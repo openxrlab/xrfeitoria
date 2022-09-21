@@ -13,7 +13,7 @@
 
 - [x] Test on Unreal Engine 4.27.3
 
-## [API Documentation](http://openxrlab.pages.gitlab.bj.sensetime.com/xrfeitoria/xrfeitoria-gear/)
+## [API Documentation](http://meihaiyi.pages.gitlab.bj.sensetime.com/xrfeitoria-gear-docs/)
 
 ## Download releases
 
