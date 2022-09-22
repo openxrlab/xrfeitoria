@@ -11,7 +11,7 @@
 
 - [x] Tested on Unreal Engine 5.0.3
 
-- [x] Test on Unreal Engine 4.27.3
+- [x] Tested on Unreal Engine 4.27.3
 
 ## [API Documentation](http://meihaiyi.pages.gitlab.bj.sensetime.com/xrfeitoria-gear-docs/)
 
