@@ -1,6 +1,6 @@
 # XRFeitoria: A Synthetic Data Factory for Machine Learning
 
-![](docs/pics/demo.gif)
+![](https://gitlab.bj.sensetime.com/meihaiyi/xrfeitoria-gear-docs/-/blob/master/pics/demo.gif)
 
 > It's for AI Researchers who have no experience with Unreal Engine, and want to create synthetic datasets.
 >
@@ -21,11 +21,12 @@
 
 # Get Started
 
-Please see [Get-Started](/docs/Get-Started.md) for plugin setup.
+Please see [Get-Started](http://meihaiyi.pages.gitlab.bj.sensetime.com/xrfeitoria-gear-docs/Get-Started.html)
 
 # Tutorial
 
-Please see [Tutorial](/docs/Tutorial.md) for a demonstration.
+Please see [Tutorial](http://meihaiyi.pages.gitlab.bj.sensetime.com/xrfeitoria-gear-docs/Tutorial.html)
+for a demonstration.
 
 # Details
 
