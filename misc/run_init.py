@@ -45,7 +45,7 @@ def main(config_file=f'{ROOT}/user.json'):
     
     ue_python = ue_command.parents[1] / 'ThirdParty/Python3/Win64/python.exe'
     req_file = Path.cwd() / ROOT / 'requirements.txt'
-    req_ue_file = Path.cwd() / ROOT / 'requirements_ue.txt'
+    req_ue_file = Path.cwd() / ROOT / 'requirements-ue.txt'
 
     info = subprocess.STARTUPINFO()
     info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
