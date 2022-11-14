@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Callable, List, Optional
+from concurrent.futures import ThreadPoolExecutor
 
 import cv2
 from tqdm import tqdm
@@ -31,7 +32,7 @@ class Visualizer:
 
     @classmethod
     def depth(cls, img_path: Path, out_path: Path) -> None:
-        img = vis_exr.get_depth_exr(str(img_path), 5000)
+        img = vis_exr.get_depth_exr(str(img_path), 1.)
         # img = get_depth_exr(str(img_path))
         cv2.imwrite(str(out_path), img)
 
@@ -60,15 +61,19 @@ def visualize(image_paths: List[Path], out_dir: Path, vis_type: str, out_format:
     visualizer: Optional[Callable[[Path, Path], None]] = getattr(Visualizer, vis_type, None)
     if visualizer is None:
         raise ValueError(f"Not visualizer for vis_type={vis_type}")
-
     out_dir.mkdir(parents=True, exist_ok=True)
-    count = 0
-    for img_path in tqdm(image_paths, desc=f"{vis_type}"):
+    
+    def visualize_one(img_path: Path):
         out_path = out_dir / f"{img_path.stem}{out_format}"
         if out_path.exists() and not overwrite:
-            continue
+            return
         visualizer(img_path, out_path)
+
+    count = 0
+    executor = ThreadPoolExecutor(max_workers=16)
+    for _ in tqdm(executor.map(visualize_one, image_paths), total=len(image_paths)):
         count += 1
+
     print(f'{vis_type}: saved {count} images to {out_dir}')
 
 

@@ -118,6 +118,9 @@ def log_msg_with_socket(PIEExecutor: unreal.MoviePipelinePIEExecutor, msg: str):
 ################################################################################
 # misc
 
+def list_dir(path: str) -> List[str]:
+    return unreal.EditorAssetLibrary.list_assets(path, recursive=True)
+
 def get_world() -> unreal.World:
     if EditorSub:
         world = EditorSub.get_editor_world()

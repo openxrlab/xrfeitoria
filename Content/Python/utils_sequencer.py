@@ -459,6 +459,7 @@ def add_spawnable_actor_to_sequence(
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
     if seq_length is None:
+        # TODO: what if animation asset is None
         seq_length = get_animation_length(animation_asset, seq_fps)
 
     # add actor to sequence
@@ -534,14 +535,14 @@ def main():
     camera_trans = [
         SequenceKey(
             frame=0, 
-            location=(500, 1500, 100),
-            rotation=(0, 0, 30)
+            location=(600, 1600, 100),
+            rotation=(0, 0, 10)
         )
     ]
     add_spawnable_camera_to_sequence(
         new_sequence, 
         camera_trans=camera_trans,
-        camera_fov=120.,
+        camera_fov=90.,
         seq_length=seq_length
     )
 
