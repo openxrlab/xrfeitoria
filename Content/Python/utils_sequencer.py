@@ -217,6 +217,35 @@ def add_property_int_track_to_binding(
     return int_track
 
 
+def add_property_string_track_to_binding(
+    binding: unreal.SequencerBindingProxy,
+    property_name: str,
+    property_value: Union[str, Dict[int, str]],
+    string_track: Optional[unreal.MovieSceneStringTrack] = None,
+) -> unreal.MovieSceneIntegerTrack:
+
+    if string_track is None:
+        # add int track
+        string_track: unreal.MovieSceneStringTrack = binding.add_track(unreal.MovieSceneStringTrack)
+        string_track.set_property_name_and_path(property_name, property_name)
+
+    # add int section, and set it to extend the whole sequence
+    string_section = string_track.add_section()
+    string_section.set_start_frame_bounded(0)
+    string_section.set_end_frame_bounded(0)
+
+    # set key
+    for channel in string_section.find_channels_by_type(unreal.MovieSceneScriptingStringChannel):
+        channel: unreal.MovieSceneScriptingStringChannel
+        if isinstance(property_value, str):
+            channel.set_default(property_value)
+        elif isinstance(property_value, dict):
+            for key_frame, value in property_value.items():
+                channel.add_key(unreal.FrameNumber(key_frame), value)
+    
+    return string_track
+
+
 def add_property_float_track_to_binding(
     binding: unreal.SequencerBindingProxy,
     property_name: str,

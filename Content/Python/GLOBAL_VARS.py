@@ -45,3 +45,5 @@ PROJECT_ROOT, PLUGIN_ROOT, PLUGIN_PYTHON_ROOT, LEVEL_INFO_JSON = get_plugin_path
 
 ENGINE_MAJOR_VERSION = int(unreal.SystemLibrary.get_engine_version()[0])
 EditorActorSub, EditorLevelSub, EditorSub = get_subsystem(ENGINE_MAJOR_VERSION)
+
+MRQ_JOB_UPPER = 500
