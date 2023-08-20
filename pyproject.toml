@@ -1,0 +1,63 @@
+[build-system]
+requires = ['setuptools>=45', 'setuptools-scm[toml]>=6.2']
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = 'xrfeitoria/version.py'
+
+
+[project]
+name = "xrfeitoria"
+authors = [{ name = "OpenXRLab", email = "openxrlab@pjlab.org.cn" }]
+description = ""
+readme = "README.md"
+requires-python = ">=3.7, <=3.11"
+license = { text = 'Apache License 2.0' }
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    'License :: OSI Approved :: Apache Software License',
+]
+dependencies = [
+    "tqdm",
+    "numpy",
+    "pydantic>2",
+    "psutil",
+    "rich",
+    "pywin32; platform_system=='Windows'",
+    "loguru",
+    "tenacity",
+]
+dynamic = ['version']
+
+[project.urls]
+"Homepage" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria-gear"
+"Bug Tracker" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria-gear/-/issues"
+
+[tool.black]
+line-length = 120
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+skip-string-normalization = true
+
+[tool.isort]
+line-length = 120
+profile = "black"
+
+[tool.ruff]
+line-length = 120
+
+# Always autofix, but never try to fix:
+# - `F401` (unused imports)
+# - `F841` (unused variables)
+fix = true
+unfixable = ["F401", "F841"]
+
+# Assume the minimum version is Python 3.7
+target-version = 'py37'

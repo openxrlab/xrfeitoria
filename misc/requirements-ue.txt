@@ -1,9 +1,0 @@
-yacs
-pydantic
-pandas
-numpy
-scipy
-requests
-tqdm
-rich
-# opencv-python
