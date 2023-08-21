@@ -83,7 +83,19 @@ def get_value_from_channel(channel: unreal.MovieSceneScriptingFloatChannel) -> f
 def get_transform_channels_from_section(
     trans_section: unreal.MovieScene3DTransformSection,
 ) -> List[unreal.MovieSceneScriptingChannel]:
-    channel_x = channel_y = channel_z = channel_roll = channel_pitch = channel_yaw = None
+    (
+        channel_x,
+        channel_y,
+        channel_z,
+    ) = (
+        channel_roll,
+        channel_pitch,
+        channel_yaw,
+    ) = (
+        channel_scale_x,
+        channel_scale_y,
+        channel_scale_z,
+    ) = (None, None, None)
     for channel in trans_section.get_all_channels():
         channel: unreal.MovieSceneScriptingChannel
         if channel.channel_name == "Location.X":
@@ -98,14 +110,34 @@ def get_transform_channels_from_section(
             channel_pitch = channel
         elif channel.channel_name == "Rotation.Z":
             channel_yaw = channel
+        elif channel.channel_name == "Scale.X":
+            channel_scale_x = channel
+        elif channel.channel_name == "Scale.Y":
+            channel_scale_y = channel
+        elif channel.channel_name == "Scale.Z":
+            channel_scale_z = channel
+
     assert channel_x is not None
     assert channel_y is not None
     assert channel_z is not None
     assert channel_roll is not None
     assert channel_pitch is not None
     assert channel_yaw is not None
+    assert channel_scale_x is not None
+    assert channel_scale_y is not None
+    assert channel_scale_z is not None
 
-    return channel_x, channel_y, channel_z, channel_roll, channel_pitch, channel_yaw
+    return (
+        channel_x,
+        channel_y,
+        channel_z,
+        channel_roll,
+        channel_pitch,
+        channel_yaw,
+        channel_scale_x,
+        channel_scale_y,
+        channel_scale_z,
+    )
 
 
 def set_transforms_by_section(
@@ -127,11 +159,17 @@ def set_transforms_by_section(
         >>>     SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0), interpolation='CONSTANT'),
         >>> ])
     """
-
-    # TODO: add scale
-    channel_x, channel_y, channel_z, channel_roll, channel_pitch, channel_yaw = get_transform_channels_from_section(
-        trans_section
-    )
+    (
+        channel_x,
+        channel_y,
+        channel_z,
+        channel_roll,
+        channel_pitch,
+        channel_yaw,
+        channel_scale_x,
+        channel_scale_y,
+        channel_scale_z,
+    ) = get_transform_channels_from_section(trans_section)
 
     if not isinstance(trans_keys, (list, tuple)):
         trans_keys = [trans_keys]
@@ -139,19 +177,27 @@ def set_transforms_by_section(
         trans_keys = [SequenceTransformKey(**k) for k in trans_keys]
 
     for trans_key in trans_keys:
+        trans_key: SequenceTransformKey
         key_frame = trans_key.frame
         key_type = trans_key.interpolation.value
-        loc_x, loc_y, loc_z = trans_key.location
-        rot_x, rot_y, rot_z = trans_key.rotation
         key_type_ = getattr(unreal.MovieSceneKeyInterpolation, key_type)
 
         key_time_ = unreal.FrameNumber(key_frame)
-        channel_x.add_key(key_time_, loc_x, interpolation=key_type_)
-        channel_y.add_key(key_time_, loc_y, interpolation=key_type_)
-        channel_z.add_key(key_time_, loc_z, interpolation=key_type_)
-        channel_roll.add_key(key_time_, rot_x, interpolation=key_type_)
-        channel_pitch.add_key(key_time_, rot_y, interpolation=key_type_)
-        channel_yaw.add_key(key_time_, rot_z, interpolation=key_type_)
+        if trans_key.location:
+            loc_x, loc_y, loc_z = trans_key.location
+            channel_x.add_key(key_time_, loc_x, interpolation=key_type_)
+            channel_y.add_key(key_time_, loc_y, interpolation=key_type_)
+            channel_z.add_key(key_time_, loc_z, interpolation=key_type_)
+        if trans_key.rotation:
+            rot_x, rot_y, rot_z = trans_key.rotation
+            channel_roll.add_key(key_time_, rot_x, interpolation=key_type_)
+            channel_pitch.add_key(key_time_, rot_y, interpolation=key_type_)
+            channel_yaw.add_key(key_time_, rot_z, interpolation=key_type_)
+        if trans_key.scale:
+            scale_x, scale_y, scale_z = trans_key.scale
+            channel_scale_x.add_key(key_time_, scale_x, interpolation=key_type_)
+            channel_scale_y.add_key(key_time_, scale_y, interpolation=key_type_)
+            channel_scale_z.add_key(key_time_, scale_z, interpolation=key_type_)
 
 
 def set_animation_by_section(
@@ -482,7 +528,6 @@ def add_spawnable_camera_to_sequence(
     Returns:
         unreal.CameraActor: _description_
     """
-    # TODO: support multi-view camera
     # get sequence settings
     if seq_length is None:
         seq_length = sequence.get_playback_end()

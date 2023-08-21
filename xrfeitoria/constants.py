@@ -202,6 +202,8 @@ class RenderJobUnreal(BaseModel):
     file_name_format: str = "{sequence_name}/{camera_name}/{render_pass}/{frame_number}"
     console_variables: Dict[str, float] = {}
     anti_aliasing: AntiAliasSetting = AntiAliasSetting()
+    export_vertices: bool = False
+    export_skeleton: bool = False
 
     class Config:
         use_enum_values = True
@@ -209,9 +211,9 @@ class RenderJobUnreal(BaseModel):
 
 class SequenceTransformKey(BaseModel):
     frame: int
-    location: Vector
-    rotation: Vector
-    scale: Vector = (1, 1, 1)
+    location: Optional[Vector] = None
+    rotation: Optional[Vector] = None
+    scale: Optional[Vector] = None
     interpolation: Union[InterpolationEnumUnreal, InterpolationEnumBlender]
 
     def __init__(

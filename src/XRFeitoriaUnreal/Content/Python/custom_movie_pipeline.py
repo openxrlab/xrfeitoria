@@ -86,6 +86,21 @@ class CustomMoviePipeline:
         camera_setting.render_all_cameras = enable
 
     @staticmethod
+    def set_export_vertices(movie_preset: unreal.MoviePipelineMasterConfig, enable: bool = True) -> None:
+        export_setting: unreal.MoviePipelineMeshOperator = movie_preset.find_or_add_setting_by_class(
+            unreal.MoviePipelineMeshOperator
+        )
+        export_setting.static_mesh_operator_option.save_vertices_position = enable
+        export_setting.skeletal_mesh_operator_option.save_vertices_position = enable
+
+    @staticmethod
+    def set_export_skeleton(movie_preset: unreal.MoviePipelineMasterConfig, enable: bool = True) -> None:
+        export_setting: unreal.MoviePipelineMeshOperator = movie_preset.find_or_add_setting_by_class(
+            unreal.MoviePipelineMeshOperator
+        )
+        export_setting.skeletal_mesh_operator_option.save_skeleton_position = enable
+
+    @staticmethod
     def add_render_passes(movie_preset: unreal.MoviePipelineMasterConfig, render_passes: List[RenderPass]) -> None:
         """Add render passes to a movie preset.
 
@@ -240,6 +255,8 @@ class CustomMoviePipeline:
         output_path: Optional[str] = None,
         anti_alias: RenderJobUnreal.AntiAliasSetting = RenderJobUnreal.AntiAliasSetting(),
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0.0},
+        export_vertices: bool = False,
+        export_skeleton: bool = False,
     ) -> unreal.MoviePipelineMasterConfig:
         """
         Create a movie preset from args.
@@ -268,6 +285,8 @@ class CustomMoviePipeline:
         cls.add_anti_alias(movie_preset, anti_alias)
         cls.add_console_command(movie_preset, console_variables)
         cls.set_render_all_cameras(movie_preset, enable=True)
+        cls.set_export_vertices(movie_preset, enable=export_vertices)
+        cls.set_export_skeleton(movie_preset, enable=export_skeleton)
 
         return movie_preset
 
@@ -352,6 +371,8 @@ class CustomMoviePipeline:
             output_path=job.output_path,
             anti_alias=job.anti_aliasing,
             console_variables=job.console_variables,
+            export_vertices=job.export_vertices,
+            export_skeleton=job.export_skeleton,
         )
         new_job.set_configuration(movie_preset)
         unreal.log(f"Added new job ({new_job.job_name}) to queue.")

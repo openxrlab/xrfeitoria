@@ -46,7 +46,7 @@ def level_test(xf_runner: XRFetoriaBlender):
 
 def sequence_test(debug: bool = False, background: bool = False):
     set_logger(debug=debug)
-    with _init_blender(background=background, cleanup=True, replace_plugin=True) as xf_runner:
+    with _init_blender(background=background, cleanup=True) as xf_runner:
         with __timer__("level test"):
             cam_level = level_test(xf_runner)
 

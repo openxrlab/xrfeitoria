@@ -78,12 +78,13 @@ class SequenceUnreal(SequenceBase):
     def control_camera(
         cls,
         camera_name: str,
-        location: "Vector",
-        rotation: "Vector",
+        location: "Optional[Vector]" = None,
+        rotation: "Optional[Vector]" = None,
+        scale: "Optional[Vector]" = None,
         fov: float = 90.0,
     ) -> None:
-        transform_keys = dict(frame=0, location=location, rotation=rotation)
-        cls._add_camera_in_engine(
+        transform_keys = dict(frame=0, location=location, rotation=rotation, scale=scale)
+        cls._control_camera_in_engine(
             transform_keys=transform_keys,
             fov=fov,
             camera_name=camera_name,
@@ -99,7 +100,7 @@ class SequenceUnreal(SequenceBase):
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
-        cls._add_camera_in_engine(
+        cls._control_camera_in_engine(
             transform_keys=transform_keys,
             fov=fov,
             camera_name=camera_name,
@@ -109,13 +110,14 @@ class SequenceUnreal(SequenceBase):
     def control_actor(
         cls,
         actor_name: str,
-        location: "Vector",
-        rotation: "Vector",
+        location: "Optional[Vector]" = None,
+        rotation: "Optional[Vector]" = None,
+        scale: "Optional[Vector]" = None,
         actor_stencil_value: int = 1,
         anim_asset_path: "Optional[str]" = None,
     ) -> None:
-        transform_keys = dict(frame=0, location=location, rotation=rotation)
-        cls._add_actor_in_engine(
+        transform_keys = dict(frame=0, location=location, rotation=rotation, scale=scale)
+        cls._control_actor_in_engine(
             actor_name=actor_name,
             transform_keys=transform_keys,
             actor_stencil_value=actor_stencil_value,
@@ -133,7 +135,7 @@ class SequenceUnreal(SequenceBase):
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
-        cls._add_actor_in_engine(
+        cls._control_actor_in_engine(
             actor_name=actor_name,
             transform_keys=transform_keys,
             actor_stencil_value=actor_stencil_value,
@@ -205,7 +207,7 @@ class SequenceUnreal(SequenceBase):
     # ------ add actor and camera -------- #
 
     @staticmethod
-    def _add_camera_in_engine(
+    def _control_camera_in_engine(
         transform_keys: "Union[List[Dict], Dict]",
         fov: float = 90.0,
         camera_name: str = "Camera",
@@ -222,7 +224,7 @@ class SequenceUnreal(SequenceBase):
         )
 
     @staticmethod
-    def _add_actor_in_engine(
+    def _control_actor_in_engine(
         actor_name: str,
         transform_keys: "Union[List[Dict], Dict]",
         actor_stencil_value: int = 1,
@@ -253,10 +255,11 @@ class SequenceUnreal(SequenceBase):
         if isinstance(transform_keys[0], dict):
             transform_keys = [XRFeitoriaUnrealFactory.constants.SequenceTransformKey(**k) for k in transform_keys]
 
-        XRFeitoriaUnrealFactory.Sequence.spawn_camera(
+        XRFeitoriaUnrealFactory.Sequence.add_camera(
             transform_keys=transform_keys,
             fov=fov,
             camera_name=camera_name,
+            spawnable=True,
         )
 
     @staticmethod
@@ -272,7 +275,7 @@ class SequenceUnreal(SequenceBase):
         if isinstance(transform_keys[0], dict):
             transform_keys = [XRFeitoriaUnrealFactory.constants.SequenceTransformKey(**k) for k in transform_keys]
 
-        XRFeitoriaUnrealFactory.Sequence.spawn_actor(
+        XRFeitoriaUnrealFactory.Sequence.add_actor(
             actor=actor_asset_path,
             animation_asset=anim_asset_path,
             actor_name=actor_name,

@@ -98,10 +98,13 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 {
 	if (bIsFirstFrame)
 	{
+		// Get Output Setting
 		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
 		check(OutputSettings);
 		int ResolutionX = OutputSettings->OutputResolution.X;
 		int ResolutionY = OutputSettings->OutputResolution.Y;
+
+		// Save Camera Transform (KRT)
 		FVector CamLocation = Camera->GetActorLocation();
 		FRotator CamRotation = Camera->GetActorRotation();
 		float FOV = Camera->GetCameraComponent()->FieldOfView;
@@ -131,11 +134,11 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 
 		if (SkeletalMeshOperatorOption.bSaveVerticesPosition)
 		{
-			// Get Vertex Positions (LOD 0)
+			// Get Vertex Positions (with LOD)
 			TArray<FVector> VertexPositions;
 			bool isSuccess = USF_BlueprintFunctionLibrary::GetSkeletalMeshVertexLocationsByLODIndex(
 				SkeletalMeshComponent,
-				0,  // LODIndex
+				SkeletalMeshOperatorOption.LODIndex,
 				VertexPositions
 			);
 			if (!isSuccess)
@@ -154,49 +157,19 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 				VertexPositionsFloat, GetOutputPath("Vertex" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 		}
 
-		if (SkeletalMeshOperatorOption.bSaveOcclusionRate || SkeletalMeshOperatorOption.bSaveOcclusionResult)
+		if (SkeletalMeshOperatorOption.bSaveSkeletonPosition)
 		{
-
-			float non_occlusion_rate;
-			float self_occlusion_rate;
-			float inter_occlusion_rate;
 			TArray<FVector> SkeletonPositions;
 			TArray<FName> SkeletonNames;
-			TArray<EOcclusion> SkeletonOcclusion;
-			float MeshThickness = 5.0f;
-			bool isSuccess = USF_BlueprintFunctionLibrary::DetectInterOcclusionSkeleton(
-				SkeletalMeshComponent,
-				Camera,
-				non_occlusion_rate,
-				self_occlusion_rate,
-				inter_occlusion_rate,
-				SkeletonPositions,
-				SkeletonNames,
-				SkeletonOcclusion,
-				MeshThickness,
-				false
-			);
+			bool isSuccess = USF_BlueprintFunctionLibrary::GetSkeletalMeshBoneLocations(
+				SkeletalMeshComponent, SkeletonPositions, SkeletonNames);
 
-			// Skeleton Names
+			// Skeleton Names (only save on the first frame)
 			TArray<FString> SkeletonNamesString;
 			for (FName name : SkeletonNames) SkeletonNamesString.Add(name.ToString());
 			FString BoneNamePath = GetOutputPath("BoneNames" / MeshName, "txt", &InMergedOutputFrame->FrameOutputState);
 			BoneNamePath = FPaths::SetExtension(FPaths::GetPath(BoneNamePath), FPaths::GetExtension(BoneNamePath));  // get rid of the frame index
 			if (bIsFirstFrame) FFileHelper::SaveStringArrayToFile(SkeletonNamesString, *BoneNamePath);
-
-			// Occlusion Int
-			TArray<uint8> SkeletonOcclusionInt;
-			for (EOcclusion occlusion : SkeletonOcclusion) SkeletonOcclusionInt.Add((uint8)occlusion);
-			FFileHelper::SaveArrayToFile(
-				SkeletonOcclusionInt, *GetOutputPath("Occlusion" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
-
-			// Occlusion rate
-			TArray<float> OcclusionRate;
-			OcclusionRate.Add(non_occlusion_rate);
-			OcclusionRate.Add(self_occlusion_rate);
-			OcclusionRate.Add(inter_occlusion_rate);
-			USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
-				OcclusionRate, *GetOutputPath("OcclusionRate" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 
 			// Skeleton Positions
 			TArray<float> SkeletonPositionsFloat;
@@ -208,14 +181,75 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 			}
 			USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
 				SkeletonPositionsFloat, GetOutputPath("SkeletonPositions" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
-
-
-			// TODO: export to npz
 		}
 
+		//if (SkeletalMeshOperatorOption.bSaveOcclusionRate || SkeletalMeshOperatorOption.bSaveOcclusionResult)
+		//{
+		//
+		//	float non_occlusion_rate;
+		//	float self_occlusion_rate;
+		//	float inter_occlusion_rate;
+		//	TArray<FVector> SkeletonPositions;
+		//	TArray<FName> SkeletonNames;
+		//	TArray<EOcclusion> SkeletonOcclusion;
+		//	float MeshThickness = 5.0f;
+		//	bool isSuccess = USF_BlueprintFunctionLibrary::DetectInterOcclusionSkeleton(
+		//		SkeletalMeshComponent,
+		//		Camera,
+		//		non_occlusion_rate,
+		//		self_occlusion_rate,
+		//		inter_occlusion_rate,
+		//		SkeletonPositions,
+		//		SkeletonNames,
+		//		SkeletonOcclusion,
+		//		MeshThickness,
+		//		false
+		//	);
+		//	// Occlusion Int
+		//	TArray<uint8> SkeletonOcclusionInt;
+		//	for (EOcclusion occlusion : SkeletonOcclusion) SkeletonOcclusionInt.Add((uint8)occlusion);
+		//	FFileHelper::SaveArrayToFile(
+		//		SkeletonOcclusionInt, *GetOutputPath("Occlusion" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
+		//
+		//	// Occlusion rate
+		//	TArray<float> OcclusionRate;
+		//	OcclusionRate.Add(non_occlusion_rate);
+		//	OcclusionRate.Add(self_occlusion_rate);
+		//	OcclusionRate.Add(inter_occlusion_rate);
+		//	USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
+		//		OcclusionRate, *GetOutputPath("OcclusionRate" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
+		//	// TODO: export to npz
+		//}
 	}
-
 	// TODO: add static mesh components
+	for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
+	{
+		FString MeshName = StaticMeshComponent->GetOwner()->GetActorNameOrLabel();
+		if (StaticMeshOperatorOption.bSaveVerticesPosition)
+		{
+			// Get Vertex Positions (with LOD)
+			TArray<FVector> VertexPositions;
+			bool isSuccess = USF_BlueprintFunctionLibrary::GetStaticMeshVertexLocations(
+				StaticMeshComponent,
+				StaticMeshOperatorOption.LODIndex,
+				VertexPositions
+			);
+			if (!isSuccess)
+			{
+				UE_LOG(LogMovieRenderPipeline, Error, TEXT("Failed to get vertex positions"));
+				continue;
+			}
+			TArray<float> VertexPositionsFloat;
+			for (FVector position : VertexPositions)
+			{
+				VertexPositionsFloat.Add(position.X);
+				VertexPositionsFloat.Add(position.Y);
+				VertexPositionsFloat.Add(position.Z);
+			}
+			USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
+				VertexPositionsFloat, GetOutputPath("Vertex" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
+		}
+	}
 	if (bIsFirstFrame) bIsFirstFrame = false;
 }
 
@@ -236,10 +270,16 @@ FString UMoviePipelineMeshOperator::GetOutputPath(FString PassName, FString Ext,
 	FString OutputPath;
 	FMoviePipelineFormatArgs Args;
 	TMap<FString, FString> FormatOverrides;
+	FormatOverrides.Add(TEXT("camera_name"), "");
 	FormatOverrides.Add(TEXT("render_pass"), PassName);
 	FormatOverrides.Add(TEXT("ext"), Ext);
 	GetPipeline()->ResolveFilenameFormatArguments(
 		OutputDirectory / FileNameFormatString, FormatOverrides, OutputPath, Args, InOutputState);
+
+	if (FPaths::IsRelative(OutputPath))
+	{
+		OutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
+	}
 
 	return OutputPath;
 }

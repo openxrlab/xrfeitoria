@@ -45,14 +45,34 @@ public:
 		bool bEnabled = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
 		bool bSaveVerticesPosition = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
-		bool bSaveOcclusionResult = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
-		bool bSaveOcclusionRate = true;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+	//	bool bSaveOcclusionResult = true;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+	//	bool bSaveOcclusionRate = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
 		int32 LODIndex = 0;
 };
 
+
+USTRUCT(BlueprintType)
+struct XRFEITORIAUNREAL_API FSkeletalMeshOperatorOption
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		bool bEnabled = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		bool bSaveVerticesPosition = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		bool bSaveSkeletonPosition = true;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+	//	bool bSaveOcclusionResult = true;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+	//	bool bSaveOcclusionRate = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		int32 LODIndex = 0;
+};
 
 UCLASS(Blueprintable)
 class XRFEITORIAUNREAL_API UMoviePipelineMeshOperator : public UMoviePipelineOutputBase
@@ -72,7 +92,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Operator")
 		FMeshOperatorOption StaticMeshOperatorOption = FMeshOperatorOption();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Operator")
-		FMeshOperatorOption SkeletalMeshOperatorOption = FMeshOperatorOption();
+		FSkeletalMeshOperatorOption SkeletalMeshOperatorOption = FSkeletalMeshOperatorOption();
 
 private:
 	TArray<FSequencerBoundObjects> boundObjects;

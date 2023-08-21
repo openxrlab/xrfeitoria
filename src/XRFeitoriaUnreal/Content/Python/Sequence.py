@@ -24,7 +24,6 @@ class Sequence:
     def close(cls) -> None:
         if cls.sequence is not None:
             unreal.LevelSequenceEditorBlueprintLibrary.close_level_sequence()
-
             del cls.sequence
         cls.map_path = None
         cls.sequence_path = None
@@ -49,6 +48,7 @@ class Sequence:
             seq_dir = DEFAULT_SEQUENCE_PATH
         cls.sequence_path = f"{seq_dir}/{seq_name}"
         cls.sequence: unreal.LevelSequence = unreal.load_asset(cls.sequence_path)
+        # TODO: when error was raised from spawn_xxx, the sequence is not closed, which would cause unable to delete the sequence asset
 
     @classmethod
     def new(
@@ -89,50 +89,11 @@ class Sequence:
     @classmethod
     def add_camera(
         cls,
+        camera_name: str,
         transform_keys: "Optional[Union[List[SequenceTransformKey], SequenceTransformKey]]" = None,
         fov: float = 90.0,
-        camera_name: str = "Camera",
+        spawnable: bool = False,
     ):
-        camera = utils_actor.get_actor_by_name(camera_name)
-        bindings = utils_sequencer.add_camera_to_sequence(
-            sequence=cls.sequence,
-            camera=camera,
-            camera_transform_keys=transform_keys,
-            camera_fov=fov,
-        )
-        cls.bindings[camera_name] = bindings
-
-    @classmethod
-    def add_actor(
-        cls,
-        actor_name: str,
-        transform_keys: "Optional[Union[List[SequenceTransformKey], SequenceTransformKey]]" = None,
-        actor_stencil_value: int = 1,
-        animation_asset: "Optional[Union[str, unreal.AnimSequence]]" = None,
-    ) -> None:
-        assert cls.sequence is not None, "Sequence not initialized"
-        if animation_asset and isinstance(animation_asset, str):
-            animation_asset = unreal.load_asset(animation_asset)
-
-        actor = utils_actor.get_actor_by_name(actor_name)
-        bindings = utils_sequencer.add_actor_to_sequence(
-            sequence=cls.sequence,
-            actor=actor,
-            actor_transform_keys=transform_keys,
-            actor_stencil_value=actor_stencil_value,
-            animation_asset=animation_asset,
-        )
-        cls.bindings[actor_name] = bindings
-
-    # ------ spawn actor and camera ------ #
-
-    @classmethod
-    def spawn_camera(
-        cls,
-        transform_keys: "Optional[Union[List[SequenceTransformKey], SequenceTransformKey]]" = None,
-        fov: float = 90.0,
-        camera_name: str = "Camera",
-    ) -> None:
         """
         Spawn a camera in sequence
 
@@ -142,22 +103,32 @@ class Sequence:
             camera_name (str, optional): Name of camera to set in sequence. Defaults to "Camera".
         """
         assert cls.sequence is not None, "Sequence not initialized"
-        bindings = utils_sequencer.add_spawnable_camera_to_sequence(
-            sequence=cls.sequence,
-            camera_name=camera_name,
-            camera_transform_keys=transform_keys,
-            camera_fov=fov,
-        )
-        cls.bindings[camera_name] = bindings
+        if spawnable:
+            bindings = utils_sequencer.add_spawnable_camera_to_sequence(
+                sequence=cls.sequence,
+                camera_name=camera_name,
+                camera_transform_keys=transform_keys,
+                camera_fov=fov,
+            )
+            cls.bindings[camera_name] = bindings
+        else:
+            camera = utils_actor.get_actor_by_name(camera_name)
+            bindings = utils_sequencer.add_camera_to_sequence(
+                sequence=cls.sequence,
+                camera=camera,
+                camera_transform_keys=transform_keys,
+                camera_fov=fov,
+            )
+            cls.bindings[camera_name] = bindings
 
     @classmethod
-    def spawn_actor(
+    def add_actor(
         cls,
-        actor: "Union[str, unreal.Actor]",
-        animation_asset: "Optional[Union[str, unreal.AnimSequence]]" = None,
-        actor_name: str = "Actor",
+        actor_name: str,
+        actor: "Optional[Union[str, unreal.Actor]]" = None,
         transform_keys: "Optional[Union[List[SequenceTransformKey], SequenceTransformKey]]" = None,
         actor_stencil_value: int = 1,
+        animation_asset: "Optional[Union[str, unreal.AnimSequence]]" = None,
     ) -> None:
         """
         Spawn an actor in sequence
@@ -170,20 +141,32 @@ class Sequence:
             actor_stencil_value (int, optional): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
         """
         assert cls.sequence is not None, "Sequence not initialized"
-        if isinstance(actor, str):
-            actor = unreal.load_asset(actor)
         if animation_asset and isinstance(animation_asset, str):
             animation_asset = unreal.load_asset(animation_asset)
+        if isinstance(actor, str):
+            actor = unreal.load_asset(actor)
 
-        bindings = utils_sequencer.add_spawnable_actor_to_sequence(
-            sequence=cls.sequence,
-            actor_name=actor_name,
-            actor_asset=actor,
-            animation_asset=animation_asset,
-            actor_transform_keys=transform_keys,
-            actor_stencil_value=actor_stencil_value,
-        )
-        cls.bindings[actor_name] = bindings
+        if actor:
+            bindings = utils_sequencer.add_spawnable_actor_to_sequence(
+                sequence=cls.sequence,
+                actor_name=actor_name,
+                actor_asset=actor,
+                animation_asset=animation_asset,
+                actor_transform_keys=transform_keys,
+                actor_stencil_value=actor_stencil_value,
+            )
+            cls.bindings[actor_name] = bindings
+
+        else:
+            actor = utils_actor.get_actor_by_name(actor_name)
+            bindings = utils_sequencer.add_actor_to_sequence(
+                sequence=cls.sequence,
+                actor=actor,
+                actor_transform_keys=transform_keys,
+                actor_stencil_value=actor_stencil_value,
+                animation_asset=animation_asset,
+            )
+            cls.bindings[actor_name] = bindings
 
 
 if __name__ == "__main__":

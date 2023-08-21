@@ -31,6 +31,8 @@ class RendererUnreal(RendererBase):
         file_name_format: str = "{sequence_name}/{camera_name}/{render_pass}/{frame_number}",
         console_variables: Dict[str, float] = {},
         anti_aliasing: RenderJobUnreal.AntiAliasSetting = RenderJobUnreal.AntiAliasSetting(),
+        export_vertices: bool = False,
+        export_skeleton: bool = False,
     ) -> None:
         job = RenderJobUnreal(
             map_path=map_path,
@@ -41,6 +43,8 @@ class RendererUnreal(RendererBase):
             file_name_format=file_name_format,
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
+            export_vertices=export_vertices,
+            export_skeleton=export_skeleton,
         )
         cls._add_job_in_engine(job.model_dump())
         cls.render_queue.append(job)

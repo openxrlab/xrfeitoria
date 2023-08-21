@@ -24,8 +24,6 @@ def create_seq(xf_runner: XRFeitoriaUnreal, map_path: str, seq_name: str):
         )
         seq.control_actor(
             actor_name="Cube",
-            location=(0, 0, 200),
-            rotation=(0, 0, 180),
             actor_stencil_value=1,
         )
 
@@ -92,6 +90,8 @@ def add_job_in_batch(xf_runner: XRFeitoriaUnreal, jobs: list[dict[str, str]]):
             RenderPass("img", "png"),
             RenderPass("mask", "exr"),
         ],
+        export_vertices=True,
+        export_skeleton=True,
     )
     for job in jobs:
         map_path = job["map_path"]
@@ -104,8 +104,8 @@ def sequence_test(debug: bool = False, background: bool = False):
     with _init_unreal(background=background) as xf_runner:
         with __timer__("create seq 'test'"):
             create_seq(xf_runner, map_path="/Game/NewMap", seq_name="test")
-        with __timer__("create seq 'test2'"):
-            create_seq(xf_runner, map_path="/Game/NewMap", seq_name="test2")
+        # with __timer__("create seq 'test2'"):
+        #     create_seq(xf_runner, map_path="/Game/NewMap", seq_name="test2")
         with __timer__("open seq 'test'"):
             open_seq(xf_runner, map_path="/Game/NewMap", seq_name="test")
         with __timer__("add jobs to render queue"):
@@ -114,7 +114,7 @@ def sequence_test(debug: bool = False, background: bool = False):
                 xf_runner,
                 jobs=[
                     {"map_path": "/Game/NewMap", "seq_name": "test"},
-                    {"map_path": "/Game/NewMap", "seq_name": "test2"},
+                    # {"map_path": "/Game/NewMap", "seq_name": "test2"},
                 ],
             )
         with __timer__("render jobs"):

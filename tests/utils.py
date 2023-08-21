@@ -43,7 +43,7 @@ _init_blender = partial(
 )
 _init_unreal = partial(
     xf.init_unreal,
-    exec_path="C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe",
-    project_path="E:/Unreal_Projects/MyProject_52/MyProject_52.uproject",
+    exec_path="E:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe",
+    project_path="C:/Documents/Unreal_Projects/MyProject_52/MyProject_52.uproject",
     new_process=False,
 )

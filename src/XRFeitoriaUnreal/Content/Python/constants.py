@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import unreal
 
@@ -129,18 +129,20 @@ class RenderPass:
 @dataclass
 class SequenceTransformKey:
     frame: int
-    location: Vector
-    rotation: Vector
-    scale: Vector = (1, 1, 1)
+    location: Optional[Vector] = None
+    rotation: Optional[Vector] = None
+    scale: Optional[Vector] = None
     interpolation: InterpolationEnum = InterpolationEnum.CONSTANT
 
     def __post_init__(self):
         if not isinstance(self.frame, int):
             raise ValueError("Frame must be an integer")
-        if not isinstance(self.location, (tuple, list)) or len(self.location) != 3:
+        if self.location and (not isinstance(self.location, (tuple, list)) or len(self.location) != 3):
             raise ValueError("Location must be a tuple of 3 floats")
-        if not isinstance(self.rotation, (tuple, list)) or len(self.rotation) != 3:
+        if self.rotation and (not isinstance(self.rotation, (tuple, list)) or len(self.rotation) != 3):
             raise ValueError("Rotation must be a tuple of 3 floats")
+        if self.scale and (not isinstance(self.scale, (tuple, list)) or len(self.scale) != 3):
+            raise ValueError("Scale must be a tuple of 3 floats")
         if isinstance(self.interpolation, str):
             self.interpolation = InterpolationEnum.get(self.interpolation.upper())
 
@@ -165,6 +167,8 @@ class RenderJobUnreal:
     file_name_format: str = "{sequence_name}/{camera_name}/{render_pass}/{frame_number}"
     console_variables: Dict[str, float] = field(default_factory=dict)
     anti_aliasing: AntiAliasSetting = AntiAliasSetting()
+    export_vertices: bool = False
+    export_skeleton: bool = False
 
     def __post_init__(self):
         self.render_passes = [RenderPass(**rp) for rp in self.render_passes]
