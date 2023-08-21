@@ -32,7 +32,6 @@ def save_blend(save_path: "Optional[PathLike]" = None, pack: bool = False):
 # --------- INIT  -----------
 @remote_blender_decorator
 def init_scene_and_collection(default_level_name: str, cleanup: bool = False) -> tuple:
-    # BUG: duplicated scene name
     if default_level_name not in bpy.data.collections.keys():
         default_collection = BlenderSceneCollectionUtils.new_collection(default_level_name)
     else:

@@ -79,14 +79,17 @@ class RendererBlender(RendererBase):
                 camera_pass_dir.mkdir(exist_ok=True)
                 camera_pass_files = pass_dir.glob(f"*{camera_name}.*")
                 for camera_pass_file in camera_pass_files:
-                    camera_pass_file.rename(camera_pass_dir / camera_pass_file.name.replace(camera_name, ""))
+                    new_camera_pass_file = camera_pass_dir / camera_pass_file.name.replace(camera_name, "")
+                    if new_camera_pass_file.exists():
+                        new_camera_pass_file.unlink()
+                    camera_pass_file.rename(new_camera_pass_file)
 
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
 
     @staticmethod
-    def _set_renderer_in_engine(job: "Dict[str, Any]", use_gpu: bool = True) -> None:
+    def _set_renderer_in_engine(job: "Dict[str, Any]", use_gpu: bool = True) -> None: 
         scene = (
             bpy.data.scenes[job["sequence_name"]] if job["sequence_name"] else bpy.data.scenes[default_level_blender]
         )
@@ -109,7 +112,7 @@ class RendererBlender(RendererBase):
 
     @staticmethod
     def _render_in_engine(job: "Dict[str, Any]") -> None:
-        scene = job["sequence_name"] if job["sequence_name"] else default_level_blender
+        scene = job["sequence_name"] if job["sequence_name"] else bpy.data.scenes[default_level_blender]
         RendererBlenderUtils.render(scene=scene)
 
 
@@ -140,6 +143,7 @@ class RendererBlenderUtils:
     def use_gpu_in_engine(scene: "bpy.types.Scene") -> None:
         """Set the background of the scene to transparent"""
         if scene.render.engine == "CYCLES":
+            bpy.context.preferences.addons['cycles'].preferences.compute_device_type = "CUDA"
             scene.cycles.device = "GPU"
 
     @staticmethod

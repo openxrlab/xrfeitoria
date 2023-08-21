@@ -78,7 +78,6 @@ class SequenceBlender(SequenceBase):
         seq_fps: "Optional[float]" = None,
         seq_length: "Optional[int]" = None,
         replace: bool = False,
-        # TODO: add replace option
     ) -> None:
         cls.name = seq_name
         cls._new_seq_in_engine(

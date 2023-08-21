@@ -16,7 +16,6 @@ if os.environ.get("TEST_ENVIRONMENT"):
 remote_blender_decorator = factory.remote_call(
     port=BLENDER_PORT,
     remap_pairs=REMAP_PAIRS,
-    # TODO: check if it's right
     default_imports=["import bpy", "default_level_blender=bpy.context.scene.default_level_blender"],
 )
 remote_blender_decorator_class = factory.remote_class(remote_blender_decorator)

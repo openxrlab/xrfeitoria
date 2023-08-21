@@ -299,13 +299,12 @@ class ObjectUtilsBlender(ObjectUtilsBase):
             new_objs[0].name = name
         elif len(new_objs) >= 2:
             obj_types = [obj.data.__class__.__name__ for obj in new_objs]
-            if 'Armature' in obj_types and 'Mesh' in obj_types:
+            if 'Armature' not in obj_types:
+                raise ValueError(f"Unspport file")
+            elif obj_types.count('Armature') >= 2:
+                raise ValueError(f"Unspport file")
+            elif 'Armature' in obj_types and 'Mesh' in obj_types:
                 new_objs[obj_types.index('Armature')].name = name
-        #     else:
-        #         # TODO: how to express this error
-        #         raise ValueError(f"Unspport file")
-        # else:
-        #     raise ValueError(f"Unspport file")
 
     ##########################
     # ------- Delete ------- #
@@ -342,7 +341,6 @@ class ObjectUtilsBlender(ObjectUtilsBase):
         name: str,
         collection_name: str = "XRFeitoria",
     ) -> None:
-        # TODO: import to collection, same as camera
         if collection_name not in bpy.data.collections.keys():
             raise ValueError(f"Invalid collection_name, '{collection_name}' does not exists.")
 
@@ -382,8 +380,6 @@ class ObjectUtilsBlender(ObjectUtilsBase):
 
     @staticmethod
     def _import_animation_from_file_in_engine(animation_path: "PathLike", name: str, action_name: str = None) -> None:
-        # TODO: import animation
-        # import animation and apply animation to armature
         anim_file_ext = Path(animation_path).suffix
         if anim_file_ext.lower() == ".json":
             ImportFunctions.import_mo_json(mo_json_file=animation_path, actor_name=name)

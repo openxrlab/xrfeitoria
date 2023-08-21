@@ -39,8 +39,6 @@ class XRFetoriaBlender:
             background=background,
             new_process=new_process,
         )
-        # TODO; check this
-        self.scene_name = "Scene"
 
 
 class XRFeitoriaUnreal:
