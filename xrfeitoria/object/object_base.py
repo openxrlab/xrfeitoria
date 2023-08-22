@@ -3,13 +3,22 @@ from .object_utils import ObjectUtilsBase
 
 
 class ObjectBase:
+    """
+    Base class for all objects in the world
+    """
+
     _object_utils = ObjectUtilsBase
 
     def __init__(self, name: str) -> None:
+        """
+        Args:
+            name (str): name of the object
+        """
         self._name = name
 
     @property
     def name(self) -> str:
+        """Name of the object"""
         return self._name
 
     @name.setter
@@ -19,12 +28,7 @@ class ObjectBase:
 
     @property
     def location(self) -> Vector:
-        """
-        Location of the object in the world, in meters
-
-        Returns:
-            Tuple[float, float, float]: in meters
-        """
+        """Location of the object in the world, in meters"""
         return self._object_utils.get_location(self._name)
 
     @location.setter
@@ -34,12 +38,7 @@ class ObjectBase:
 
     @property
     def rotation(self) -> Vector:
-        """
-        Rotation of the object in the world, in degrees
-
-        Returns:
-            Tuple[float, float, float]: in degrees
-        """
+        """Rotation of the object in the world, in degrees"""
         return self._object_utils.get_rotation(self._name)
 
     @rotation.setter
@@ -49,12 +48,7 @@ class ObjectBase:
 
     @property
     def scale(self) -> Vector:
-        """
-        Scale of the object in the world, no units
-
-        Returns:
-            Tuple[float, float, float]: no units, 1.0 is default
-        """
+        """Scale of the object in the world, no units, 1.0 is default"""
         return self._object_utils.get_scale(self._name)
 
     @scale.setter
@@ -63,10 +57,23 @@ class ObjectBase:
         self._object_utils.set_scale(self._name, self._scale)
 
     def get_transform(self) -> Transform:
-        """Get the transform of the object in the world"""
+        """
+        Get the transform of the object in the world
+
+        Returns:
+            Transform: location, rotation, scale
+        """
         return self._object_utils.get_transform(self._name)
 
-    def set_transform(self, location: Vector, rotation: Vector, scale: Vector):
+    def set_transform(self, location: Vector, rotation: Vector, scale: Vector) -> None:
+        """
+        Set the transform of the object in the world
+
+        Args:
+            location (Tuple[float, float, float]): in meters
+            rotation (Tuple[float, float, float]): in degrees
+            scale (Tuple[float, float, float]): no units, 1.0 is default
+        """
         self._object_utils.set_transform(self._name, location, rotation, scale)
 
     def delete(self):
