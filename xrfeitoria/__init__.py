@@ -77,9 +77,9 @@ def init_unreal(
 
 __version__ = _get_version()
 __all__ = [
-    __platform__,
-    RenderPass,
-    SequenceTransformKey,
-    init_unreal,
-    init_blender,
+    "__platform__",
+    "RenderPass",
+    "SequenceTransformKey",
+    "init_unreal",
+    "init_blender",
 ]

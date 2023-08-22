@@ -28,4 +28,4 @@ class RPC:
         )
 
 
-__all__ = [RPC]
+__all__ = ["RPC"]

@@ -7,6 +7,10 @@ from ..utils import Validator
 
 
 class ActorBase(ABC, ObjectBase):
+    """
+    Base class for all actors in the world
+    """
+
     _object_utils = ObjectUtilsBase
 
     @classmethod

@@ -2,7 +2,10 @@ import os
 
 from . import client, factory
 
-__all__ = [client, factory]
+__all__ = [
+    "client",
+    "factory",
+]
 
 # blender
 REMAP_PAIRS = []
