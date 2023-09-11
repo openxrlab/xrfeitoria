@@ -2,7 +2,7 @@
 
 
 #include "MoviePipelineMeshOperator.h"
-#include "SF_BlueprintFunctionLibrary.h"
+#include "XF_BlueprintFunctionLibrary.h"
 #include "Engine/StaticMeshActor.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Camera/CameraActor.h"
@@ -23,7 +23,7 @@ void UMoviePipelineMeshOperator::SetupForPipelineImpl(UMoviePipeline* InPipeline
 	UMovieScene* MovieScene = LevelSequence->GetMovieScene();
 	TArray<FMovieSceneBinding> bindings = MovieScene->GetBindings();
 
-	TArray<FSequencerBindingProxy> bindingProxies;
+	TArray<FMovieSceneBindingProxy> bindingProxies;
 	for (FMovieSceneBinding binding : bindings)
 	{
 		FGuid guid = binding.GetObjectGuid();
@@ -67,9 +67,7 @@ void UMoviePipelineMeshOperator::SetupForPipelineImpl(UMoviePipeline* InPipeline
 					break;
 				}
 			}
-			if (!bFound)
-				SkeletalMeshComponents.Add(SkeletalMeshComponent);
-			// TODO: save bone name here
+			if (!bFound) SkeletalMeshComponents.Add(SkeletalMeshComponent);
 		}
 		else if (BoundObject->IsA(UStaticMeshComponent::StaticClass()))
 		{
@@ -87,56 +85,28 @@ void UMoviePipelineMeshOperator::SetupForPipelineImpl(UMoviePipeline* InPipeline
 			if (!bFound)
 				StaticMeshComponents.Add(StaticMeshComponent);
 		}
-		else if (BoundObject->IsA(ACameraActor::StaticClass()))
-		{
-			Camera = Cast<ACameraActor>(BoundObject);
-		}
 	}
 }
 
 void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutputFrame* InMergedOutputFrame)
 {
-	if (bIsFirstFrame)
-	{
-		// Get Output Setting
-		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
-		check(OutputSettings);
-		int ResolutionX = OutputSettings->OutputResolution.X;
-		int ResolutionY = OutputSettings->OutputResolution.Y;
-
-		// Save Camera Transform (KRT)
-		FVector CamLocation = Camera->GetActorLocation();
-		FRotator CamRotation = Camera->GetActorRotation();
-		float FOV = Camera->GetCameraComponent()->FieldOfView;
-
-		TArray<float> CamInfo;
-		CamInfo.Add(CamLocation.X);
-		CamInfo.Add(CamLocation.Y);
-		CamInfo.Add(CamLocation.Z);
-		CamInfo.Add(CamRotation.Roll);
-		CamInfo.Add(CamRotation.Pitch);
-		CamInfo.Add(CamRotation.Yaw);
-		CamInfo.Add(FOV);
-		CamInfo.Add(ResolutionX);
-		CamInfo.Add(ResolutionY);
-
-		FString CameraTransformPath = GetOutputPath("CameraTransform", "dat", &InMergedOutputFrame->FrameOutputState);
-		CameraTransformPath = FPaths::SetExtension(FPaths::GetPath(CameraTransformPath), FPaths::GetExtension(CameraTransformPath));  // get rid of the frame index
-		USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(CamInfo, CameraTransformPath);
-	}
-
 	for (USkeletalMeshComponent* SkeletalMeshComponent : SkeletalMeshComponents)
 	{
 		// loop over Skeletal mesh components
 		if (!SkeletalMeshOperatorOption.bEnabled) continue;
 
-		FString MeshName = SkeletalMeshComponent->GetOwner()->GetActorNameOrLabel();
+		// Actor in level
+		FString MeshNameFromLabel = SkeletalMeshComponent->GetOwner()->GetActorNameOrLabel();
+		// Actor spawned from sequence
+		FString MeshNameFromName = SkeletalMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+		// Judge which name is correct
+		FString MeshName = MeshNameFromName.StartsWith("SkeletalMesh") ? MeshNameFromLabel : MeshNameFromName;
 
 		if (SkeletalMeshOperatorOption.bSaveVerticesPosition)
 		{
 			// Get Vertex Positions (with LOD)
 			TArray<FVector> VertexPositions;
-			bool isSuccess = USF_BlueprintFunctionLibrary::GetSkeletalMeshVertexLocationsByLODIndex(
+			bool isSuccess = UXF_BlueprintFunctionLibrary::GetSkeletalMeshVertexLocationsByLODIndex(
 				SkeletalMeshComponent,
 				SkeletalMeshOperatorOption.LODIndex,
 				VertexPositions
@@ -153,22 +123,28 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 				VertexPositionsFloat.Add(position.Y);
 				VertexPositionsFloat.Add(position.Z);
 			}
-			USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
-				VertexPositionsFloat, GetOutputPath("Vertex" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
+			UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
+				VertexPositionsFloat, GetOutputPath(
+					SkeletalMeshOperatorOption.DirectoryVertices / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 		}
 
 		if (SkeletalMeshOperatorOption.bSaveSkeletonPosition)
 		{
 			TArray<FVector> SkeletonPositions;
 			TArray<FName> SkeletonNames;
-			bool isSuccess = USF_BlueprintFunctionLibrary::GetSkeletalMeshBoneLocations(
+			bool isSuccess = UXF_BlueprintFunctionLibrary::GetSkeletalMeshBoneLocations(
 				SkeletalMeshComponent, SkeletonPositions, SkeletonNames);
 
 			// Skeleton Names (only save on the first frame)
 			TArray<FString> SkeletonNamesString;
 			for (FName name : SkeletonNames) SkeletonNamesString.Add(name.ToString());
-			FString BoneNamePath = GetOutputPath("BoneNames" / MeshName, "txt", &InMergedOutputFrame->FrameOutputState);
-			BoneNamePath = FPaths::SetExtension(FPaths::GetPath(BoneNamePath), FPaths::GetExtension(BoneNamePath));  // get rid of the frame index
+			FString BoneNamePath = GetOutputPath(
+				SkeletalMeshOperatorOption.DirectorySkeleton / MeshName, "txt", &InMergedOutputFrame->FrameOutputState);
+			// save to DirectorySkeleton / BoneName.txt
+			BoneNamePath = FPaths::Combine(
+				FPaths::GetPath(BoneNamePath),
+				FPaths::SetExtension("BoneName", FPaths::GetExtension(BoneNamePath))
+			);
 			if (bIsFirstFrame) FFileHelper::SaveStringArrayToFile(SkeletonNamesString, *BoneNamePath);
 
 			// Skeleton Positions
@@ -179,8 +155,9 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 				SkeletonPositionsFloat.Add(position.Y);
 				SkeletonPositionsFloat.Add(position.Z);
 			}
-			USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
-				SkeletonPositionsFloat, GetOutputPath("SkeletonPositions" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
+			UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
+				SkeletonPositionsFloat, GetOutputPath(
+					SkeletalMeshOperatorOption.DirectorySkeleton / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 		}
 
 		//if (SkeletalMeshOperatorOption.bSaveOcclusionRate || SkeletalMeshOperatorOption.bSaveOcclusionResult)
@@ -193,7 +170,7 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 		//	TArray<FName> SkeletonNames;
 		//	TArray<EOcclusion> SkeletonOcclusion;
 		//	float MeshThickness = 5.0f;
-		//	bool isSuccess = USF_BlueprintFunctionLibrary::DetectInterOcclusionSkeleton(
+		//	bool isSuccess = UXF_BlueprintFunctionLibrary::DetectInterOcclusionSkeleton(
 		//		SkeletalMeshComponent,
 		//		Camera,
 		//		non_occlusion_rate,
@@ -216,20 +193,28 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 		//	OcclusionRate.Add(non_occlusion_rate);
 		//	OcclusionRate.Add(self_occlusion_rate);
 		//	OcclusionRate.Add(inter_occlusion_rate);
-		//	USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
+		//	UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
 		//		OcclusionRate, *GetOutputPath("OcclusionRate" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 		//	// TODO: export to npz
 		//}
 	}
-	// TODO: add static mesh components
 	for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
 	{
-		FString MeshName = StaticMeshComponent->GetOwner()->GetActorNameOrLabel();
+		// loop over static mesh components
+		if (!StaticMeshOperatorOption.bEnabled) continue;
+
+		// Actor in level
+		FString MeshNameFromLabel = StaticMeshComponent->GetOwner()->GetActorNameOrLabel();
+		// Actor spawned from sequence
+		FString MeshNameFromName = StaticMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+		// Judge which name is correct
+		FString MeshName = MeshNameFromName.StartsWith("StaticMesh") ? MeshNameFromLabel : MeshNameFromName;
+
 		if (StaticMeshOperatorOption.bSaveVerticesPosition)
 		{
 			// Get Vertex Positions (with LOD)
 			TArray<FVector> VertexPositions;
-			bool isSuccess = USF_BlueprintFunctionLibrary::GetStaticMeshVertexLocations(
+			bool isSuccess = UXF_BlueprintFunctionLibrary::GetStaticMeshVertexLocations(
 				StaticMeshComponent,
 				StaticMeshOperatorOption.LODIndex,
 				VertexPositions
@@ -246,8 +231,9 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 				VertexPositionsFloat.Add(position.Y);
 				VertexPositionsFloat.Add(position.Z);
 			}
-			USF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
-				VertexPositionsFloat, GetOutputPath("Vertex" / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
+			UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(
+				VertexPositionsFloat, GetOutputPath(
+					StaticMeshOperatorOption.DirectoryVertices / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 		}
 	}
 	if (bIsFirstFrame) bIsFirstFrame = false;
@@ -262,6 +248,7 @@ void UMoviePipelineMeshOperator::BeginExportImpl()
 
 FString UMoviePipelineMeshOperator::GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState)
 {
+	//UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
 	UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
 	check(OutputSettings);
 	FString OutputDirectory = OutputSettings->OutputDirectory.Path;
@@ -280,6 +267,9 @@ FString UMoviePipelineMeshOperator::GetOutputPath(FString PassName, FString Ext,
 	{
 		OutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
 	}
+
+	// Replace any double slashes with single slashes.
+	OutputPath.ReplaceInline(TEXT("//"), TEXT("/"));
 
 	return OutputPath;
 }

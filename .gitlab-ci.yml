@@ -1,0 +1,24 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - lint_python
+
+before_script:
+  - echo $PATH
+  - source /root/miniconda3/etc/profile.d/conda.sh && conda deactivate
+  - conda info -e
+  - export http_proxy=http://172.16.1.135:3128/
+  - export https_proxy=http://172.16.1.135:3128/
+  - export HTTP_PROXY=http://172.16.1.135:3128/
+  - export HTTPS_PROXY=http://172.16.1.135:3128/
+
+lint_python:
+  image: registry.sensetime.com/zoetrope/lint:ubuntu1804_x64_py38
+  stage: lint_python
+  script:
+    - source /root/miniconda3/etc/profile.d/conda.sh && conda deactivate
+    - conda activate lint
+    - pre-commit install
+    - pre-commit run --all-files
+    - interrogate -vinmMI --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" -f 40 xrfeitoria/

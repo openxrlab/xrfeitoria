@@ -58,6 +58,11 @@ THIRD_PARTY_INCLUDES_END
 #include "Modules/ModuleManager.h"
 #include "MoviePipelineUtils.h"
 
+#include "SequencerTools.h"
+#include "SequencerSettings.h"
+#include "SequencerBindingProxy.h"
+#include "SequencerScriptingRange.h"
+
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
 	#include "MoviePipelineMasterConfig.h"
 #endif
@@ -82,32 +87,32 @@ enum class ECustomImageFormat : uint8
 	/** OpenEXR (HDR) image file format. */
 	EXR
 };
-	
+
 USTRUCT(BlueprintType)
 struct XRFEITORIAUNREAL_API FCustomMoviePipelineRenderPass
 {
 	GENERATED_BODY()
-	
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Render Pass")
 	bool bEnabled = true;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Render Pass")
 	FString RenderPassName;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Render Pass")
 	TSoftObjectPtr<UMaterialInterface> Material;
 	// UMaterialInterface* Material;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Render Pass")
 	ECustomImageFormat Extension;
-	
+
 	FString SPassName;
 
 };
 
 /**
- * 
+ *
  */
 UCLASS()
 class XRFEITORIAUNREAL_API UCustomMoviePipelineOutput : public UMoviePipelineImageSequenceOutputBase
@@ -118,22 +123,39 @@ public:
 	virtual FText GetDisplayText() const override { return NSLOCTEXT("MovieRenderPipeline", "ImgSequenceEXTSettingDisplayName", ".ext(custom) Sequence [8/16bit]"); }
 #endif
 public:
-	UCustomMoviePipelineOutput(): UMoviePipelineImageSequenceOutputBase()
+	UCustomMoviePipelineOutput() : UMoviePipelineImageSequenceOutputBase()
 	{
 		OutputFormat = EImageFormat::PNG;
 	}
+	virtual void SetupForPipelineImpl(UMoviePipeline* InPipeline);
 	virtual void OnReceiveImageDataImpl(FMoviePipelineMergerOutputFrame* InMergedOutputFrame) override;
-	
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|RGB")
-	bool bEnableRenderPass_RGB = true;
+		bool bEnableRenderPass_RGB = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|RGB")
-	FString RenderPassName_RGB;
+		FString RenderPassName_RGB;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|RGB")
-	ECustomImageFormat Extension_RGB = ECustomImageFormat::PNG;
-	
+		ECustomImageFormat Extension_RGB = ECustomImageFormat::PNG;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|Additional")
-	TArray<FCustomMoviePipelineRenderPass> AdditionalRenderPasses;
+		TArray<FCustomMoviePipelineRenderPass> AdditionalRenderPasses;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|Camera")
+		FString DirectoryActorInfo = "actor_infos";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|Camera")
+		FString DirectoryCameraInfo = "camera_params";
+
+private:
+	FString GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState);
+
+private:
+	TArray<FSequencerBoundObjects> boundObjects;
+	TArray<ACameraActor*> Cameras;
+	TArray<UStaticMeshComponent*> StaticMeshComponents;
+	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	bool bIsFirstFrame = true;
 };

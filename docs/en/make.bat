@@ -25,6 +25,7 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
+del /q %SOURCEDIR%\apis\generated
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 

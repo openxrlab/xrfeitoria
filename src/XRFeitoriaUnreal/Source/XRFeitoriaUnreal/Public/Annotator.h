@@ -43,11 +43,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Annotations")
 		ECustomPPMType PreviewAnnotationType = ECustomPPMType::None;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Annotations", 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Annotations",
 		meta = (EditCondition = "PreviewAnnotationType == ECustomPPMType::Custom", EditConditionHides))
 		UMaterialInterface* CustomPostprocessMaterial;
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AAnnotator();
 
@@ -55,7 +55,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

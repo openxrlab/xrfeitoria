@@ -1,3 +1,6 @@
+# Ref:
+# https://github.com/EpicGames/BlenderTools/blob/main/send2ue/dependencies/rpc/factory.py
+
 import ast
 import inspect
 import os
@@ -5,13 +8,12 @@ import re
 import sys
 import textwrap
 import types
-import unittest
+from functools import wraps
+from inspect import BoundArguments, signature
+from pathlib import Path
+from typing import Any, Callable, List, Optional, Tuple
 from xmlrpc.client import Fault
-from inspect import signature, BoundArguments, Parameter
 
-from loguru import logger
-
-from ..constants import remote_function_suffix
 from .client import RPCClient
 from .validations import (
     get_line_link,
@@ -23,187 +25,185 @@ from .validations import (
 
 
 class RPCFactory:
-    def __init__(self, rpc_client, remap_pairs=None, default_imports=None):
-        self.rpc_client = rpc_client
-        self.file_path = None
-        self.remap_pairs = remap_pairs
-        self.default_imports = default_imports or []
+    rpc_client: RPCClient = None
+    file_path = None
+    remap_pairs = []
+    default_imports = []
+    registered_function_names = []
+
+    @classmethod
+    def setup(cls, port: int, remap_pairs: List[str] = None, default_imports: List[str] = None):
+        """Sets up the RPC factory.
+
+        Args:
+            port (int): The port to connect to.
+            remap_pairs (List[str], optional): A list of remap pairs. Defaults to None.
+            default_imports (List[str], optional): A list of default imports. Defaults to None.
+        """
+        if cls.rpc_client is None or cls.rpc_client.port != port:
+            cls.rpc_client = RPCClient(port)
+        cls.remap_pairs = remap_pairs
+        cls.default_imports = default_imports or []
+        if os.environ.get('RPC_RELOAD'):
+            # clear the registered functions, so they can be re-registered
+            cls.registered_function_names.clear()
 
     @staticmethod
-    def _get_docstring(code, function_name):
-        """
-        Gets the docstring value from the functions code.
+    def _get_docstring(code: List[str], function_name: str) -> str:
+        """Gets the docstring value from the functions code.
 
-        :param list code: A list of code lines.
-        :param str function_name: The name of the function.
-        :returns: The docstring text.
-        :rtype: str
+        Args:
+            code (List[str]): A list of code lines.
+            function_name (str): The name of the function.
+
+        Returns:
+            str: The docstring text.
         """
         # run the function code
-        exec("\n".join(code))
+        exec('\n'.join(code))
         # get the function from the locals
         function_instance = locals().copy().get(function_name)
         # get the doc strings from the function
         return function_instance.__doc__
 
-    @staticmethod
-    def _save_execution_history(code, function, args):
+    @classmethod
+    def _get_callstack_references(cls, code, function):
+        """Gets all references for the given code.
+
+        Args:
+            code (List[str]): A list of code lines.
+            function (Callable): A callable.
         """
-        Saves out the executed code to a file.
-
-        :param list code: A list of code lines.
-        :param callable function: A function.
-        :param list args: A list of function arguments.
-        """
-        history_file_path = os.environ.get("RPC_EXECUTION_HISTORY_FILE")
-
-        if history_file_path and os.path.exists(os.path.dirname(history_file_path)):
-            file_size = 0
-            if os.path.exists(history_file_path):
-                file_size = os.path.getsize(history_file_path)
-
-            with open(history_file_path, "a") as history_file:
-                # add the import for SourceFileLoader if the file is empty
-                if file_size == 0:
-                    history_file.write("from importlib.machinery import SourceFileLoader\n")
-
-                # space out the functions
-                history_file.write(f"\n\n")
-
-                for line in code:
-                    history_file.write(f"{line}\n")
-
-                # convert the args to strings
-                formatted_args = []
-                for arg in args:
-                    if isinstance(arg, str):
-                        formatted_args.append(f'r"{arg}"')
-                    else:
-                        formatted_args.append(str(arg))
-
-                # write the call with the arg values
-                params = ", ".join(formatted_args) if formatted_args else ""
-                history_file.write(f"{function.__name__}({params})\n")
-
-    def _get_callstack_references(self, code, function):
-        """
-        Gets all references for the given code.
-
-        :param list[str] code: The code of the callable.
-        :param callable function: A callable.
-        :return str: The new code of the callable with all its references added.
-        """
-        import_code = self.default_imports
+        import_code = cls.default_imports.copy()
 
         client_module = inspect.getmodule(function)
-        self.file_path = get_source_file_path(function)
+        cls.file_path = get_source_file_path(function)
 
         # if a list of remap pairs have been set, the file path will be remapped to the new server location
         # Note: The is useful when the server and client are not on the same machine.
-        server_module_path = self.file_path
-        for client_path_root, matching_server_path_root in self.remap_pairs or []:
-            if self.file_path.startswith(client_path_root):
+        server_module_path = cls.file_path
+        for client_path_root, matching_server_path_root in cls.remap_pairs or []:
+            if cls.file_path.startswith(client_path_root):
                 server_module_path = os.path.join(
                     matching_server_path_root,
-                    self.file_path.replace(client_path_root, "").replace(os.sep, "/").strip("/"),
+                    cls.file_path.replace(client_path_root, '').replace(os.sep, '/').strip('/'),
                 )
                 break
 
         for key in dir(client_module):
             # skip default imports (e.g. bpy, unreal, etc)
-            if key in [_key.split()[-1] for _key in self.default_imports]:
+            if key in [_key.split()[-1] for _key in cls.default_imports]:
                 continue
 
             for line_number, line in enumerate(code):
-                if line.startswith("def "):
+                if line.startswith('def '):
                     continue
 
                 # if the key is in the line, then add it to the import code
                 # this re.split is used to split the line by the following characters: . ( ) [ ] =
                 # e.g. ret = bpy.data.objects['Cube'] -> ["bpy", "data", "objects", "'Cube'""]
-                if key in re.split("\.|\(|\)|\[|\]|\=|\ = | ", line.strip()):
-                    relative_path = function.__module__.replace(".", os.path.sep)
-                    import_dir = self.file_path.strip(".py").replace(relative_path, "").strip(os.sep)
+                if key in re.split('\.|\(|\)|\[|\]|\=|\ = | ', line.strip()):
+                    relative_path = function.__module__.replace('.', os.path.sep)
+                    import_dir = cls.file_path.strip('.py').replace(relative_path, '').strip(os.sep)
                     # add the source file to the import code
                     source_import_code = f'sys.path.append(r"{import_dir}")'
                     if source_import_code not in import_code:
                         import_code.append(source_import_code)
                     # relatively import the module from the source file
-                    relative_import_code = f"from {function.__module__} import {key}"
+                    relative_import_code = f'from {function.__module__} import {key}'
                     if relative_import_code not in import_code:
                         import_code.append(relative_import_code)
 
-        return textwrap.indent("\n".join(import_code), " " * 4)
+        return textwrap.indent('\n'.join(import_code), ' ' * 4)
 
-    def _get_code(self, function):
-        """
-        Gets the code from a callable.
+    @classmethod
+    def _get_code(cls, function: Callable) -> List[str]:
+        """Gets the code from a callable.
 
-        :param callable function: A callable.
-        :return str: The code of the callable.
+        Args:
+            function (Callable): A callable.
+
+        Returns:
+            List[str]: A list of code lines.
         """
-        code = textwrap.dedent(inspect.getsource(function)).split("\n")
-        code = [line for line in code if not line.strip().startswith(("@", "#"))]
-        code = ast.unparse(ast.parse("\n".join(code))).split("\n")  # set definition part of function into a single line
+        import astunparse
+
+        code = textwrap.dedent(inspect.getsource(function)).split('\n')
+        code = [line for line in code if not line.strip().startswith(('@', '#'))]
+        # set definition part of function into a single line
+        code = astunparse.unparse(ast.parse('\n'.join(code))).split('\n')
+        code = [line for line in code if line != '']  # remove empty lines
 
         # get the docstring from the code
-        doc_string = self._get_docstring(code, function.__name__)
+        doc_string = cls._get_docstring(code, function.__name__)
 
         # get import code and insert them inside the function
-        import_code = self._get_callstack_references(code, function)
+        import_code = cls._get_callstack_references(code, function)
         code.insert(1, import_code)
 
         # remove the doc string
         if doc_string:
-            code = "\n".join(code).replace(doc_string, "")
-            code = [line for line in code.split("\n") if not all([char == '"' or char == "'" for char in line.strip()])]
+            code = '\n'.join(code).replace(doc_string, '')
+            code = [line for line in code.split('\n') if not all([char == '"' or char == "'" for char in line.strip()])]
 
         return code
 
-    def _register(self, function):
-        """
-        Registers a given callable with the server.
+    @classmethod
+    def _register(cls, function: Callable) -> List[str]:
+        """Registers a given callable with the server.
 
-        :param  callable function: A callable.
-        :return: The code of the function.
-        :rtype: list
+        Args:
+            function (Callable): A callable.
+
+        Returns:
+            List[str]: A list of code lines.
         """
-        code = self._get_code(function)
+        from loguru import logger
+
+        # if function registered, skip it
+        if function.__name__ in cls.registered_function_names:
+            logger.debug(f'Function "{function.__name__}" has already been registered with the server!')
+            return []
+
+        code = cls._get_code(function)
         try:
             # if additional paths are explicitly set, then use them. This is useful with the client is on another
             # machine and the python paths are different
-            additional_paths = list(filter(None, os.environ.get("RPC_ADDITIONAL_PYTHON_PATHS", "").split(",")))
+            additional_paths = list(filter(None, os.environ.get('RPC_ADDITIONAL_PYTHON_PATHS', '').split(',')))
 
             if not additional_paths:
                 # otherwise use the current system path
                 additional_paths = sys.path
 
-            response = self.rpc_client.proxy.add_new_callable(function.__name__, "\n".join(code), additional_paths)
-            if os.environ.get("RPC_DEBUG"):
-                _code = "\n".join(code)
-                logger.debug(f"code:\n{_code}")
-                logger.debug(response)
+            response = cls.rpc_client.proxy.add_new_callable(function.__name__, '\n'.join(code), additional_paths)
+            cls.registered_function_names.append(function.__name__)
+            if os.environ.get('RPC_DEBUG'):
+                _code = '\n'.join(code)
+                logger.debug(f'code:\n{_code}')
+                logger.debug(f'response: {response}')
 
         except ConnectionRefusedError:
-            server_name = os.environ.get(f"RPC_SERVER_{self.rpc_client.port}", self.rpc_client.port)
+            server_name = os.environ.get(f'RPC_SERVER_{cls.rpc_client.port}', cls.rpc_client.port)
             raise ConnectionRefusedError(f'No connection could be made with "{server_name}"')
 
         return code
 
-    def run_function_remotely(self, function, args):
-        """
-        Handles running the given function on remotely.
+    @classmethod
+    def run_function_remotely(cls, function: Callable, args: Tuple[Any]) -> Any:
+        """Handles running the given function on remotely.
 
-        :param callable function: A function reference.
-        :param tuple(Any) args: The function's arguments.
-        :return callable: A remote callable.
+        Args:
+            function (Callable): A callable.
+            args (Tuple[Any]): A tuple of arguments.
+
+        Returns:
+            Any: The return value of the function.
         """
         validate_arguments(function, args)
 
         # get the remote function instance
-        code = self._register(function)
-        remote_function = getattr(self.rpc_client.proxy, function.__name__)
-        self._save_execution_history(code, function, args)
+        code = cls._register(function)
+        remote_function = getattr(cls.rpc_client.proxy, function.__name__)
 
         current_frame = inspect.currentframe()
         outer_frame_info = inspect.getouterframes(current_frame)
@@ -212,7 +212,7 @@ class RPCFactory:
         # create a trace back that is relevant to the remote code rather than the code transporting it
         call_traceback = types.TracebackType(None, caller_frame, caller_frame.f_lasti, caller_frame.f_lineno)
         # call the remote function
-        if not self.rpc_client.marshall_exceptions:
+        if not cls.rpc_client.marshall_exceptions:
             # if exceptions are not marshalled then receive the default Fault
             return remote_function(*args)
 
@@ -226,134 +226,105 @@ class RPCFactory:
             raise exception.__class__(stack_trace).with_traceback(call_traceback)
 
 
-def remote_call(port, default_imports=None, remap_pairs=None):
-    """
-    A decorator that makes this function run remotely.
+def is_in_engine() -> bool:
+    """Returns True if the code is running in the engine.
 
-    :param Enum port: The name of the port application i.e. maya, blender, unreal.
-    :param list[str] default_imports: A list of import commands that include modules in every call.
-    :param list(tuple) remap_pairs: A list of tuples with first value being the client file path root and the
-    second being the matching server path root. This can be useful if the client and server are on two different file
-    systems and the root of the import paths need to be dynamically replaced.
+    Args:
+        True if the code is running in the engine.
+    """
+    try:
+        import bpy  # isort:skip
+
+        assert bpy.context.scene.default_level_blender
+        return True
+    except Exception:
+        pass
+
+    # check if the code is running in unreal
+    try:
+        from unreal_factory import XRFeitoriaUnrealFactory  # defined in src/XRFeitoriaUnreal/Content/Python
+
+        return True
+    except Exception:
+        pass
+
+    # not running in the engine
+    return False
+
+
+def remote_call(
+    port: int,
+    default_imports: Optional[List[str]] = None,
+    remap_pairs: Optional[List[Tuple]] = None,
+    dec_class: bool = False,
+    prefix: str = '',
+    suffix: str = '',
+) -> Callable:
+    """A decorator that makes this function (or class) run remotely.
+
+    Args:
+        port (int): The port to connect to.
+        default_imports (List[str], optional): A list of default imports. Defaults to None.
+        remap_pairs (List[Tuple], optional): A list of remap pairs. Defaults to None.
+        dec_class (bool, False): If True, the ``staticmethod`` with following
+            prefix and suffix of class will be decorated. Defaults to False.
+        prefix (str, optional): This is used when `dec_class=True`.
+            Functions that start with this prefix in the class will be decorated. Defaults to ''.
+        suffix (str, optional): This is used when `dec_class=True`.
+            Functions that end with this suffix in the class will be decorated. Defaults to ''.
+
+    Returns:
+        Callable: A decorated function.
+
+    Note:
+        When ``dec_class=True``, only the ``staticmethod`` with ``prefix`` and ``suffix`` will be decorated.
     """
 
     def decorator(function):
-        # https://stackoverflow.com/questions/33448997/convert-kwargs-arguments-to-positional
-        func_signature = signature(function)
-
+        @wraps(function)
         def wrapper(*args, **kwargs):
+            if is_in_engine():
+                return function(*args, **kwargs)
+
             # remove the self argument (args[0]) if it is the same as the class name
-            if len(args) > 0 and args[0].__class__.__name__ == function.__qualname__.split(".")[0]:
+            if len(args) > 0 and args[0].__class__.__name__ == function.__qualname__.split('.')[0]:
                 args = args[1:]
 
-            # sort the kwargs into the correct order, and append them to the args, then clear the kwargs
-            # this is done because the kwargs are not supported by the remote function
-            # _kwargs = {key: kwargs[key] for key in inspect.getfullargspec(function).args if key in kwargs}
-            # args = args + tuple(_kwargs.values())
-            # kwargs = {}
-
             # convert kwargs arguments to positional
+            # https://stackoverflow.com/questions/33448997/convert-kwargs-arguments-to-positional
+            func_signature = signature(function)
             bound_arguments: BoundArguments = func_signature.bind(*args, **kwargs)
             bound_arguments.apply_defaults()
             args = bound_arguments.args
             kwargs = bound_arguments.kwargs
 
+            # convert the args
+            args = list(args)  # convert tuple to list
+            for index, arg in enumerate(args):
+                # convert Path to string
+                if isinstance(arg, Path):
+                    args[index] = arg.as_posix()
+
             validate_file_is_saved(function)
             validate_key_word_parameters(function, kwargs)
-            rpc_factory = RPCFactory(
-                rpc_client=RPCClient(port), remap_pairs=remap_pairs, default_imports=default_imports
-            )
-            return rpc_factory.run_function_remotely(function, args)
+            RPCFactory.setup(port=port, remap_pairs=remap_pairs, default_imports=default_imports)
+            return RPCFactory.run_function_remotely(function, args)
 
         return wrapper
 
-    return decorator
+    if dec_class:
 
+        def decorator_class(cls):
+            for attribute, value in cls.__dict__.items():
+                if (
+                    isinstance(value, staticmethod)
+                    and callable(getattr(cls, attribute))
+                    and attribute.startswith(prefix)
+                    and attribute.endswith(suffix)
+                ):
+                    setattr(cls, attribute, decorator(getattr(cls, attribute)))
+            return cls
 
-def remote_class(decorator):
-    """
-    A decorator that makes this class run remotely.
-
-    :param remote_call decorator: The remote call decorator.
-    :return: A decorated class.
-    """
-
-    def decorate(cls):
-        for attribute, value in cls.__dict__.items():
-            if isinstance(value, staticmethod) and callable(getattr(cls, attribute)):
-                setattr(cls, attribute, decorator(getattr(cls, attribute)))
-        return cls
-
-    return decorate
-
-
-def remote_class_private(decorator):
-    """
-    A decorator that makes this class run remotely.
-
-    :param remote_call decorator: The remote call decorator.
-    :return: A decorated class.
-    """
-
-    def decorate(cls):
-        for attribute, value in cls.__dict__.items():
-            if (
-                isinstance(value, staticmethod)
-                and callable(getattr(cls, attribute))
-                and attribute.startswith("_")
-                and attribute.endswith(remote_function_suffix)
-            ):
-                setattr(cls, attribute, decorator(getattr(cls, attribute)))
-        return cls
-
-    return decorate
-
-
-class RPCTestCase(unittest.TestCase):
-    """
-    Subclasses unittest.TestCase to implement a RPC compatible TestCase.
-    """
-
-    port = None
-    remap_pairs = None
-    default_imports = None
-
-    @classmethod
-    def run_remotely(cls, method, args):
-        """
-        Run the given method remotely.
-
-        :param callable method: A method to wrap.
-        """
-        default_imports = cls.__dict__.get("default_imports", None)
-        port = cls.__dict__.get("port", None)
-        remap_pairs = cls.__dict__.get("remap_pairs", None)
-        rpc_factory = RPCFactory(rpc_client=RPCClient(port), default_imports=default_imports, remap_pairs=remap_pairs)
-        return rpc_factory.run_function_remotely(method, args)
-
-    def _callSetUp(self):
-        """
-        Overrides the TestCase._callSetUp method by passing it to be run remotely.
-        Notice None is passed as an argument instead of self. This is because only static methods
-        are allowed by the RPCClient.
-        """
-        self.run_remotely(self.setUp, [None])
-
-    def _callTearDown(self):
-        """
-        Overrides the TestCase._callTearDown method by passing it to be run remotely.
-        Notice None is passed as an argument instead of self. This is because only static methods
-        are allowed by the RPCClient.
-        """
-        # notice None is passed as an argument instead of self so self can't be used
-        self.run_remotely(self.tearDown, [None])
-
-    def _callTestMethod(self, method):
-        """
-        Overrides the TestCase._callTestMethod method by capturing the test case method that would be run and then
-        passing it to be run remotely. Notice no arguments are passed. This is because only static methods
-        are allowed by the RPCClient.
-
-        :param callable method: A method from the test case.
-        """
-        self.run_remotely(method, [])
+        return decorator_class
+    else:
+        return decorator

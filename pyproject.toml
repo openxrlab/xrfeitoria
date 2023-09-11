@@ -2,8 +2,14 @@
 requires = ['setuptools>=45', 'setuptools-scm[toml]>=6.2']
 build-backend = "setuptools.build_meta"
 
+
 [tool.setuptools_scm]
 write_to = 'xrfeitoria/version.py'
+
+
+[tool.setuptools.packages.find]
+include = ['xrfeitoria', 'xrfeitoria.*']
+exclude = ['tests*', 'docs*', 'tutorials*', 'src*']
 
 
 [project]
@@ -11,53 +17,81 @@ name = "xrfeitoria"
 authors = [{ name = "OpenXRLab", email = "openxrlab@pjlab.org.cn" }]
 description = ""
 readme = "README.md"
-requires-python = ">=3.7, <=3.11"
+requires-python = ">=3.8, <3.11"
 license = { text = 'Apache License 2.0' }
 classifiers = [
     "Operating System :: Microsoft :: Windows",
-    "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     'License :: OSI Approved :: Apache Software License',
 ]
 dependencies = [
-    "tqdm",
-    "numpy",
-    "pydantic>2",
-    "psutil",
-    "rich",
-    "pywin32; platform_system=='Windows'",
-    "loguru",
-    "tenacity",
+    "astunparse==1.6.3",
+    "fake-bpy-module-latest",
+    "numpy>=1,<2",
+    "loguru<1",
+    "pydantic>=2,<3",
+    "psutil>=5,<6",
+    "rich>=13,<14",
+    "typer==0.9.0",
+    "typing_extensions",
+    "xrprimer==0.7.1",
 ]
 dynamic = ['version']
 
+[project.optional-dependencies]
+all = ["xrfeitoria[doc]"]
+doc = [
+    "autodoc_pydantic==2.0.1",
+    "docutils",
+    "ipykernel",
+    "ipywidgets",
+    "myst-parser==2.0.0",
+    "nbsphinx==0.8.12",
+    "sphinx==7.2.5",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-gallery==0.10.1",
+    "sphinx-rtd-theme==1.3.0",
+    "sphinx-tabs==3.4.1",
+    "enum-tools[sphinx]",
+
+    # https://graphviz.org/download/#windows
+    # sudo apt install pandoc
+    # sudo apt install graphviz
+]
+
 [project.urls]
-"Homepage" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria-gear"
-"Bug Tracker" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria-gear/-/issues"
+"Homepage" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria"
+"Bug Tracker" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria/-/issues"
+
+[project.scripts]
+xf-render = "xrfeitoria.cmd.render:app"
 
 [tool.black]
 line-length = 120
-target-version = ['py37', 'py38', 'py39', 'py310', 'py311']
+target-version = ['py38', 'py39', 'py310']
 include = '\.pyi?$'
 skip-string-normalization = true
 
-[tool.isort]
-line-length = 120
-profile = "black"
 
 [tool.ruff]
 line-length = 120
-
 # Always autofix, but never try to fix:
 # - `F401` (unused imports)
 # - `F841` (unused variables)
 fix = true
 unfixable = ["F401", "F841"]
+# Assume the minimum version is Python 3.8
+target-version = 'py38'
 
-# Assume the minimum version is Python 3.7
-target-version = 'py37'
+
+[tool.isort]
+line_length = 120
+profile = "black"
+src_paths = ["."]
+
+[tool.codespell]
+ignore-words-list = "ue,UE,lod,LOD"
+skip = "**/mask_colors.json"

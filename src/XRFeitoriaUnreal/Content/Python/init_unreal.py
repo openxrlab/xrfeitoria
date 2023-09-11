@@ -34,11 +34,11 @@ class XRFeitoriaBlueprintFunctionLibrary(unreal.BlueprintFunctionLibrary):
         return struct
 
 
-def debug_init(ip: str = "127.0.0.1", port: int = 5678):
+def debug_init(ip: str = '127.0.0.1', port: int = 5678):
     import ptvsd
 
     ptvsd.enable_attach(address=(ip, port))
-    unreal.log("ptvsd.enable_attach execute")
+    unreal.log('ptvsd.enable_attach execute')
 
 
 @Loader
@@ -47,14 +47,14 @@ def main(rpc_port: int = 9998):
     # debug_init()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     rpc_port = 9998
 
     (cmdTokens, cmdSwitches, cmdParameters) = unreal.SystemLibrary.parse_command_line(
         unreal.SystemLibrary.get_command_line()
     )
     try:
-        rpc_port = int(cmdParameters["rpc_port"])
+        rpc_port = int(cmdParameters['rpc_port'])
     except Exception:
-        unreal.log(f"RPC port not found in command line, using default port {rpc_port}")
+        unreal.log(f'RPC port not found in command line, using default port {rpc_port}')
     main(rpc_port=rpc_port)

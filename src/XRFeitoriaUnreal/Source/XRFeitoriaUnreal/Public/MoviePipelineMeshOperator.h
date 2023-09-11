@@ -32,7 +32,7 @@
 #include "MoviePipelineMeshOperator.generated.h"
 
 /**
- * 
+ *
  */
 
 USTRUCT(BlueprintType)
@@ -49,6 +49,8 @@ public:
 	//	bool bSaveOcclusionResult = true;
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
 	//	bool bSaveOcclusionRate = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		FString DirectoryVertices = "vertices";
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
 		int32 LODIndex = 0;
 };
@@ -71,6 +73,10 @@ public:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
 	//	bool bSaveOcclusionRate = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		FString DirectoryVertices = "vertices";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
+		FString DirectorySkeleton = "skeleton";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Occlusion Checker")
 		int32 LODIndex = 0;
 };
 
@@ -87,7 +93,7 @@ public:
 	virtual void BeginExportImpl() override;
 private:
 	FString GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState);
-	
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Operator")
 		FMeshOperatorOption StaticMeshOperatorOption = FMeshOperatorOption();
@@ -98,7 +104,5 @@ private:
 	TArray<FSequencerBoundObjects> boundObjects;
 	TArray<UStaticMeshComponent*> StaticMeshComponents;
 	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
-	ACameraActor* Camera;
 	bool bIsFirstFrame = true;
-
 };

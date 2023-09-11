@@ -7,20 +7,20 @@ public class XRFeitoriaUnreal : ModuleRules
 	public XRFeitoriaUnreal(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
 			}
 			);
-				
-		
+
+
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
 			}
 			);
-		
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -34,7 +34,7 @@ public class XRFeitoriaUnreal : ModuleRules
 				"AudioMixer",
 				"UEOpenExr", // Needed for multilayer EXRs
 				"UEOpenExrRTTI", // Needed for EXR metadata
-				"ImageWrapper",				
+				"ImageWrapper",
 				"CinematicCamera", // For metadata
 				"MovieRenderPipelineSettings", // For settings
 				"MovieRenderPipelineRenderPasses",
@@ -59,7 +59,7 @@ public class XRFeitoriaUnreal : ModuleRules
 			}
 			);
 #endif
-		
+
 
 		PublicDependencyModuleNames.AddRange(
 			new string[]
@@ -74,15 +74,15 @@ public class XRFeitoriaUnreal : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-		
-		
+
+
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-		
+
 		// Required for UEOpenExr
 		AddEngineThirdPartyPrivateStaticDependencies(Target, "zlib");
 	}

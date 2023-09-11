@@ -1,7 +1,9 @@
+# Ref:
+# https://github.com/EpicGames/BlenderTools/blob/main/send2ue/dependencies/rpc/exceptions.py
+
+
 class BaseRPCException(Exception):
-    """
-    Raised when a rpc class method is not authored as a static method.
-    """
+    """Raised when a rpc class method is not authored as a static method."""
 
     def __init__(self, message=None, line_link=''):
         self.message = message + line_link
@@ -9,9 +11,7 @@ class BaseRPCException(Exception):
 
 
 class InvalidClassMethod(BaseRPCException):
-    """
-    Raised when a rpc class method is not authored as a static method.
-    """
+    """Raised when a rpc class method is not authored as a static method."""
 
     def __init__(self, cls, method, message=None, line_link=''):
         self.message = message
@@ -24,9 +24,7 @@ class InvalidClassMethod(BaseRPCException):
 
 
 class InvalidTestCasePort(BaseRPCException):
-    """
-    Raised when a rpc test case class does not have a port defined.
-    """
+    """Raised when a rpc test case class does not have a port defined."""
 
     def __init__(self, cls, message=None, line_link=''):
         self.message = message
@@ -37,9 +35,7 @@ class InvalidTestCasePort(BaseRPCException):
 
 
 class InvalidKeyWordParameters(BaseRPCException):
-    """
-    Raised when a rpc function has key word arguments in its parameters.
-    """
+    """Raised when a rpc function has key word arguments in its parameters."""
 
     def __init__(self, function, kwargs, message=None, line_link=''):
         self.message = message
@@ -53,9 +49,7 @@ class InvalidKeyWordParameters(BaseRPCException):
 
 
 class UnsupportedArgumentType(BaseRPCException):
-    """
-    Raised when a rpc function's argument type is not supported.
-    """
+    """Raised when a rpc function's argument type is not supported."""
 
     def __init__(self, function, arg, supported_types, message=None, line_link=''):
         self.message = message
@@ -69,9 +63,8 @@ class UnsupportedArgumentType(BaseRPCException):
 
 
 class FileNotSavedOnDisk(BaseRPCException):
-    """
-    Raised when a rpc function is called in a context where it is not a saved file on disk.
-    """
+    """Raised when a rpc function is called in a context where it is not a saved file on
+    disk."""
 
     def __init__(self, function, message=None):
         self.message = message

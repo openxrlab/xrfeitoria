@@ -491,12 +491,28 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake,visualstudio,visualstudiocode,qtcreator
 
+# Assets
+*.blend*
 
+# VS Code
 .vscode
-src/*.zip
-_ext/*
-inbox/*
+
+# Docs
+docs/**/generated/
 **/build/
 **/_build/
-**/latex/
+
+# Redundant files
 .DS_Store
+Thumbs.db
+
+# Plugins
+src/*.zip
+src/XRFeitoriaUnreal/Binaries/
+
+# Configs
+*/config.py
+**/output/
+
+# Python
+xrfeitoria/version.py

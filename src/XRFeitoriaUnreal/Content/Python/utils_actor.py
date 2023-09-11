@@ -1,8 +1,32 @@
-from typing import Dict, List, Tuple, Union
+import json
+from pathlib import Path
+from typing import Dict, List, Tuple, TypedDict, Union
 
 import unreal
 from constants import SubSystem
 from utils import get_world
+
+root = Path(__file__).parent.resolve()
+color_type = TypedDict(
+    'color',
+    {
+        'name': str,
+        'hex': str,
+        'rgb': Tuple[int, int, int],
+    },
+)
+mask_colors: List[color_type] = json.load((root / 'data' / 'mask_colors.json').open())
+
+
+def get_stencil_value(actor: unreal.Actor) -> int:
+    # skeletal mesh component
+    for skeletal_mesh_component in actor.get_components_by_class(unreal.SkeletalMeshComponent):
+        stencil_value = skeletal_mesh_component.get_editor_property('custom_depth_stencil_value')
+        return stencil_value
+    # static mesh component
+    for static_mesh_component in actor.get_components_by_class(unreal.StaticMeshComponent):
+        stencil_value = static_mesh_component.get_editor_property('custom_depth_stencil_value')
+        return stencil_value
 
 
 def set_stencil_value(actor: unreal.Actor, stencil_value: int, receives_decals: bool = False) -> None:
@@ -16,6 +40,15 @@ def set_stencil_value(actor: unreal.Actor, stencil_value: int, receives_decals: 
         static_mesh_component.set_render_custom_depth(True)
         static_mesh_component.set_custom_depth_stencil_value(stencil_value)
         static_mesh_component.set_editor_property('receives_decals', receives_decals)
+
+
+def get_mask_color(stencil_value: int) -> Tuple[int, int, int]:
+    return mask_colors[stencil_value]['rgb']
+
+
+def get_actor_mask_color(actor: unreal.Actor) -> Tuple[int, int, int]:
+    stencil_value = get_stencil_value(actor)
+    return get_mask_color(stencil_value)
 
 
 def get_actor_mesh_component(
@@ -76,16 +109,6 @@ def hit_to_z(hit) -> float:
     return z
 
 
-def rp_rotation(rot: list) -> Tuple[float, float, float]:
-    # rotate 90 degrees around yaw axis (z)
-    rot_x, rot_y, rot_z = rot
-    quat, quat_offset = unreal.Quat(), unreal.Quat()
-    quat.set_from_euler(unreal.Vector(rot_x, rot_y, rot_z))
-    quat_offset.set_from_euler(unreal.Vector(0, 0, 90))
-    rot = (quat * quat_offset).euler()
-    return (rot.x, rot.y, rot.z)
-
-
 def draw_actor_bbox(
     actor: unreal.Actor,
     color: unreal.LinearColor = unreal.LinearColor(1, 0, 0, 1),
@@ -111,14 +134,33 @@ def draw_selected_actors_bbox(
 
 
 def spawn_actor_from_object(
-    actor_object: unreal.StreamableRenderAsset,
+    actor_object: unreal.Object,
     location: Tuple[float, float, float] = (0, 0, 0),
     rotation: Tuple[float, float, float] = (0, 0, 0),
     scale: Tuple[float, float, float] = (1, 1, 1),
 ) -> unreal.Actor:
+    """Spawn an actor from an object.
+
+    Args:
+        actor_object (unreal.Object): Actor loaded from ``unreal.load_asset(path)``
+        location (Tuple[float, float, float]): Location of the actor. Units in meters. Defaults to (0, 0, 0).
+        rotation (Tuple[float, float, float], optional): Rotation of the actor. Units in degrees. Defaults to (0, 0, 0).
+        scale (Tuple[float, float, float], optional): Scale of the actor. Defaults to (1, 1, 1).
+
+    Returns:
+        unreal.Actor: Spawned actor
+
+    Examples:
+        >>> import unreal
+        >>> import utils_actor
+        >>> actor_object = unreal.load_asset('/Engine/BasicShapes/Cube')
+        >>> actor = utils_actor.spawn_actor_from_object(actor_object, location=(1, 1, 1))
+    """
     location = unreal.Vector(location[0], location[1], location[2])
     rotation = unreal.Rotator(rotation[0], rotation[1], rotation[2])
     scale = unreal.Vector(scale[0], scale[1], scale[2])
+    # convert from meters to centimeters
+    location *= 100.0
 
     if SubSystem.EditorActorSub:
         actor = SubSystem.EditorActorSub.spawn_actor_from_object(
@@ -141,6 +183,8 @@ def spawn_actor_from_class(
     location = unreal.Vector(location[0], location[1], location[2])
     rotation = unreal.Rotator(rotation[0], rotation[1], rotation[2])
     scale = unreal.Vector(scale[0], scale[1], scale[2])
+    # convert from meters to centimeters
+    location *= 100.00
 
     if SubSystem.EditorActorSub:
         actor = SubSystem.EditorActorSub.spawn_actor_from_class(

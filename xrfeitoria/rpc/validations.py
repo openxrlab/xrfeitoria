@@ -1,3 +1,6 @@
+# Ref:
+# https://github.com/EpicGames/BlenderTools/blob/main/send2ue/dependencies/rpc/validations.py
+
 import inspect
 
 from .exceptions import (
@@ -10,8 +13,7 @@ from .exceptions import (
 
 
 def get_source_file_path(function):
-    """
-    Gets the full path to the source code.
+    """Gets the full path to the source code.
 
     :param callable function: A callable.
     :return str: A file path.
@@ -21,8 +23,7 @@ def get_source_file_path(function):
 
 
 def get_line_link(function):
-    """
-    Gets the line number of a function.
+    """Gets the line number of a function.
 
     :param callable function: A callable.
     :return int: The line number
@@ -33,8 +34,7 @@ def get_line_link(function):
 
 
 def validate_arguments(function, args):
-    """
-    Validates arguments to ensure they are a supported type.
+    """Validates arguments to ensure they are a supported type.
 
     :param callable function: A function reference.
     :param tuple(Any) args: A list of arguments.
@@ -50,14 +50,13 @@ def validate_arguments(function, args):
 
 
 def validate_test_case_class(cls):
-    """
-    This is use to validate a subclass of RPCTestCase. While building your test
-    suite you can call this method on each class preemptively to validate that it
-    was defined correctly.
+    """This is use to validate a subclass of RPCTestCase. While building your test suite
+    you can call this method on each class preemptively to validate that it was defined
+    correctly.
 
     :param RPCTestCase cls: A class.
     :param str file_path: Optionally, a file path to the test case can be passed to give
-    further context into where the error is occurring.
+        further context into where the error is occurring.
     """
     line_link = get_line_link(cls)
     if not cls.__dict__.get('port'):
@@ -70,8 +69,7 @@ def validate_test_case_class(cls):
 
 
 def validate_class_method(cls, method):
-    """
-    Validates a method on a class.
+    """Validates a method on a class.
 
     :param Any cls: A class.
     :param callable method: A callable.
@@ -82,8 +80,7 @@ def validate_class_method(cls, method):
 
 
 def validate_key_word_parameters(function, kwargs):
-    """
-    Validates a method on a class.
+    """Validates a method on a class.
 
     :param callable function: A callable.
     :param dict kwargs: A dictionary of key word arguments.
@@ -94,8 +91,7 @@ def validate_key_word_parameters(function, kwargs):
 
 
 def validate_file_is_saved(function):
-    """
-    Validates that the file that the function is from is saved on disk.
+    """Validates that the file that the function is from is saved on disk.
 
     :param callable function: A callable.
     """
