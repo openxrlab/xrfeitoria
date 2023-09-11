@@ -11,11 +11,16 @@
 [![codecov](https://codecov.io/gh/openxrlab/xrfeitoria/branch/main/graph/badge.svg)](https://codecov.io/gh/openxrlab/xrfeitoria)
 [![PyPI](https://img.shields.io/pypi/v/xrfeitoria)](https://pypi.org/project/xrfeitoria/)
 [![Percentage of issues still open](https://isitmaintained.com/badge/open/openxrlab/xrfeitoria.svg)](https://github.com/openxrlab/xrfeitoria/issues)
+[![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## Introduction
 
 XRFeitoria is a rendering toolbox for generating synthetic data photorealistic with ground-truth annotations.
 It is a part of the [OpenXRLab](https://openxrlab.org.cn/) project.
+
+<div align="center">
+    <img src="http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/pics/demo.gif"/>
+</div>
 
 ### Major Features
 
@@ -73,11 +78,13 @@ Please follow the instructions [here](/samples/README.md).
 
 ## :rocket: Amazing Projects Using XRFeitoria
 
-- [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/)
-- [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/)
-- [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/)
-- [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/)
-- [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/)
+| Project | Teaser | Engine |
+| :---: | :---: | :---: |
+| [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <img src="https://synbody.github.io/static/teaser.png"/> | Unreal Engine / Blender |
+| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <img src="https://github.com/WenjiaWang0312/Zolly/blob/main/assets/demo_sota.jpg?raw=true"/> | Blender |
+| [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"/> | Blender |
+| [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <img src="https://city-super.github.io/matrixcity/img/teaser.jpg"/> | Unreal Engine |
+| [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <img src="https://skhu101.github.io/HumanLiff/HumanLiff%20-%20Project%20Page_files/SHERF_teaser.png"/> | Blender |
 
 ## License
 
