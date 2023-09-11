@@ -70,6 +70,6 @@ Known Issues
 Inaccurate vertices in Unreal Engine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _XRFeitoriaUnreal: TODO
+.. _XRFeitoriaUnreal: https://github.com/openxrlab/xrfeitoria/tree/main/src/XRFeitoriaUnreal
 
 The vertices exported from actors in Unreal Engine may be inaccurate. This is a issue in `XRFeitoriaUnreal`_ plugin.

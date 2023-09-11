@@ -19,7 +19,7 @@ XRFeitoria is a rendering toolbox for generating synthetic data photorealistic w
 It is a part of the [OpenXRLab](https://openxrlab.org.cn/) project.
 
 <div align="center">
-    <img src="http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/pics/demo.gif"/>
+    <img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/demo.gif"/>
 </div>
 
 ### Major Features
@@ -66,7 +66,7 @@ xf-render bunny.obj
 ### Tutorials
 
 There are several [tutorials](/tutorials/).
-You can read them [here](http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/docs/en/_build/html/src/Tutorials.html).
+You can read them [here](https://xrfeitoria.readthedocs.io/en/latest/src/Tutorials.html).
 
 
 ### Sample codes
@@ -81,7 +81,7 @@ Please follow the instructions [here](/samples/README.md).
 | Project | Teaser | Engine |
 | :---: | :---: | :---: |
 | [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <img src="https://synbody.github.io/static/teaser.png"/> | Unreal Engine / Blender |
-| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <img src="https://github.com/WenjiaWang0312/Zolly/blob/main/assets/demo_sota.jpg?raw=true"/> | Blender |
+| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"/> | Blender |
 | [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"/> | Blender |
 | [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <img src="https://city-super.github.io/matrixcity/img/teaser.jpg"/> | Unreal Engine |
 | [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <img src="https://skhu101.github.io/HumanLiff/HumanLiff%20-%20Project%20Page_files/SHERF_teaser.png"/> | Blender |
@@ -113,3 +113,4 @@ If you find this project useful in your research, please consider cite:
 - [XRMoCap](https://github.com/openxrlab/xrmocap): OpenXRLab Multi-view Motion Capture Toolbox and Benchmark.
 - [XRMoGen](https://github.com/openxrlab/xrmogen): OpenXRLab Human Motion Generation Toolbox and Benchmark.
 - [XRNeRF](https://github.com/openxrlab/xrnerf): OpenXRLab Neural Radiance Field (NeRF) Toolbox and Benchmark.
+- [XRFeitoria](https://github.com/openxrlab/xrfeitoria): OpenXRLab Synthetic Data Rendering Toolbox.

@@ -1,0 +1,22 @@
+version: 2
+
+build:
+  os: ubuntu-22.04
+  apt_packages:
+    - pandoc
+    - graphviz
+  tools:
+    python: "3.10"
+
+formats: all
+
+python:
+  install:
+  - method: pip
+    path: .
+    # pip install .[all]
+    extra_requirements:
+      - all
+
+sphinx:
+  configuration: docs/en/conf.py

@@ -14,17 +14,17 @@ from xrfeitoria.utils.tools import Logger
 
 # XXX: Hard-coded assets url
 assets_url = dict(
-    bunny='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/stanford-bunny.obj',
-    koupen_chan='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/koupen_chan.fbx',
-    SMPL_XL='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/SMPL-XL-001.fbx',
-    motion_1='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/motion-greeting.fbx',
-    motion_2='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/motion-stand_to_walk_back.fbx',
-    blend_sample='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/Tree1.blend',
-    hdr_sample='http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/hdr-sample.hdr',
+    bunny='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/stanford-bunny.obj',
+    koupen_chan='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/koupen_chan.fbx',
+    SMPL_XL='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.fbx',
+    motion_1='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/motion-greeting.fbx',
+    motion_2='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/motion-stand_to_walk_back.fbx',
+    blend_sample='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/Tree1.blend',
+    hdr_sample='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/hdr-sample.hdr',
 )
 # XXX: hard-coded unreal project url
 unreal_sample_url = (
-    'http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/unreal_project/XRFeitoriaUnreal_Sample.zip'
+    'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/unreal_project/XRFeitoriaUnreal_Sample.zip'
 )
 asset_dir = tmp_dir / 'assets'
 
