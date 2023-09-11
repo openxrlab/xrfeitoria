@@ -64,7 +64,7 @@ xf-render bunny.obj
 ### Tutorials
 
 There are several [tutorials](/tutorials/).
-You can read them [here](https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/docs/en/_build/html/src/Tutorials.html).
+You can read them [here](https://xrfeitoria.readthedocs.io/en/latest/src/Tutorials.html).
 
 
 ### Sample codes
