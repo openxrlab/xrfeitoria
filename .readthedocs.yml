@@ -17,6 +17,6 @@ python:
     # pip install .[all]
     extra_requirements:
       - all
-  
+
 sphinx:
   configuration: docs/en/conf.py
