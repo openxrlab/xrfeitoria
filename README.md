@@ -19,7 +19,7 @@ XRFeitoria is a rendering toolbox for generating synthetic data photorealistic w
 It is a part of the [OpenXRLab](https://openxrlab.org.cn/) project.
 
 <div align="center">
-    <img src="http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/pics/demo.gif"/>
+    <img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/demo.gif"/>
 </div>
 
 ### Major Features
@@ -66,7 +66,7 @@ xf-render bunny.obj
 ### Tutorials
 
 There are several [tutorials](/tutorials/).
-You can read them [here](http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/docs/en/_build/html/src/Tutorials.html).
+You can read them [here](https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/docs/en/_build/html/src/Tutorials.html).
 
 
 ### Sample codes

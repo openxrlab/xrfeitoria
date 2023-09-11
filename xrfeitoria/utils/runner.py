@@ -26,13 +26,13 @@ from .setup import get_exec_path
 # XXX: hardcode plugin download url
 unreal_plugin_urls = dict(
     Windows={
-        '5.1': 'http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-UE5.1-Windows.zip',
-        '5.2': 'http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-UE5.2-Windows.zip',
+        '5.1': 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-UE5.1-Windows.zip',
+        '5.2': 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-UE5.2-Windows.zip',
     },
     Darwin={},
     Linux={},
 )
-blender_plugin_url = 'http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/plugins/XRFeitoriaBpy.zip'
+blender_plugin_url = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy.zip'
 
 
 def _rmtree(path: Path) -> None:

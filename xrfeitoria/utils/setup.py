@@ -14,12 +14,10 @@ from .downloader import download
 
 # XXX: hard-coded blender download url
 blender_compressed_urls = {
-    'Windows': 'http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/blender-3.3.10-windows-x64.zip',
-    # 'Windows': 'https://download.blender.org/release/Blender3.3/blender-3.3.10-windows-x64.zip',
+    'Windows': 'https://download.blender.org/release/Blender3.3/blender-3.3.10-windows-x64.zip',
     # 'Windows': 'https://mirrors.aliyun.com/blender/release/Blender3.3/blender-3.3.10-windows-x64.zip',
     'Darwin': None,
-    'Linux': 'http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/blender-3.3.10-linux-x64.tar.xz'
-    # 'Linux': 'https://download.blender.org/release/Blender3.3/blender-3.3.10-linux-x64.tar.xz',
+    'Linux': 'https://download.blender.org/release/Blender3.3/blender-3.3.10-linux-x64.tar.xz',
     # 'Linux': 'https://mirror.freedif.org/blender/release/Blender3.3/blender-3.3.10-linux-x64.tar.xz',
 }
 

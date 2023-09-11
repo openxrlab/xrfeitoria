@@ -3,6 +3,7 @@
 Samples
 =========
 
-Extra sample codes which are specific to certain engine can be found in the :ref:`samples` folder.
+.. _here: https://github.com/openxrlab/xrfeitoria/tree/main/samples/
 
-.. TODO: add a link to the samples folder
+Extra sample codes which are specific to certain engine in `here`_. Please follow the instructions.
+
