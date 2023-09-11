@@ -54,8 +54,8 @@ xf-render --help
 xf-render {mesh_file}
 
 # for example
-wget http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/assets/stanford-bunny.obj
-xf-render stanford-bunny.obj
+wget https://graphics.stanford.edu/~mdfisher/Data/Meshes/bunny.obj
+xf-render bunny.obj
 ```
 
 ### Tutorials

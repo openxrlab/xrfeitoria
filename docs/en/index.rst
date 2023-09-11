@@ -27,9 +27,9 @@ It is a part of the `OpenXRLab`_ project.
 Major Features
 ----------------
 
-- Support assets/camera management, including import, export, and delete.
-- Support rendering in multi-view.
+- Support rendering photorealistic images with ground-truth annotations.
 - Support multiple engine backends, including `Unreal Engine`_ and `Blender`_.
+- Support assets/camera management, including import, export, and delete.
 - Support a CLI tool to render images from a mesh file.
 
 --------
@@ -60,7 +60,7 @@ Requirements
     :maxdepth: 1
     :caption: Beginner's Guide
 
-    src/Get-Started.md
+    src/cli.md
     src/Tutorials.rst
     src/Samples.rst
 
@@ -83,7 +83,7 @@ Requirements
 ----
 
 .. toctree::
-    maxdepth: 1
+    :maxdepth: 1
     :caption: Plugins
 
     src/blender-addon.md
