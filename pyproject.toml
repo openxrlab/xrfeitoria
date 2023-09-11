@@ -63,8 +63,8 @@ doc = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria"
-"Bug Tracker" = "https://gitlab.bj.sensetime.com/openxrlab/xrfeitoria/xrfeitoria/-/issues"
+"Homepage" = "https://github.com/openxrlab/xrfeitoria"
+"Bug Tracker" = "https://github.com/openxrlab/xrfeitoria/issues"
 
 [project.scripts]
 xf-render = "xrfeitoria.cmd.render:app"
