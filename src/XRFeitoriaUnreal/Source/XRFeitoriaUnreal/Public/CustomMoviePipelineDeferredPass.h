@@ -7,7 +7,7 @@
 #include "CustomMoviePipelineDeferredPass.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class XRFEITORIAUNREAL_API UCustomMoviePipelineDeferredPass : public UMoviePipelineDeferredPassBase
@@ -19,5 +19,5 @@ protected:
 #if WITH_EDITOR
 	virtual FText GetDisplayText() const override { return NSLOCTEXT("MovieRenderPipeline", "Custom DeferredBasePassSetting_DisplayName_Lit", "Custom Deferred Rendering"); }
 #endif
-	
+
 };

@@ -1,0 +1,30 @@
+/* This file is used to override the default Sphinx theme styles */
+
+/* modify width of the sidebar */
+/* .wy-nav-content {
+    max-width: 1000px;
+} */
+
+/* force property to be in one separate line */
+dl.py.property {
+    display: inline !important;
+}
+
+/* modify font color for code blocks */
+.rst-content code.literal, .rst-content tt.literal {
+    color: #000000;
+}
+
+/* modify paddings for notebook blocks */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    padding-top: 11px;
+}
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 10px;
+}

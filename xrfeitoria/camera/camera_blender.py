@@ -1,57 +1,53 @@
 import math
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
-import loguru
-import numpy as np
-
-from ..constants import PathLike, SequenceTransformKey, Vector, default_level_blender
-from ..object import ObjectUtilsBlender
-from ..rpc import remote_class_blender
+from ..data_structure.constants import Vector
+from ..object.object_utils import ObjectUtilsBlender
+from ..rpc import remote_blender
 from ..utils import Validator
-from . import CameraBase
+from .camera_base import CameraBase
 
 try:
-    import bpy
+    import bpy  # isort:skip
+    from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
+except ModuleNotFoundError:
+    pass
+
+try:
+    from ..data_structure.models import TransformKeys  # isort:skip
 except ModuleNotFoundError:
     pass
 
 
-@remote_class_blender
+@remote_blender(dec_class=True, suffix='_in_engine')
 class CameraBlender(CameraBase):
+    """Camera class for Blender."""
+
     _object_utils = ObjectUtilsBlender
 
-    @classmethod
-    def spawn_camera(
-        cls,
-        name: str,
-        collection_name: str = default_level_blender,
-        location: Vector = (0, 0, 0),
-        rotation: Vector = (0, 0, 0),
-        fov: float = 90,
-    ) -> "CameraBase":
-        cls._object_utils.validate_new_name(name)
-        Validator.validate_vector(location, 3)
-        Validator.validate_vector(rotation, 3)
-        Validator.validate_argument_type(fov, [float, int])
-        cls._setup_camera_in_engine(
-            camera_name=name, location=location, rotation=rotation, fov=fov, collection_name=collection_name
-        )
-        return cls(name)
+    @property
+    def active(self) -> bool:
+        """Activaty of the camera.
 
-    @classmethod
-    def spawn_camera_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        fov: float = 90.0,
-    ) -> "CameraBase":
+        Only active cameras participate in rendering.
+        """
+        return self._get_camera_active_in_engine(self._name)
+
+    @active.setter
+    def active(self, value):
+        Validator.validate_argument_type(value, bool)
+        self._set_camera_active_in_engine(self._name, value)
+
+    def set_transform_keys(self, transform_keys: 'TransformKeys') -> None:
+        """Set transform keys of actor.
+
+        Args:
+            transform_keys (List[Dict]): Keyframes of transform (frame, location, rotation, scale, and interpolation).
+        """
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
-        cls.spawn_camera(name=name, fov=fov, collection_name=collection_name)
-        cls._object_utils._set_keyframe_in_engine(obj_name=name, transform_keys=transform_keys)
-        return cls(name)
+        self._object_utils.set_transform_keys(name=self.name, transform_keys=transform_keys)
 
     #####################################
     ###### RPC METHODS (Private) ########
@@ -59,34 +55,77 @@ class CameraBlender(CameraBase):
 
     ######   Getter   ######
     @staticmethod
-    def _get_camera_fov_in_engine(name) -> float:
+    def _get_camera_active_in_engine(name: str) -> bool:
+        """Get camera's activity in blender. (Only the active cameras participate in
+        rendering.)
+
+        Args:
+            name (str): name of the camera.
+
+        Returns:
+            bool: activity of the camera.
+        """
+        view: bpy.types.SceneRenderView = bpy.context.scene.render.views.get(name)
+        if view is None:
+            return False
+        else:
+            return view.use
+
+    @staticmethod
+    def _get_fov_in_engine(name: str) -> float:
+        """Get camera's field of view from blender.
+
+        Args:
+            name (str): name of the camera.
+
+        Returns:
+            float: camera's field of view. (unit: degree)
+        """
         camera = bpy.data.objects[name]
         return math.degrees(camera.data.angle)
 
     @staticmethod
-    def _get_camera_KRT_in_engine(name):
+    def _get_KRT_in_engine(name: str) -> 'Tuple[List, List, List]':
+        """Get camrea's intrinsic and extrinsic parameters from blender.
+
+        Args:
+            name (str): name of the camera.
+
+        Returns:
+            Tuple[List, List, List]: K (3x3), R (3x3), T (3)
+        """
         camera = bpy.data.objects[name]
-        K, R, T = CameraUtils.get_camera_KRT_from_blender(camera)
+        K, R, T = XRFeitoriaBlenderFactory.get_camera_KRT_from_blender(camera)
         return K.tolist(), R.tolist(), T.tolist()
 
     ######   Setter   ######
 
     @staticmethod
-    def _setup_camera_in_engine(
+    def _set_KRT_in_engine(name, K, R, T):
+        raise NotImplementedError
+
+    @staticmethod
+    def _spawn_in_engine(
         camera_name: str,
-        collection_name: str,
-        location: "Vector" = (0, 0, 0),
-        rotation: "Vector" = (0, 0, 0),
+        collection_name: 'Optional[str]' = None,
+        location: 'Vector' = (0, 0, 0),
+        rotation: 'Vector' = (0, 0, 0),
         fov: float = 90.0,
-    ) -> str:
+    ) -> None:
+        """Setup a new camera in blender.
+
+        Args:
+            name (str): Name of the new camera.
+            collection_name (str): Name of the scene where spawn the new camera.
+            location (Vector, optional): Location of the camera. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the camera. Defaults to (0, 0, 0).
+            fov (float in (0.0, 180.0), optional): Field of view of the camera. Defaults to 90.0. (unit: degree)
+        """
         ## Create new camera datablock
         camera_data = bpy.data.cameras.new(name=camera_name)
 
         ## set FOV
-        camera_data.lens_unit = "FOV"
-        camera_data.angle = math.radians(fov)  # fov in radians
-        ## set FOV
-        camera_data.lens_unit = "FOV"
+        camera_data.lens_unit = 'FOV'
         camera_data.angle = math.radians(fov)  # fov in radians
 
         ## Create new object with the camera datablock
@@ -95,103 +134,48 @@ class CameraBlender(CameraBase):
         ## set camera location and rotation
         camera.location = location
         camera.rotation_euler = tuple(math.radians(r) for r in rotation)
-        ## set camera location and rotation
-        camera.location = location
-        camera.rotation_euler = tuple(math.radians(r) for r in rotation)
 
-        # scene = bpy.data.scenes[collection_name] if collection_name else bpy.context.scene
-        collection = bpy.data.collections.get(collection_name)
-        assert collection, f"Collection {collection_name} not found"
+        ## get scene and collection
+        scene, collection = XRFeitoriaBlenderFactory.get_scene_and_collection_for_new_object(collection_name)
+
+        # link the camera to the collection
         collection.objects.link(camera)
 
-        # active scene
-        scene = bpy.data.scenes[collection_name]
-        if collection_name in scene.collection.children.keys():
-            # assert (
-            #     collection_name in scene.collection.children.keys()
-            # ), f"Collection {collection_name} not found in the active scene"
-            CameraUtils.set_multiview(scene)
-            CameraUtils.add_multiview_camera(camera_name=camera_name, scene=scene)
-            scene.camera = camera
+        # set camera activity
+        active = False if scene.name == collection.name else True
+        XRFeitoriaBlenderFactory.set_camera_activity(camera_name=camera_name, scene=scene, active=active)
+        scene.camera = camera
 
     @staticmethod
-    def _set_camera_fov_in_engine(name, fov: float):
+    def _set_camera_fov_in_engine(name: str, fov: float):
+        """Set camera's field of view in blender.
+
+        Args:
+            name (str): name of the camera.
+            fov (float): field of view of the camera.
+        """
         camera = bpy.data.objects[name]
         camera.data.angle = math.radians(fov)
 
     @staticmethod
     def _set_camera_active_in_engine(name: str, active: bool):
+        """Set camera's activity in blender. (Only the active cameras participate in
+        rendering.)
+
+        Args:
+            name (str): name of the camera.
+            active (bool): activity of the camera.
+        """
         bpy.context.scene.render.views[name].use = active
 
+    @staticmethod
+    def _look_at_in_engine(name: str, target: 'Vector'):
+        """Set the camera to look at the target in blender.
 
-@remote_class_blender
-class CameraUtils:
-    """Camera utils functions"""
-
-    @classmethod
-    def get_3x3_K_matrix_from_blender(cls, cam) -> np.array:
-        scene = bpy.context.scene
-        fov = cam.data.angle
-
-        resolution_x_in_px = scene.render.resolution_x
-        resolution_y_in_px = scene.render.resolution_y
-
-        focal = max(resolution_x_in_px, resolution_y_in_px) / 2 / math.tan(fov / 2)
-        u_0 = resolution_x_in_px / 2
-        v_0 = resolution_y_in_px / 2
-
-        K = np.array(((focal, 0, u_0), (0, focal, v_0), (0, 0, 1)))
-        return K
-
-    @classmethod
-    def get_R_T_matrix_from_blender(cls, cam) -> Tuple[np.array, np.array]:
-        R_BlenderView_to_OpenCVView = np.diag([1, -1, -1])
-
-        location, rotation = cam.matrix_world.decompose()[:2]
-        R_BlenderView = rotation.to_matrix().transposed()
-
-        T_BlenderView = -1.0 * R_BlenderView @ location
-
-        R = R_BlenderView_to_OpenCVView @ R_BlenderView
-        T = R_BlenderView_to_OpenCVView @ T_BlenderView
-
-        return R, T
-
-    @classmethod
-    def get_camera_KRT_from_blender(cls, cam) -> Tuple[np.array, np.array, np.array]:
-        """Get camera KRT from blender camera object"""
-        from scipy.spatial.transform import Rotation as spRotation
-
-        K = cls.get_3x3_K_matrix_from_blender(cam)
-        R, T = cls.get_R_T_matrix_from_blender(cam)
-
-        # TODO: remove scipy dependency, has gimbal lock issue
-        R_euler_offset = np.array([-math.pi / 2, 0, 0])
-        R_euler = spRotation.from_matrix(R).as_euler("xyz", degrees=False)
-        R_euler += R_euler_offset
-        R = spRotation.from_euler("xyz", R_euler, degrees=False).as_matrix()
-        return K, R, T
-
-    @classmethod
-    def set_multiview(cls, scene: "bpy.types.Scene") -> None:
-        """Set the multiview of the scene"""
-        if not scene.render.use_multiview:
-            scene.render.use_multiview = True
-            scene.render.views_format = "MULTIVIEW"
-            scene.render.views[0].use = False
-            scene.render.views[1].use = False
-
-    @classmethod
-    def add_multiview_camera(cls, camera_name: str, scene: "bpy.types.Scene", active: bool = True) -> None:
-        render_view = scene.render.views.new(camera_name)
-        render_view.file_suffix = camera_name
-        render_view.camera_suffix = camera_name
-        render_view.use = active
-
-    @classmethod
-    def get_active_cameras(cls, scene: "bpy.types.Scene") -> List[str]:
-        active_cameras = []
-        for cam in scene.render.views:
-            if cam.use == True:
-                active_cameras.append(cam.camera_suffix)
-        return active_cameras
+        Args:
+            name (str): name of the camera.
+            target (Vector): the location of the target.
+        """
+        camera = bpy.data.objects[name]
+        loc_camera = camera.location
+        camera.rotation_euler = XRFeitoriaBlenderFactory.get_rotation_to_look_at(loc_camera, target)

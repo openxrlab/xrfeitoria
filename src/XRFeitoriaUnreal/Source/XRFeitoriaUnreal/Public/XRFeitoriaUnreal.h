@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FXRFeitoriaUnrealModule : public IModuleInterface 
+class FXRFeitoriaUnrealModule : public IModuleInterface
 {
 public:
 

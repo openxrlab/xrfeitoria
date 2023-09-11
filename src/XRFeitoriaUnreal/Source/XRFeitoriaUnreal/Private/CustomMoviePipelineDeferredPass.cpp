@@ -6,14 +6,15 @@
 
 void UCustomMoviePipelineDeferredPass::SetupImpl(const MoviePipeline::FMoviePipelineRenderPassInitSettings& InPassInitSettings)
 {
-	
+
 	UCustomMoviePipelineOutput* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UCustomMoviePipelineOutput>();
+	//UCustomMoviePipelineOutput* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UCustomMoviePipelineOutput>();
 	check(OutputSettings);
 
 	AdditionalPostProcessMaterials.Empty();
 	for (FCustomMoviePipelineRenderPass& Pass : OutputSettings->AdditionalRenderPasses)
 	{
-		if (Pass.Material.IsNull() || Pass.bEnabled == false) 
+		if (Pass.Material.IsNull() || Pass.bEnabled == false)
 		{
 			continue;
 		}
@@ -29,8 +30,8 @@ void UCustomMoviePipelineDeferredPass::SetupImpl(const MoviePipeline::FMoviePipe
 			Pass.RenderPassName = PassName;
 		}
 	}
-	
-	UE_LOG(LogMovieRenderPipeline, Log, TEXT("Custom Movie Pipeline Finised, %d ppm materials."), AdditionalPostProcessMaterials.Num());
-	
+
+	UE_LOG(LogMovieRenderPipeline, Log, TEXT("Custom Movie Pipeline Finished, %d ppm materials."), AdditionalPostProcessMaterials.Num());
+
 	Super::SetupImpl(InPassInitSettings);
 }

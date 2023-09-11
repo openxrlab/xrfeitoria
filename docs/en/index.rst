@@ -1,88 +1,98 @@
-.. XRFeitoriaGear documentation master file, created by
-   sphinx-quickstart on Fri Sep  2 17:12:45 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-.. |check| raw:: html
-
-   <input checked=""  type="checkbox">
-
 .. |check_| raw:: html
 
-   <input checked=""  disabled="" type="checkbox">
-
-.. |uncheck| raw:: html
-
-   <input type="checkbox">
+    <input checked=""  disabled="" type="checkbox">
 
 .. |uncheck_| raw:: html
 
-   <input disabled="" type="checkbox">
+    <input disabled="" type="checkbox">
 
-Welcome to XRFeitoria-Gear's documentation!
+.. _Unreal Engine: https://www.unrealengine.com/en-US/
+
+.. _Blender: https://www.blender.org/
+
+.. _OpenXRLab: https://openxrlab.org.cn/
+
+Welcome to XRFeitoria's documentation!
 =============================================
 
+XRFeitoria is a rendering toolbox for generating synthetic data photorealistic with ground-truth annotations.
+It is a part of the `OpenXRLab`_ project.
 
-.. note::
+.. image:: http://file.bj.zoe.sensetime.com/resources/meihaiyi/xrfeitoria/pics/demo.gif
+    :alt: XRFeitoria Demo
+    :align: center
 
-   ``XRFeitoriaGear``: A Synthetic Data Factory for Machine Learning
+--------
 
-.. image:: pics/demo.gif
+Major Features
+----------------
 
-- It's for AI Researchers who have no experience with Unreal Engine, and want to create synthetic datasets.
+- Support assets/camera management, including import, export, and delete.
+- Support rendering in multi-view.
+- Support multiple engine backends, including `Unreal Engine`_ and `Blender`_.
+- Support a CLI tool to render images from a mesh file.
 
-- Using this to generate synthetic data including rgb, segmentation, depth, normal map, camera parameters, 3d vertices, 3d bounding box, etc.
+--------
 
-- This plugin is relied on the `Movie Render Queue`_ plugin, and is python-friendly.
-.. _Movie Render Queue: https://docs.unrealengine.com/5.0/en-US/render-cinematics-in-unreal-engine/
+Installation
+------------
 
+.. code-block:: bash
 
-|check_| Tested on Unreal Engine 5.0.3
+    pip install xrfeitoria
 
-|check_| Tested on Unreal Engine 4.27.3
+Requirements
+^^^^^^^^^^^^
+
+- ``Python >= 3.8``
+- (optional) ``Unreal Engine >= 5.1``
+    |check_| Windows
+- (optional) `Blender >= 3.0`
+    |check_| Windows
+
+    |check_| Linux
+
+    |check_| MacOS
+
+----
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Beginner's Guide
+
+    src/Get-Started.md
+    src/Tutorials.rst
+    src/Samples.rst
+
+--------
+
+.. toctree::
+    :maxdepth: 1
+    :caption: API Reference
+
+    apis/xrfeitoria.rst
+    apis/factory.rst
+    apis/object.rst
+    apis/actor.rst
+    apis/camera.rst
+    apis/sequence.rst
+    apis/renderer.rst
+    apis/utils.rst
+    apis/data_structure.rst
 
 ----
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Beginner's Guide
+    maxdepth: 1
+    :caption: Plugins
 
-   tutorials/Get-Started.md
+    src/blender-addon.md
+    src/unreal-plugin.md
 
-.. toctree::
-   :maxdepth: 1
-   :caption: API Reference
-
-   api.rst
-
-----
-
-Additional Resources
-====================
+--------
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Basics of UE
+    :maxdepth: 2
+    :caption: FAQ
 
-   tutorials/Basics.md
-
-.. toctree::
-   :maxdepth: 2
-   :caption: XRFeitoria-Gear Plugins Info
-
-   tutorials/Plugin.md
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Related Plugins
-
-   tutorials/Related.md
-
-----
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+    faq.rst

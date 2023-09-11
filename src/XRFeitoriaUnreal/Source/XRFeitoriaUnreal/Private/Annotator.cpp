@@ -15,7 +15,7 @@ AAnnotator::AAnnotator()
 void AAnnotator::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called every frame
@@ -24,4 +24,3 @@ void AAnnotator::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-

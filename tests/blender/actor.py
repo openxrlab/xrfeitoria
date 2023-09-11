@@ -1,74 +1,103 @@
 """
-python -m tests.blender.actor
+>>> python -m tests.blender.actor
 """
 from pathlib import Path
 
 import numpy as np
-from loguru import logger
 
-from ..utils import __timer__, _init_blender, set_logger
+from xrfeitoria.data_structure.constants import xf_obj_name
+from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
 
-root = Path(__file__).parent.resolve()
+from ..config import assets_path
+from ..utils import __timer__, _init_blender, setup_logger
+
+root = Path(__file__).parents[2].resolve()
+# output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
+output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
+bunny_obj = assets_path['bunny']
 
 
 def actor_test(debug: bool = False, background: bool = False):
-    set_logger(debug=debug)
+    logger = setup_logger(debug=debug)
     with _init_blender(background=background) as xf_runner:
-        with __timer__("import_actor"):
-            actor = xf_runner.Actor.import_actor_from_file(
-                name="new_actor",
-                path=(root.parent / "assets" / "cube.fbx").as_posix(),
+        with __timer__('import_actor'):
+            actor = xf_runner.Actor.import_from_file(
+                actor_name='bunny',
+                file_path=bunny_obj,
                 location=(0, 0, 0),
                 rotation=(90, 0, 0),
                 scale=(2, 1, 1),
             )
-            assert np.allclose(actor.location, (0, 0, 0)), f"location: {actor.location}"
-            assert np.allclose(actor.rotation, (90, 0, 0)), f"rotation: {actor.rotation}"
-            assert np.allclose(actor.scale, (2, 1, 1)), f"scale: {actor.scale}"
+            # test properties
+            assert actor.name == 'bunny', f'name not match, actor.name={actor.name}'
+            assert np.allclose(actor.location, (0, 0, 0)), f'location: {actor.location}'
+            assert np.allclose(actor.rotation, (90, 0, 0)), f'rotation: {actor.rotation}'
+            assert np.allclose(actor.scale, (2, 1, 1)), f'scale: {actor.scale}'
 
-        with __timer__("spawn_actor"):
-            cube = xf_runner.Mesh.spawn_mesh(name="my cube", mesh_type="cube")
-            cube.location = (3, 0, 0)
-            assert np.allclose(cube.location, (3, 0, 0)), f"location: {cube.location}"
+            # test set properties
+            actor.location = (3, 0, 0)
+            actor.rotation = (40, 0, 0)
+            actor.scale = (3, 3, 3)
+            assert np.allclose(actor.location, (3, 0, 0)), f'location: {actor.location}'
+            assert np.allclose(actor.rotation, (40, 0, 0)), f'rotation: {actor.rotation}'
+            assert np.allclose(actor.scale, (3, 3, 3)), f'scale: {actor.scale}'
 
-            ico_sphere = xf_runner.Mesh.spawn_mesh(name="ico sphere", mesh_type="ico_sphere", subdivisions=4)
-            ico_sphere.rotation = (40, 0, 0)
-            assert np.allclose(ico_sphere.rotation, (40, 0, 0)), f"rotation: {ico_sphere.rotation}"
+            # test functions
+            # test get_transform/set_transform
+            actor.set_transform(location=(0, 0, 1), rotation=(0, 0, 90), scale=(1, 3, 1))
+            assert np.allclose(actor.location, (0, 0, 1)), f'location: {actor.location}'
+            assert np.allclose(actor.rotation, (0, 0, 90)), f'rotation: {actor.rotation}'
+            assert np.allclose(actor.scale, (1, 3, 1)), f'scale: {actor.scale}'
 
-            uv_sphere = xf_runner.Mesh.spawn_mesh(name="uv sphere", mesh_type="uv_sphere", segments=32, ring_count=32)
-            uv_sphere.scale = (3, 3, 3)
-            assert np.allclose(uv_sphere.scale, (3, 3, 3)), f"scale: {uv_sphere.scale}"
+            location, rotation, scale = actor.get_transform()
+            assert np.allclose(location, (0, 0, 1)), f'location: {location}'
+            assert np.allclose(rotation, (0, 0, 90)), f'rotation: {rotation}'
+            assert np.allclose(scale, (1, 3, 1)), f'scale: {scale}'
 
-            plane = xf_runner.Mesh.spawn_mesh(name="plane", mesh_type="plane", size=5)
-            plane.set_transform(location=(0, 0, 1), rotation=(0, 0, 90), scale=(1, 3, 1))
-            assert np.allclose(plane.location, (0, 0, 1)), f"location: {plane.location}"
-            assert np.allclose(plane.rotation, (0, 0, 90)), f"rotation: {plane.rotation}"
-            assert np.allclose(plane.scale, (1, 3, 1)), f"scale: {plane.scale}"
-
-            cylinder = xf_runner.Mesh.spawn_mesh(
-                name="cylinder",
-                mesh_type="cylinder",
-                location=(0, 0, 2),
-                rotation=(0, 150, 0),
-                scale=(3, 2, 1),
-                vertices=16,
+            # test set_transform_keys
+            xf_runner.ObjectUtils.set_transform_keys(
+                name=actor.name,
+                transform_keys=[
+                    SeqTransKey(frame=0, location=(-1, 0, 1.8), rotation=(0, 0, 0), interpolation='AUTO'),
+                    SeqTransKey(frame=30, location=(-1, 0, -1.1), rotation=(0, 0, 0), interpolation='AUTO'),
+                    SeqTransKey(frame=40, location=(1, 0, -1.1), rotation=(40, 30, 20), interpolation='AUTO'),
+                ],
             )
-            location, rotation, scale = cylinder.get_transform()
-            assert np.allclose(location, (0, 0, 2)), f"location: {location}"
-            assert np.allclose(rotation, (0, 150, 0)), f"rotation: {rotation}"
-            assert np.allclose(scale, (3, 2, 1)), f"scale: {scale}"
+            if not xf_runner.utils.is_background_mode():
+                xf_runner.utils.set_frame_current(0)
+                assert np.allclose(actor.location, (-1, 0, 1.8)), f'location: {actor.location}'
+                assert np.allclose(actor.rotation, (0, 0, 0)), f'rotation: {actor.rotation}'
+                xf_runner.utils.set_frame_current(30)
+                assert np.allclose(actor.location, (-1, 0, -1.1)), f'location: {actor.location}'
+                assert np.allclose(actor.rotation, (0, 0, 0)), f'rotation: {actor.rotation}'
+            xf_runner.utils.set_frame_current(40)
+            assert np.allclose(actor.location, (1, 0, -1.1)), f'location: {actor.location}'
+            assert np.allclose(actor.rotation, (40, 30, 20)), f'rotation: {actor.rotation}'
+            xf_runner.utils.set_frame_current(0)
 
-            # cone = xf_runner.Actor.spawn_mesh(name="cone", mesh_type="cone", radius1=2, radius2=3, vertices=16)
+            # test set origin
+            logger.info(f':rabbit: actor location: {actor.location}')
+            actor.set_origin_to_center()
+            logger.info(f':rabbit: actor location after set origin: {actor.location}')
+            actor.delete()
 
-    logger.info("🎉 actor tests passed!")
+        with __timer__('spawn shape'):
+            for _type in ['cube', 'sphere', 'cylinder', 'cone', 'plane']:
+                actor = xf_runner.Shape.spawn(type=_type)
+                assert actor.name == xf_obj_name.format(
+                    obj_type=_type, obj_idx=1
+                ), f'name not match, actor.name={actor.name}'
+                actor.delete()
+
+    logger.info('🎉 [bold green]actor tests passed!')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import argparse
 
     args = argparse.ArgumentParser()
-    args.add_argument("--debug", action="store_true")
-    args.add_argument("--background", "-b", action="store_true")
+    args.add_argument('--debug', action='store_true')
+    args.add_argument('--background', '-b', action='store_true')
     args = args.parse_args()
 
     actor_test(debug=args.debug, background=args.background)

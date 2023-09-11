@@ -1,130 +1,156 @@
 """
-python -m tests.blender.camera
+>>> python -m tests.blender.sequence
 """
-import math
 from pathlib import Path
 
+import numpy as np
 from loguru import logger
 
-from xrfeitoria import RenderPass, XRFetoriaBlender
-from xrfeitoria import SequenceTransformKey as SeqTransKey
+from xrfeitoria.data_structure.models import RenderPass
+from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
+from xrfeitoria.factory import XRFeitoriaBlender
 
-from ..utils import __timer__, _init_blender, set_logger
+from ..config import assets_path
+from ..utils import __timer__, _init_blender, setup_logger
 
-root = Path(__file__).parent.resolve()
-hdr_map_path = (root.parent / "assets" / "white-background.hdr").as_posix()
-# actor_path = (root.parent / "assets" / "people.fbx").as_posix()
-# anim_path = (root.parent / "assets" / "anim.fbx").as_posix()
+root = Path(__file__).parents[2].resolve()
+# output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
+output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 
-
-def level_test(xf_runner: XRFetoriaBlender):
-    cube = xf_runner.Mesh.spawn_cube(name="cube")
-    cube.location = (4, 5, 6)
-    cube.rotation = (30, 50, 60)
-
-    actor1 = xf_runner.Actor.import_actor_from_file(
-        name="actor1",
-        path=str(root.parent / "assets" / "36_18_armature.fbx"),
-        stencil_value=255,
-    )
-    actor1.setup_animation(
-        anim_asset_path=str(root.parent / "assets" / "36_18_motion.blend"),
-        action_name="ArmatureAction",
-    )
-    actor2 = xf_runner.Actor.import_actor_from_file(
-        name="actor2",
-        path=str(root.parent / "assets" / "36_18_armature.fbx"),
-        stencil_value=255,
-    )
-    actor2.setup_animation(anim_asset_path=str(root.parent / "assets" / "mo_json.json"))
-    cam_level = xf_runner.Camera.spawn_camera("level_camera")
-    cam_level.location = (-10, 0, 0)
-    cam_level.rotation = (90, 0, -90)
-    cam_level.fov = 39.6
-    return cam_level
+# define testing assets
+hdr_map_path = assets_path['hdr_sample']
+bunny_obj_path = assets_path['bunny']
+actor_path = assets_path['SMPL_XL']
+motion_path = assets_path['motion_1']
 
 
-def sequence_test(debug: bool = False, background: bool = False):
-    set_logger(debug=debug)
-    with _init_blender(background=background, cleanup=True) as xf_runner:
-        with __timer__("level test"):
-            cam_level = level_test(xf_runner)
+def seq_actor(xf_runner: XRFeitoriaBlender, seq_name: str = 'seq_actor'):
+    xf_runner.utils.set_hdr_map(hdr_map_path=hdr_map_path)
 
-        with __timer__("sequence test"):
-            with xf_runner.new_seq(
-                seq_name="Seq_1", seq_length=60, seq_fps=60, hdr_map_path=hdr_map_path, replace=True
-            ) as seq:
-                cam_level.active = True
+    camera_level = xf_runner.Camera.spawn(location=(0, 10, 0))
+    camera_level.look_at(target=(0, 0, 0))
 
-                ico_sphere = seq.spawn_mesh_with_keys(
-                    mesh_name="ico_sphere",
-                    mesh_type="ico_sphere",
-                    stencil_value=128,
-                    subdivisions=3,
-                    transform_keys=[
-                        SeqTransKey(frame=0, location=(-2, 0, 1), rotation=(0, 0, 0), interpolation="BEZIER"),
-                        SeqTransKey(frame=30, location=(-5, 3, 4), rotation=(0, 0, 0), interpolation="BEZIER"),
-                        SeqTransKey(
-                            frame=60,
-                            location=(3, 4, -5),
-                            rotation=(math.radians(40), math.radians(30), math.radians(20)),
-                            interpolation="BEZIER",
-                        ),
-                    ],
-                )
-                ico_sphere.scale = (2, 0.8, 1.5)
-                ico_sphere.location = (-5, -2, 3)
+    with xf_runner.Sequence.new(seq_name=seq_name, seq_length=2) as seq:
+        seq.use_camera(camera_level)
+        camera = seq.spawn_camera(camera_name='camera', location=(-10, 0, 0), rotation=(90, 0, -90), fov=39.6)
 
-                actor3 = seq.spawn_actor(
-                    "actor3",
-                    actor_asset_path=str(root.parent / "assets" / "people.fbx"),
-                )
-                actor3.setup_animation(
-                    anim_asset_path=str(
-                        root.parent
-                        / "assets"
-                        / "Subject_80_F_19-Sens_people_3767-frame_interval_1-frame_start_21-frame_end_82-fps_30.fbx"
-                    )
-                )
-                actor3.scale = (0.01, 0.01, 0.01)
+        assert np.allclose(camera.location, (-10, 0, 0)), f'❌ cam.location={camera.location} wrong'
+        assert np.allclose(camera.rotation, (90, 0, -90)), f'❌ cam.rotation={camera.rotation} wrong'
+        assert np.allclose(camera.fov, 39.6), f'❌ cam.fov={camera.fov} wrong'
 
-                xf_runner.Renderer.add_job(
-                    seq_name=seq.name,
-                    output_path=str(root.parent / "output"),
-                    render_passes=[
-                        {
-                            "render_layer": "img",
-                            "image_format": "png",
-                        },
-                        {
-                            "render_layer": "mask",
-                            "image_format": "png",
-                        },
-                    ],
-                    resolution=[512, 512],
-                    render_engine="CYCLES",
-                    render_samples=128,
-                    transparent_background=False,
-                    arrange_file_structure=True,
-                )
+        camera1 = seq.spawn_camera_with_keys(
+            transform_keys=[
+                SeqTransKey(frame=0, location=(-1, 0, 1.8), rotation=(0, 0, 0), interpolation='AUTO'),
+                SeqTransKey(frame=30, location=(-1, 0, -1.1), rotation=(0, 0, 0), interpolation='AUTO'),
+                SeqTransKey(frame=40, location=(1, 0, -1.1), rotation=(40, 30, 20), interpolation='AUTO'),
+            ],
+        )
+        # assert np.allclose(camera1.location, (-1, 0, 1.8)), f'❌ cam.location={camera1.location} wrong'
+        # assert np.allclose(camera1.rotation, (0, 0, 0)), f'❌ cam.rotation={camera1.rotation} wrong'
 
-        with __timer__("render"):
-            xf_runner.Renderer.render_jobs(use_gpu=True)
+        actor1 = seq.import_actor(file_path=actor_path, stencil_value=128)
+        actor1.setup_animation(animation_path=motion_path)
+        actor2 = seq.import_actor_with_keys(
+            file_path=actor_path,
+            transform_keys=[
+                SeqTransKey(
+                    frame=0, location=(-1, 0, 1.8), rotation=(0, 0, 0), scale=(0.01, 0.01, 0.01), interpolation='AUTO'
+                ),
+                SeqTransKey(frame=30, location=(-1, 0, -1.1), rotation=(0, 0, 0), interpolation='AUTO'),
+                SeqTransKey(frame=40, location=(1, 0, -1.1), rotation=(40, 30, 20), interpolation='AUTO'),
+            ],
+            stencil_value=255,
+        )
 
-        with __timer__("save_blend"):
-            xf_runner.utils.save_blend(
-                save_path=str(root.parent / "output" / "test.blend"),
-            )
+        # get keys range
+        keys_range = xf_runner.utils.get_keys_range()
+        logger.info(f'keys_range={keys_range}')
 
-    logger.info("🎉 sequence tests passed!")
+        logger.info('Override frame range to [0, 2] for testing')
+        xf_runner.utils.set_frame_range(start=0, end=2)
+
+        seq.add_to_renderer(
+            output_path=output_path / f'{seq.name}',
+            render_passes=[
+                RenderPass('img', 'png'),
+                RenderPass('mask', 'png'),
+            ],
+            resolution=[128, 128],
+            render_engine='CYCLES',
+            render_samples=1,
+            transparent_background=False,
+            arrange_file_structure=True,
+        )
 
 
-if __name__ == "__main__":
-    import argparse
+def seq_shape(xf_runner: XRFeitoriaBlender, seq_name='seq_shape'):
+    with xf_runner.Sequence.new(seq_name=seq_name, seq_length=6) as seq:
+        camera = seq.spawn_camera(location=(-10, 0, 0), rotation=(90, 0, -90), fov=39.6)
 
-    args = argparse.ArgumentParser()
-    args.add_argument("--debug", action="store_true")
-    args.add_argument("--background", "-b", action="store_true")
-    args = args.parse_args()
+        xf_runner.utils.set_frame_current(frame=3)
+
+        cube = seq.spawn_shape(type='cube', size=1.0, stencil_value=128)
+        cube1 = seq.spawn_shape_with_keys(
+            type='cube',
+            transform_keys=[
+                SeqTransKey(
+                    frame=0,
+                    location=(-1, 0, 1.8),
+                    rotation=(0, 0, 0),
+                    interpolation='AUTO',
+                ),
+                SeqTransKey(
+                    frame=3,
+                    location=(-1, 0, -1.1),
+                    rotation=(0, 0, 0),
+                    interpolation='AUTO',
+                ),
+                SeqTransKey(
+                    frame=6,
+                    location=(1, 0, -1.1),
+                    rotation=(40, 30, 20),
+                    interpolation='AUTO',
+                ),
+            ],
+            size=0.1,
+            stencil_value=255,
+        )
+        seq.add_to_renderer(
+            output_path=output_path / f'{seq.name}',
+            render_passes=[
+                RenderPass('img', 'png'),
+                RenderPass('mask', 'exr'),
+            ],
+            resolution=[128, 128],
+            render_engine='CYCLES',
+            render_samples=1,
+            transparent_background=False,
+            arrange_file_structure=True,
+        )
+
+
+def sequence_test(debug=False, background=False):
+    logger = setup_logger(debug=debug)
+    with _init_blender(background=background) as xf_runner:
+        with __timer__('seq_actor'):
+            seq_actor(xf_runner, seq_name='seq_actor')
+
+        with __timer__('seq_shape'):
+            seq_shape(xf_runner, seq_name='seq_shape')
+
+        # save blend
+        blend_file = output_path / 'source.blend'
+        xf_runner.utils.save_blend(save_path=blend_file)
+
+        with __timer__('render'):
+            xf_runner.render()
+
+    logger.info('🎉 [bold green]sequence & render tests passed!')
+
+
+if __name__ == '__main__':
+    from ..utils import parse_args
+
+    args = parse_args()
 
     sequence_test(debug=args.debug, background=args.background)

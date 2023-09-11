@@ -1,27 +1,36 @@
-""" 
-python -m tests.unreal.init_test
+"""
+>>> python -m tests.unreal.init_test
 """
 
 from loguru import logger
 
-from ..utils import __timer__, _init_unreal, set_logger, test_unreal
+from xrfeitoria.rpc import remote_unreal
+
+from ..utils import __timer__, _init_unreal, setup_logger
 
 
-def init_test(debug: bool = False, background: bool = False):
-    set_logger(debug=debug)
-    with __timer__("init unreal"):
-        with _init_unreal(background=background) as xf_runner:
+@remote_unreal()
+def test_unreal():
+    import unreal  # fmt: skip
+    unreal.log('test')
+
+
+def init_test(debug: bool = False, dev: bool = False, background: bool = False):
+    setup_logger(debug=debug)
+    with __timer__('init unreal'):
+        with _init_unreal(dev_plugin=dev, background=background) as xf_runner:
             test_unreal()
 
-    logger.info("🎉 init tests passed!")
+    logger.info('🎉 [bold green]init tests passed!')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import argparse
 
     args = argparse.ArgumentParser()
-    args.add_argument("--debug", action="store_true")
-    args.add_argument("--background", "-b", action="store_true")
+    args.add_argument('--debug', action='store_true')
+    args.add_argument('--dev', action='store_true')
+    args.add_argument('--background', '-b', action='store_true')
     args = args.parse_args()
 
-    init_test(debug=args.debug, background=args.background)
+    init_test(debug=args.debug, dev=args.dev, background=args.background)

@@ -1,10 +1,18 @@
 import os
-import shutil
 from typing import Callable, Dict, List, Optional, Tuple
 
 import unreal
 import utils
-from constants import MATERIAL_PATHS, PROJECT_ROOT, RenderJobUnreal, RenderPass, SubSystem
+from constants import (
+    ENGINE_MAJOR_VERSION,
+    ENGINE_MINOR_VERSION,
+    MATERIAL_PATHS,
+    PROJECT_ROOT,
+    RenderJobUnreal,
+    RenderPass,
+    SubSystem,
+    UnrealRenderLayerEnum,
+)
 
 # define the post process material to the render_pass
 material_paths = MATERIAL_PATHS
@@ -12,8 +20,8 @@ material_path_keys = [key.lower() for key in material_paths.keys()]
 
 
 class CustomMoviePipeline:
-    """This class contains several class methods, which are used to control the
-    movie pipeline (Movie Render Queue), including:
+    """This class contains several class methods, which are used to control the movie
+    pipeline (Movie Render Queue), including:
 
     - clearQueue: Clear the movie render queue.
     - addJobToQueueWithYAMLConfig: Add a job to the movie render queue with yaml config.
@@ -34,28 +42,34 @@ class CustomMoviePipeline:
         if cls.executor is None:
             cls.executor = unreal.MoviePipelinePIEExecutor()
         cls.executor.connect_socket(cls.host, cls.socket_port)
-        cls.log_msg_with_socket("Socket of Unreal Renderer Connected")
+        cls.log_msg_with_socket('Socket of Unreal Renderer Connected')
+
+    @classmethod
+    def close_executor(cls):
+        if cls.executor is not None:
+            cls.executor.disconnect_socket()
+            cls.executor = None
 
     @classmethod
     def clear_queue(cls) -> None:
         for job in cls.pipeline_queue.get_jobs():
-            unreal.log("Deleting job " + job.job_name)
+            unreal.log('Deleting job ' + job.job_name)
             cls.pipeline_queue.delete_job(job)
         cls.jobs.clear()
 
         if cls.executor is not None:
-            unreal.log("Disconnecting socket.")
+            unreal.log('Disconnecting socket')
             cls.executor.disconnect_socket()
             cls.executor = None
-        unreal.log("Queue cleared.")
+        unreal.log('Queue cleared')
 
     @classmethod
     def save_queue(cls, path: str) -> None:
         """Save the movie render queue."""
         unreal.MoviePipelineEditorLibrary.save_queue_to_manifest_file(cls.pipeline_queue)
-        manifest_file = PROJECT_ROOT / "Saved/MovieRenderPipeline/QueueManifest.utxt"
+        manifest_file = PROJECT_ROOT / 'Saved/MovieRenderPipeline/QueueManifest.utxt'
         manifest_str = unreal.MoviePipelineEditorLibrary.convert_manifest_file_to_string(manifest_file.as_posix())
-        with open(path, "w") as f:
+        with open(path, 'w') as f:
             f.write(manifest_str)
         unreal.log(f"Saved queue to '{path}' as a manifest file.")
 
@@ -122,7 +136,7 @@ class CustomMoviePipeline:
             enable = True
             ext = getattr(unreal.CustomImageFormat, render_pass.image_format.value.upper())  # convert to unreal enum
 
-            if pass_name.lower() == 'rgb':
+            if pass_name.lower() == UnrealRenderLayerEnum.img.value.lower():
                 render_pass_config.enable_render_pass_rgb = enable
                 render_pass_config.render_pass_name_rgb = pass_name
                 render_pass_config.extension_rgb = ext
@@ -180,9 +194,11 @@ class CustomMoviePipeline:
         console_config: unreal.MoviePipelineConsoleVariableSetting = movie_preset.find_or_add_setting_by_class(
             unreal.MoviePipelineConsoleVariableSetting
         )
-
-        for key, value in console_variables.items():
-            console_config.add_or_update_console_variable(key, value)
+        if ENGINE_MAJOR_VERSION >= 5 and ENGINE_MINOR_VERSION >= 2:
+            for key, value in console_variables.items():
+                console_config.add_or_update_console_variable(key, value)
+        else:
+            console_config.console_variables = console_variables
 
     @staticmethod
     def add_anti_alias(
@@ -334,7 +350,7 @@ class CustomMoviePipeline:
             return False
         movie_preset = unreal.load_asset(config)
         new_job.set_configuration(movie_preset)
-        unreal.log(f"Added new job ({new_job.job_name}) to queue.")
+        unreal.log(f'Added new job ({new_job.job_name}) to queue')
         return True
 
     @classmethod
@@ -375,7 +391,7 @@ class CustomMoviePipeline:
             export_skeleton=job.export_skeleton,
         )
         new_job.set_configuration(movie_preset)
-        unreal.log(f"Added new job ({new_job.job_name}) to queue.")
+        unreal.log(f'Added new job ({new_job.job_name}) to queue')
         return True
 
     @classmethod
@@ -404,7 +420,7 @@ class CustomMoviePipeline:
                     'Console_Variables': {'r.MotionBlurQuality': 0.0},
                     'Anti_Alias': {'enable': False, 'spatial_samples': 8, 'temporal_samples': 8},
                     'Render_Passes': [
-                        {'pass_name': 'rgb', 'enable': True, 'ext': 'jpeg'},
+                        {'pass_name': 'img', 'enable': True, 'ext': 'jpeg'},
                         {'pass_name': 'depth', 'enable': True, 'ext': 'exr'},
                         {'pass_name': 'mask', 'enable': True, 'ext': 'exr'},
                         {'pass_name': 'optical_flow', 'enable': True, 'ext': 'exr'},
@@ -435,26 +451,25 @@ class CustomMoviePipeline:
             console_variables=render_config['Console_Variables'],
         )
         newJob.set_configuration(movie_preset)
-        unreal.log(f"Added new job ({newJob.job_name}) to queue.")
+        unreal.log(f'Added new job ({newJob.job_name}) to queue')
         return True
 
     def onQueueFinishedCallback(executor: unreal.MoviePipelineLinearExecutorBase, success: bool):
-        """On queue finished callback.
-        This is called when the queue finishes.
-        The args are the executor and the success of the queue, and it cannot be modified.
+        """On queue finished callback. This is called when the queue finishes. The args
+        are the executor and the success of the queue, and it cannot be modified.
 
         Args:
             executor (unreal.MoviePipelineLinearExecutorBase): The executor of the queue.
             success (bool): Whether the queue finished successfully.
         """
         # TODO: bug fix
-        mss = f"Render completed. Success: {success}"
+        mss = f'     Render completed. Success: {success}'
         CustomMoviePipeline.log_msg_with_socket(mss, executor)
 
     def onIndividualJobFinishedCallback(inJob: unreal.MoviePipelineExecutorJob, success: bool):
-        """On individual job finished callback.
-        This is called when an individual job finishes.
-        The args are the job and the success of the job, and it cannot be modified.
+        """On individual job finished callback. This is called when an individual job
+        finishes. The args are the job and the success of the job, and it cannot be
+        modified.
 
         Args:
             inJob (unreal.MoviePipelineExecutorJob): The job that finished.
@@ -469,8 +484,7 @@ class CustomMoviePipeline:
         output_path = CustomMoviePipeline.get_output_path(inJob.get_configuration())
 
         # XXX: for no reason (only in here), the first 4 characters of mss cannot be sent
-        # TODO: success=False
-        mss = f"    job finished ({job_index}/{len(jobs)}): success={success}, seq_name='{job_name}', rendered in '{output_path}/{job_name}'"
+        mss = f'    job rendered ({job_index}/{len(jobs)}): seq_name="{job_name}", saved to "{output_path}/{job_name}"'
         CustomMoviePipeline.log_msg_with_socket(mss, CustomMoviePipeline.executor)
 
     @classmethod
@@ -479,10 +493,9 @@ class CustomMoviePipeline:
         queue_finished_callback: Callable = onQueueFinishedCallback,
         individual_job_finished_callback: Callable = onIndividualJobFinishedCallback,
     ) -> None:
-        """Render the queue.
-        This will render the queue.
-        You can pass a callback function to be called when a job or the queue finishes.
-        You can also pass a custom executor to use, or the default one will be used.
+        """Render the queue. This will render the queue. You can pass a callback
+        function to be called when a job or the queue finishes. You can also pass a
+        custom executor to use, or the default one will be used.
 
         Args:
             queue_finished_callback (Callable): The callback function to be called when the queue finishes.
@@ -491,7 +504,7 @@ class CustomMoviePipeline:
         """
         # check if there's jobs added to the queue
         if len(cls.pipeline_queue.get_jobs()) == 0:
-            unreal.log_error("Open the Window > Movie Render Queue and add at least one job to use this example.")
+            unreal.log_error('Open the Window > Movie Render Queue and add at least one job to use this example')
             return
 
         # add job_name to class variable `Jobs` for monitoring progress in the individual job finished callback
@@ -508,7 +521,7 @@ class CustomMoviePipeline:
 
         # render the queue
         cls.executor.execute(cls.pipeline_queue)
-        cls.log_msg_with_socket("Start Render")
+        cls.log_msg_with_socket('Start Render')
 
 
 def main():
@@ -521,13 +534,13 @@ def main():
             output_path='E:/Datasets/tmp',
             file_name_format='{sequence_name}/{render_pass}/{frame_number}',
             console_variables={'r.MotionBlurQuality': 0.0},
-            anti_alias={"enable": False},
+            anti_alias={'enable': False},
         )
     )
     CustomMoviePipeline.render_queue()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # from utils import loadRegistry
     # registry = loadRegistry(RenderQueue)
     # registry.register()

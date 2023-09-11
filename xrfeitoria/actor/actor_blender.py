@@ -1,309 +1,439 @@
-from typing import Dict, List, Optional, Union
+from pathlib import Path
+from typing import Dict, Literal, Optional, Tuple
 
-from .. import default_level_blender
-from ..constants import PathLike, SequenceTransformKey, Vector
-from ..object import ObjectBase, ObjectUtilsBlender
-from ..rpc import remote_class_blender
-from ..utils import BlenderSceneCollectionUtils, Validator
-from . import ActorBase
+from loguru import logger
+
+from ..data_structure.constants import Vector, default_level_blender
+from ..object.object_utils import ObjectUtilsBlender
+from ..rpc import remote_blender
+from ..utils import Validator
+from ..utils.functions import blender_functions
+from .actor_base import ActorBase
 
 try:
-    import bpy
+    import bpy  # isort:skip
+    from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
+except ModuleNotFoundError:
+    pass
+
+try:
+    from ..data_structure.models import TransformKeys  # isort:skip
 except ModuleNotFoundError:
     pass
 
 
-@remote_class_blender
+@remote_blender(dec_class=True, suffix='_in_engine')
 class ActorBlender(ActorBase):
+    """Actor class for Blender."""
+
     _object_utils = ObjectUtilsBlender
 
-    @classmethod
-    def import_actor_from_file(
-        cls,
-        path: str,
-        collection_name: str = default_level_blender,
-        name: Optional[str] = None,
-        location: "Vector" = (0, 0, 0),
-        rotation: "Vector" = (0, 0, 0),
-        scale: "Vector" = (1, 1, 1),
-        stencil_value: int = 1,
-    ) -> "ActorBase":
-        cls._object_utils.validate_new_name(name)
-        Validator.validate_vector(location, 3)
-        Validator.validate_vector(rotation, 3)
-        Validator.validate_vector(scale, 3)
+    @property
+    def dimensions(self) -> Vector:
+        """Dimensions of the actor."""
+        return self._object_utils.get_dimensions(self.name)
 
-        cls._object_utils.import_actor_from_file(path=path, name=name, collection_name=collection_name)
-        cls._object_utils._set_pass_index_in_engine(name, stencil_value)
-        actor = cls(name)
-        actor.set_transform(location, rotation, scale)
-        return actor
+    @dimensions.setter
+    def dimensions(self, value: 'Vector'):
+        """Set dimensions of the actor.
 
-    @classmethod
-    def import_actor_from_file_with_keys(
-        cls,
-        name: str,
-        path: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-    ) -> None:
+        Args:
+            value (Vector): Dimensions of the actor.
+        """
+        self._object_utils.set_dimensions(self.name, value)
+
+    @property
+    def bbox(self) -> 'Dict[Tuple[Vector, Vector]]':
+        """Bounding box of the actor across all frames."""
+        logger.info(f'[cyan]Getting bbox[/cyan] of "{self.name}" across all frames')
+        logger.warning('This step is very time-consuming...')
+        return self._object_utils.get_bbox(self.name)
+
+    def set_origin_to_center(self) -> None:
+        """Set origin of the object to its center."""
+        self._object_utils.set_origin(self.name)
+
+    def set_transform_keys(self, transform_keys: 'TransformKeys') -> None:
+        """Set transform keys of actor.
+
+        Args:
+            transform_keys (List[Dict]): Keyframes of transform (frame, location, rotation, scale, and interpolation).
+        """
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
-        actor = cls.import_actor_from_file_to_collection(name=name, path=path, collection_name=collection_name)
-        cls._object_utils._set_keyframe_in_engine(obj_name=name, transform_keys=transform_keys)
-        cls._object_utils._set_pass_index_in_engine(name=name, index=stencil_value)
-        return actor
+        self._object_utils.set_transform_keys(name=self.name, transform_keys=transform_keys)
 
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
 
     @staticmethod
-    def _spawn_actor_in_engine(name: str, location: Vector, rotation: Vector) -> None:
-        raise NotImplementedError
+    def _get_stencil_value_in_engine(actor_name: str) -> int:
+        """Get stencil value (pass index) of the actor in Blender.
+
+        Args:
+            actor_name (str): Name of the actor.
+
+        Returns:
+            int: Stencil value (pass index).
+        """
+        return bpy.data.objects[actor_name].pass_index
+
+    @staticmethod
+    def _get_mask_color_in_engine(actor_name: str) -> 'Vector':
+        """Get mask color of the actor in Blender.
+
+        Args:
+            actor_name (str): Name of the actor.
+
+        Returns:
+            Vector: Mask color. (r, g, b) in [0, 255].
+        """
+        pass_index = ActorBlender._get_stencil_value_in_engine(actor_name=actor_name)
+        return (pass_index, pass_index, pass_index)
+
+    @staticmethod
+    def _set_stencil_value_in_engine(actor_name: str, value: int) -> int:
+        """Set pass index (stencil value) of the actor in Blender.
+
+        Args:
+            actor_name (str): Name of the actor.
+            value (int in [0, 255]): Pass index (stencil value).
+        """
+        object = bpy.data.objects[actor_name]
+        object.pass_index = value
+        for child in object.children:
+            child.pass_index = value
+
+    @staticmethod
+    def _import_actor_from_file_in_engine(file_path: str, actor_name: str, collection_name: str = None) -> None:
+        """Import actor from file.
+
+        Args:
+            path (str): File path used of the actor. Support: fbx | obj | alembic.
+            name (str): Name of the actor in Blender.
+            collection_name (str, optional): Name of the collection to import the actor to.
+        Raises:
+            TypeError: If 'path' is not `fbx | obj | alembic | ply | stl` file.
+        """
+        ## get scene and collection
+        scene, collection = XRFeitoriaBlenderFactory.get_scene_and_collection_for_new_object(collection_name)
+
+        # import
+        with XRFeitoriaBlenderFactory.__judge__(name=actor_name, import_path=file_path, scene=scene):
+            blender_functions.import_file(file_path=file_path)
+
+    @staticmethod
+    def _import_animation_from_file_in_engine(animation_path: str, actor_name: str, action_name: str = None) -> None:
+        """Import an animation file.
+
+        Args:
+            animation_path (PathLike): File path used of the actor. Support: json | blend | fbx.
+            name (str): Name of the actor to apply this animation.
+            action_name (str, optional): Name of the action, only need when importing from a blend file.
+                Defaults to None.
+
+        Raises:
+            TypeError: If 'animation_path' is not `json | blend | fbx` file.
+        """
+        anim_file_ext = Path(animation_path).suffix
+        if anim_file_ext.lower() == '.json':
+            XRFeitoriaBlenderFactory.import_mo_json(mo_json_file=animation_path, actor_name=actor_name)
+        elif anim_file_ext.lower() == '.blend':
+            XRFeitoriaBlenderFactory.import_mo_blend(
+                mo_blend_file=animation_path, actor_name=actor_name, action_name=action_name
+            )
+        elif anim_file_ext.lower() == '.fbx':
+            XRFeitoriaBlenderFactory.import_mo_fbx(mo_fbx_file=animation_path, actor_name=actor_name)
+        else:
+            raise TypeError(f"Invalid anim file, expected 'json', 'blend', or 'fbx' (got {anim_file_ext[1:]} instead).")
 
 
-@remote_class_blender
-class MeshBlender(ObjectBase):
+@remote_blender(dec_class=True, suffix='_in_engine')
+class ShapeBlenderWrapper:
+    """Wrapper class for shapes in Blender."""
+
     _object_utils = ObjectUtilsBlender
 
     @classmethod
     def spawn_cube(
         cls,
         name: str,
-        collection_name: str = default_level_blender,
+        size: float = 1.0,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
-        size: int = 1,
         stencil_value: int = 1,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh(name, "cube", collection_name, location, rotation, scale, stencil_value, size=size)
+    ) -> 'ActorBlender':
+        """Spawn a cube in the engine.
+
+        Args:
+            name (str): Name of the new added cube.
+            size (float in [0, inf], optional): Size of the cube. Defaults to 1.0. (unit: meter)
+            location (Vector, optional): Location of the cube. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the cube. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the cube. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the cube. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+
+
+        Returns:
+            ActorBlender: New added cube.
+        """
+        return cls.spawn(
+            name=name,
+            type='cube',
+            location=location,
+            rotation=rotation,
+            scale=scale,
+            stencil_value=stencil_value,
+            size=size,
+        )
 
     @classmethod
     def spawn_plane(
         cls,
         name: str,
-        collection_name: str = default_level_blender,
+        size: float = 1.0,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
         stencil_value: int = 1,
-        size: int = 1,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh(name, "plane", collection_name, location, rotation, scale, stencil_value, size=size)
+    ) -> 'ActorBlender':
+        """Spawn a plane in the engine.
+
+        Args:
+            name (str): Name of the new added plane.
+            size (float in [0, inf], optional): Size of the plane. Defaults to 1.0. (unit: meter)
+            location (Vector, optional): Location of the plane. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the plane. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the plane. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the plane. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+
+        Returns:
+            ActorBlender: New added plane.
+        """
+        return cls.spawn(
+            name=name,
+            type='plane',
+            location=location,
+            rotation=rotation,
+            scale=scale,
+            stencil_value=stencil_value,
+            size=size,
+        )
 
     @classmethod
-    def spawn_uv_sphere(
+    def spawn_sphere(
         cls,
         name: str,
-        stencil_value: int = 1,
-        collection_name: str = default_level_blender,
+        radius: float = 1.0,
+        segments: int = 32,
+        ring_count: int = 16,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
-        segments: int = 32,
-        ring_count: int = 16,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh(
-            name,
-            "uv_sphere",
-            collection_name,
-            location,
-            rotation,
-            scale,
-            stencil_value,
+        stencil_value: int = 1,
+    ) -> 'ActorBlender':
+        """Spawn a `UV sphere <https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#uv-sphere>`_ in the engine.
+
+        Args:
+            name (str): Name of the new added UV sphere.
+            radius (float in [0, inf], optional): Radius of the UV sphere. Defaults to 1.0. (unit: meter)
+            segments (int in [3, 100000], optional): Number of vertical segments on the sphere. Defaults to 32.
+            ring_count (int in [3, 100000], optional): Number of horizontal segmentson the sphere. Defaults to 16.
+            location (Vector, optional): Location of the UV sphere. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the UV sphere. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the UV sphere. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the UV sphere. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+
+        Returns:
+            ActorBlender: New added UV sphere.
+        """
+        return cls.spawn(
+            name=name,
+            type='sphere',
+            location=location,
+            rotation=rotation,
+            scale=scale,
+            stencil_value=stencil_value,
             segments=segments,
             ring_count=ring_count,
+            radius=radius,
         )
 
     @classmethod
     def spawn_ico_sphere(
         cls,
         name: str,
-        collection_name: str = default_level_blender,
+        radius: float = 1.0,
+        subdivisions: int = 2,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
         stencil_value: int = 1,
-        subdivisions: int = 2,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh(
-            name, "ico_sphere", collection_name, location, rotation, scale, stencil_value, subdivisions=subdivisions
+    ) -> 'ActorBlender':
+        """Spawn an `icosphere <https://docs.blender.org/manual/en/latest/modeling/meshes/primitives.html#icosphere>`_ in the engine.
+
+        Args:
+            name (str): Name of the new added icosphere.
+            radius (float in [0, inf], optional): Radius of the icosphere. Defaults to 1.0. (unit: meter)
+            subdivisions (int in [1, 10], optional): Number of times of splitting each triangular face on the sphere into four triangles. Defaults to 2.
+            location (Vector, optional): Location of the icosphere. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the icosphere. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the icosphere. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the icosphere. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+
+        Returns:
+            ActorBlender: New added icosphere.
+        """
+        return cls.spawn(
+            name=name,
+            type='ico_sphere',
+            location=location,
+            rotation=rotation,
+            scale=scale,
+            stencil_value=stencil_value,
+            subdivisions=subdivisions,
+            radius=radius,
         )
 
     @classmethod
     def spawn_cylinder(
         cls,
         name: str,
-        collection_name: str = default_level_blender,
+        radius: float = 1.0,
+        depth: float = 2.0,
+        vertices: int = 32,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
         stencil_value: int = 1,
-        vertices: int = 32,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh(
-            name, "cylinder", collection_name, location, rotation, scale, stencil_value, vertices=vertices
+    ) -> 'ActorBlender':
+        """Spawn a cylinder in the engine.
+
+        Args:
+            name (str): Name of the new added cylinder.
+            radius (float in [0, inf], optional): Radius of the cylinder's bases. Defaults to 1.0. (unit: meter)
+            depth (float in [0, inf], optional): Height of the cylinder. Defaults to 2.0. (unit: meter)
+            vertices (int in [3, 10000000], optional): Number of vertices on the circumference of the base of the cylinder. Defaults to 32.
+            location (Vector, optional): Location of the cylinder. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the cylinder. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the cylinder. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the cylinder. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+
+        Returns:
+            ActorBlender: New added cylinder.
+        """
+        return cls.spawn(
+            name=name,
+            type='cylinder',
+            location=location,
+            rotation=rotation,
+            scale=scale,
+            stencil_value=stencil_value,
+            vertices=vertices,
+            radius=radius,
+            depth=depth,
         )
 
     @classmethod
     def spawn_cone(
         cls,
         name: str,
-        collection_name: str = default_level_blender,
+        radius1: float = 1.0,
+        radius2: float = 0.0,
+        depth: float = 2.0,
+        vertices: int = 32,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
         stencil_value: int = 1,
-        vertices: int = 32,
-        radius1: int = 1,
-        radius2: int = 0,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh(
-            name,
-            "cone",
-            collection_name,
-            location,
-            rotation,
-            scale,
-            stencil_value,
+    ) -> 'ActorBlender':
+        """Spawn a cone in the engine.
+
+        Args:
+            name (str): Name of the new added cone.
+            radius1 (float in [0, inf], optional): Radius of the circular base of the cone. Defaults to 1.0. (unit: meter).
+            radius2 (float in [0, inf], optional): Radius of the tip of the cone. Defaults to 0.0. (unit: meter).
+            depth (float in [0, inf], optional): Height of the cone. Defaults to 2.0. (unit: meter)
+            vertices (int in [3, 10000000], optional): Number of vertices on the circumference of the base of the cone. Defaults to 32.
+            location (Vector, optional): Location of the cone. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the cone. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the cone. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the cone. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+
+        Returns:
+            ActorBlender: New added cone.
+        """
+        return cls.spawn(
+            name=name,
+            type='cone',
+            location=location,
+            rotation=rotation,
+            scale=scale,
+            stencil_value=stencil_value,
             vertices=vertices,
             radius1=radius1,
             radius2=radius2,
+            depth=depth,
         )
 
     @classmethod
-    def spawn_mesh(
+    def spawn(
         cls,
-        name: str,
-        mesh_type: str,
-        collection_name: str = default_level_blender,
+        type: Literal['plane', 'cube', 'sphere', 'ico_sphere', 'cylinder', 'cone'],
+        name: Optional[str] = None,
         location: Vector = (0, 0, 0),
         rotation: Vector = (0, 0, 0),
         scale: Vector = (1, 1, 1),
         stencil_value: int = 1,
         **kwargs,
-    ) -> "MeshBlender":
+    ) -> 'ActorBlender':
+        """Spawn a shape(plane, cube, UV sphere, icosphere, cylinder or cone) in the
+        scene.
+
+        Args:
+            name (str): Name of the new added shape.
+            mesh_type (enum in ['plane', 'cube', 'sphere', 'icosphere', 'cylinder', 'cone']): Type of new spawn shape.
+            location (Vector, optional): Location of the shape. Defaults to (0, 0, 0).
+            rotation (Vector, optional): Rotation of the shape. Defaults to (0, 0, 0).
+            scale (Vector, optional): Scale of the shape. Defaults to (1, 1, 1).
+            stencil_value (int in [0, 255], optional): Stencil value of the shape. Defaults to 1.
+                Ref to :ref:`FAQ-stencil-value` for details.
+            **kwargs
+                - ``plane``: size. Ref to :meth:`ShapeBlenderWrapper.spawn_plane <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper.spawn_plane>` for details.
+                - ``cube``: size. Ref to :meth:`ShapeBlenderWrapper.spawn_cube <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper.spawn_cube>` for details.
+                - ``sphere``: radius, segments, ring_count. Ref to :meth:`ShapeBlenderWrapper.spawn_sphere <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper.spawn_sphere>` for details.
+                - ``icosphere``: radius, subdivisions. Ref to :meth:`ShapeBlenderWrapper.spawn_ico_sphere <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper.spawn_ico_sphere>` for details.
+                - ``cylinder``: radius, depth, vertices. Ref to :meth:`ShapeBlenderWrapper.spawn_cylinder <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper.spawn_cylinder>` for details.
+                - ``cone``: radius1, radius2, depth, vertices. Ref to :meth:`ShapeBlenderWrapper.spawn_cone <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper.spawn_cone>` for details.
+        Returns:
+            ActorBlender: New added shape.
+        """
+        if name is None:
+            name = cls._object_utils.generate_obj_name(obj_type=type)
         cls._object_utils.validate_new_name(name)
         Validator.validate_vector(location, 3)
         Validator.validate_vector(rotation, 3)
         Validator.validate_vector(scale, 3)
 
         cls._object_utils.validate_new_name(name)
-        cls._spawn_mesh_in_engine(name, mesh_type, collection_name, **kwargs)
-        cls._object_utils._set_pass_index_in_engine(name, stencil_value)
-        mesh = cls(name=name)
-        mesh.set_transform(location, rotation, scale)
-        return mesh
-
-    @classmethod
-    def spawn_cube_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        size: int = 1,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh_with_keys(name, "cube", transform_keys, collection_name, stencil_value, size=size)
-
-    @classmethod
-    def spawn_plane_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        size: int = 1,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh_with_keys(name, "plane", transform_keys, collection_name, stencil_value, size=size)
-
-    @classmethod
-    def spawn_uv_sphere_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        segments: int = 32,
-        ring_count: int = 16,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh_with_keys(
-            name, "uv_sphere", transform_keys, collection_name, stencil_value, segments=segments, ring_count=ring_count
-        )
-
-    @classmethod
-    def spawn_ico_sphere_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        subdivisions: int = 2,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh_with_keys(
-            name, "ico_sphere", transform_keys, collection_name, stencil_value, subdivisions=subdivisions
-        )
-
-    @classmethod
-    def spawn_cylinder_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        vertices: int = 32,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh_with_keys(
-            name, "cylinder", transform_keys, collection_name, stencil_value, vertices=vertices
-        )
-
-    @classmethod
-    def spawn_cone_with_keys(
-        cls,
-        name: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        vertices: int = 32,
-        radius1: int = 1.0,
-        radius2: int = 2.0,
-    ) -> "MeshBlender":
-        return cls.spawn_mesh_with_keys(
-            name,
-            "cone",
-            transform_keys,
-            collection_name,
-            stencil_value,
-            vertices=vertices,
-            radius1=radius1,
-            radius2=radius2,
-        )
-
-    @classmethod
-    def spawn_mesh_with_keys(
-        cls,
-        name: str,
-        mesh_type: str,
-        transform_keys: "Union[List[SequenceTransformKey], SequenceTransformKey]",
-        collection_name: str = default_level_blender,
-        stencil_value: int = 1,
-        **kwargs,
-    ) -> "MeshBlender":
-        if not isinstance(transform_keys, list):
-            transform_keys = [transform_keys]
-        transform_keys = [i.model_dump() for i in transform_keys]
-        mesh = cls.spawn_mesh(
+        cls._spawn_shape_in_engine(
             name=name,
-            mesh_type=mesh_type,
-            collection_name=collection_name,
+            type=type,
             **kwargs,
         )
-        cls._object_utils._set_keyframe_in_engine(obj_name=name, transform_keys=transform_keys)
-        cls._object_utils._set_pass_index_in_engine(name, stencil_value)
+        mesh = ActorBlender(name=name)
+        mesh.set_transform(location, rotation, scale)
+        mesh.stencil_value = stencil_value
+        logger.info(f'[cyan]Spawned[/cyan] {type} "{name}"')
         return mesh
 
     #####################################
@@ -311,56 +441,74 @@ class MeshBlender(ObjectBase):
     #####################################
 
     @staticmethod
-    def _spawn_mesh_in_engine(
+    def _spawn_shape_in_engine(
         name: str,
-        mesh_type: str,
-        collection_name: str,
-        segments: "Optional[int]" = None,
-        ring_count: "Optional[int]" = None,
-        subdivisions: "Optional[int]" = None,
-        vertices: "Optional[int]" = None,
-        radius1: "Optional[int]" = None,
-        radius2: "Optional[int]" = None,
-        size: int = 1,
+        type: str,
+        collection_name: str = None,
+        size: float = 1.0,
+        segments: int = 32,
+        ring_count: int = 16,
+        radius: float = 1.0,
+        subdivisions: int = 2,
+        vertices: int = 32,
+        depth: float = 2.0,
+        radius1: float = 0.0,
+        radius2: float = 2.0,
     ) -> None:
-        if collection_name not in bpy.data.collections.keys():
-            raise ValueError(f"Invalid collection_name, '{collection_name}' does not exists.")
+        """Spawn a shape in Blender.
 
-        if collection_name == default_level_blender:
-            scene = BlenderSceneCollectionUtils.get_scene(default_level_blender)
-        else:
-            scene = BlenderSceneCollectionUtils.get_active_scene()
+        Args:
+            name (str): Name of the new added shape.
+            mesh_type (enum in ['plane', 'cube', 'UV sphere', 'icosphere', 'cylinder', 'cone']): Type of new spawn shape.
+            size (float in [0, inf], optional): Size. Defaults to 1.0. (unit: meter)
+            segments (int in [3, 100000], optional): Segments. Defaults to 32.
+            ring_count (int in [3, 100000], optional): Ring count. Defaults to 16.
+            radius (float in [0, inf], optional): Radius. Defaults to 1.0. (unit: meter)
+            subdivisions (int in [1, 10], optional): Subdivisions. Defaults to 2.
+            vertices (int in [3, 10000000], optional): Vertices. Defaults to 32.
+            depth (float in [0, inf], optional): Depth. Defaults to 2.0. (unit: meter)
+            radius1 (float in [0, inf], optional): Radius1. Defaults to 0.0. (unit: meter)
+            radius2 (float in [0, inf], optional): Radius2. Defaults to 2.0. (unit: meter)
 
-        collection = BlenderSceneCollectionUtils.get_collection(collection_name)
+        Raises:
+            TypeError: If `mesh_type` is not in Enum ['plane', 'cube', 'UV sphere', 'icosphere', 'cylinder', 'cone']
+        """
 
-        # link the 'collection' to 'scene' if collection dose not belongs to 'scene'
-        tmp_link = False
-        if collection_name not in scene.collection.children.keys():
-            BlenderSceneCollectionUtils.link_collection_to_scene(collection, scene)
-            tmp_link = True
-
-        # set 'collection' and 'scene' active
-        BlenderSceneCollectionUtils.set_scene_active(scene)
-        BlenderSceneCollectionUtils.set_collection_active(collection)
+        ## get scene and collection
+        scene, collection = XRFeitoriaBlenderFactory.get_scene_and_collection_for_new_object(collection_name)
 
         # spawn mesh
-        with ObjectUtilsBlender.__judge__(name, scene=scene):
-            if mesh_type == "plane":
+        with XRFeitoriaBlenderFactory.__judge__(name, scene=scene):
+            if type == 'plane':
                 bpy.ops.mesh.primitive_plane_add(size=size)
-            elif mesh_type == "cube":
+            elif type == 'cube':
                 bpy.ops.mesh.primitive_cube_add(size=size)
-            elif mesh_type == "uv_sphere":
-                bpy.ops.mesh.primitive_uv_sphere_add(segments=segments, ring_count=ring_count)
-            elif mesh_type == "ico_sphere":
-                bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=subdivisions)
-            elif mesh_type == "cylinder":
-                bpy.ops.mesh.primitive_cylinder_add(vertices=vertices)
-            elif mesh_type == "cone":
-                bpy.ops.mesh.primitive_cone_add(vertices=vertices, radius1=radius1, radius2=radius2)
+            elif type == 'sphere':
+                bpy.ops.mesh.primitive_uv_sphere_add(
+                    segments=segments,
+                    ring_count=ring_count,
+                    radius=radius,
+                )
+            elif type == 'ico_sphere':
+                bpy.ops.mesh.primitive_ico_sphere_add(
+                    subdivisions=subdivisions,
+                    radius=radius,
+                )
+            elif type == 'cylinder':
+                bpy.ops.mesh.primitive_cylinder_add(
+                    vertices=vertices,
+                    radius=radius,
+                    depth=depth,
+                )
+            elif type == 'cone':
+                bpy.ops.mesh.primitive_cone_add(
+                    vertices=vertices,
+                    radius1=radius1,
+                    radius2=radius2,
+                    depth=depth,
+                )
             else:
                 raise TypeError(
-                    f"Unspported mesh type, expected 'plane', 'cube', 'uv_sphere', 'ico_sphere', 'cylinder' or 'cone', (got '{mesh_type}' instead)."
+                    f'Unsupported mesh type, expected "plane", "cube", "sphere", '
+                    f'"ico_sphere", "cylinder" or "cone", (got "{type}" instead).'
                 )
-        # unlink 'collection' from 'scene' if necessary
-        if tmp_link:
-            BlenderSceneCollectionUtils.unlink_collection_from_scene(collection, scene)

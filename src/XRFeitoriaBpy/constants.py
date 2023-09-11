@@ -1,21 +1,18 @@
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple, Type, TypeVar
+from typing import List, Optional, Tuple, Type, TypeVar, Union
 
 import bpy
 
-remote_function_suffix = "_in_engine"
-__range_info__ = "Render Steps: start={}, end={}"
-__regex_range_info__ = ".*" + __range_info__.format(r"(\d+)", r"(\d+)") + ".*"
-__regex_frame_info__ = r".*Fra:(\d+).*"
+default_level_blender = 'XRFeitoria'
 
 Tuple3 = Tuple[float, float, float]
-PathLike = TypeVar("PathLike", str, Path)
+PathLike = Union[str, Path]
 
 
 class EnumBase(str, Enum):
     @classmethod
-    def get(cls, name_or_value: str) -> "EnumBase":
+    def get(cls, name_or_value: str) -> 'EnumBase':
         """Get enum member by name or value.
 
         Args:
@@ -30,36 +27,36 @@ class EnumBase(str, Enum):
             for member in cls:
                 if member.value == name_or_value:
                     return member
-            raise ValueError(f"{name_or_value} is not supported in {cls.__name__}")
+            raise ValueError(f'{name_or_value} is not supported in {cls.__name__}')
 
 
 class DeviceTypeEnum(EnumBase):
-    """Device type enum"""
+    """Device type enum."""
 
-    cuda = "CUDA"
-    optix = "OPTIX"
+    cuda = 'CUDA'
+    optix = 'OPTIX'
 
 
 class ImportFileFormatEnum(EnumBase):
-    fbx = "fbx"
-    obj = "obj"
-    abc = "abc"
+    fbx = 'fbx'
+    obj = 'obj'
+    abc = 'abc'
     # TODO: Add more
 
 
 class ImageFileFormatEnum(EnumBase):
-    png = "PNG"
-    bmp = "BMP"
-    jpg = "JPEG"
-    jpeg = "JPEG"
-    exr = "OPEN_EXR"
-    open_exr = "OPEN_EXR"
+    png = 'PNG'
+    bmp = 'BMP'
+    jpg = 'JPEG'
+    jpeg = 'JPEG'
+    exr = 'OPEN_EXR'
+    open_exr = 'OPEN_EXR'
 
 
 class RenderEngineEnum(EnumBase):
-    cycles = "CYCLES"
-    eevee = "BLENDER_EEVEE"
-    workbench = "BLENDER_WORKBENCH"
+    cycles = 'CYCLES'
+    eevee = 'BLENDER_EEVEE'
+    workbench = 'BLENDER_WORKBENCH'
 
 
 class RenderMethodEnum(EnumBase):
@@ -69,24 +66,24 @@ class RenderMethodEnum(EnumBase):
 
 
 class RenderLayerEnum(EnumBase):
-    """Render layer enum"""
+    """Render layer enum."""
 
-    img = "Image"
-    mask = "IndexOB"
-    depth = "Depth"
-    denoising_depth = "Denoising Depth"
-    flow = "Vector"
-    normal = "Normal"
-    diffuse = "DiffCol"
+    img = 'Image'
+    mask = 'IndexOB'
+    depth = 'Depth'
+    denoising_depth = 'Denoising Depth'
+    flow = 'Vector'
+    normal = 'Normal'
+    diffuse = 'DiffCol'
     # TODO: add more
 
 
 class BSDFNodeLinkEnum(EnumBase):
-    """Shader node link enum"""
+    """Shader node link enum."""
 
-    diffuse = "Base Color"
-    normal = "Normal"
-    roughness = "Roughness"
+    diffuse = 'Base Color'
+    normal = 'Normal'
+    roughness = 'Roughness'
     # TODO: Add more
     # specular = 'specular'
     # metallic = 'metallic'

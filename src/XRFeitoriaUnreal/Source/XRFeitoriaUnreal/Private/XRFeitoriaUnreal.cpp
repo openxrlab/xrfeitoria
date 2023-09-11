@@ -4,6 +4,7 @@
 #include "Engine/RendererSettings.h"
 #include "MovieRenderPipelineSettings.h"
 #include "MoviePipelineCameraSetting.h"
+#include "Settings/EditorProjectSettings.h"
 #include "CustomMoviePipelineOutput.h"
 #include "CustomMoviePipelineDeferredPass.h"
 
@@ -16,13 +17,13 @@ void FXRFeitoriaUnrealModule::StartupModule()
 	URendererSettings* Settings = GetMutableDefault<URendererSettings>();
 
 #if ENGINE_MAJOR_VERSION == 5
-	
+
 	Settings->CustomDepthStencil = ECustomDepthStencil::EnabledWithStencil;
 	Settings->VelocityPass = EVelocityOutputPass::BasePass;
 	Settings->SaveConfig();
 
 #elif ENGINE_MAJOR_VERSION == 4
-	
+
 	Settings->CustomDepthStencil = ECustomDepthStencil::EnabledWithStencil;
 	Settings->bBasePassOutputsVelocity = true;
 	Settings->SaveConfig();
@@ -35,6 +36,16 @@ void FXRFeitoriaUnrealModule::StartupModule()
 	MRQ_Settings->DefaultClasses.Add(UCustomMoviePipelineDeferredPass::StaticClass());
 	MRQ_Settings->DefaultClasses.Add(UMoviePipelineCameraSetting::StaticClass());
 	MRQ_Settings->SaveConfig();
+
+	// Set Unit to Meters
+	UEditorProjectAppearanceSettings* AppearanceSettings = GetMutableDefault<UEditorProjectAppearanceSettings>();
+	AppearanceSettings->bDisplayUnits = true;
+	AppearanceSettings->bDisplayUnitsOnComponentTransforms = true;
+	AppearanceSettings->DistanceUnits.Empty();
+	AppearanceSettings->DistanceUnits.Add(EUnit::Meters);
+	FUnitSettings& UnitSettings = FUnitConversion::Settings();
+	UnitSettings.SetDisplayUnits(EUnitType::Distance, AppearanceSettings->DistanceUnits);
+	AppearanceSettings->SaveConfig();
 }
 
 void FXRFeitoriaUnrealModule::ShutdownModule()
@@ -44,5 +55,5 @@ void FXRFeitoriaUnrealModule::ShutdownModule()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FXRFeitoriaUnrealModule, XRFeitoriaUnreal)
