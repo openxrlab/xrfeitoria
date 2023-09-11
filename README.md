@@ -7,10 +7,8 @@
 <br/>
 
 [![Documentation](https://readthedocs.org/projects/xrfeitoria/badge/?version=latest)](https://xrfeitoria.readthedocs.io/en/latest/?badge=latest)
-[![actions](https://github.com/openxrlab/xrfeitoria/workflows/build/badge.svg)](https://github.com/openxrlab/xrfeitoria/actions)
-[![codecov](https://codecov.io/gh/openxrlab/xrfeitoria/branch/main/graph/badge.svg)](https://codecov.io/gh/openxrlab/xrfeitoria)
+[![actions](https://github.com/openxrlab/xrfeitoria/workflows/lint/badge.svg)](https://github.com/openxrlab/xrfeitoria/actions)
 [![PyPI](https://img.shields.io/pypi/v/xrfeitoria)](https://pypi.org/project/xrfeitoria/)
-[![Percentage of issues still open](https://isitmaintained.com/badge/open/openxrlab/xrfeitoria.svg)](https://github.com/openxrlab/xrfeitoria/issues)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## Introduction
@@ -66,7 +64,7 @@ xf-render bunny.obj
 ### Tutorials
 
 There are several [tutorials](/tutorials/).
-You can read them [here](https://xrfeitoria.readthedocs.io/en/latest/src/Tutorials.html).
+You can read them [here](https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/docs/en/_build/html/src/Tutorials.html).
 
 
 ### Sample codes
