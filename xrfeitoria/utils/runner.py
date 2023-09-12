@@ -123,11 +123,22 @@ class RPCRunner(ABC):
                 f'Project path not valid: "{self.project_path.as_posix()}"\n'
                 'Please check in `xf.init_blender(project_path=...)` or `xf.init_unreal(project_path=...)`'
             )
+            if self.engine_type == EngineEnum.blender:
+                assert self.project_path.suffix == '.blend', (
+                    f'Project path not valid: "{self.project_path.as_posix()}"\n'
+                    'Please use a blender project file (.blend) file as project path in `xf.init_blender(project_path=...)`'
+                )
+            elif self.engine_type == EngineEnum.unreal:
+                assert self.project_path.suffix == '.uproject', (
+                    f'Project path not valid: "{self.project_path.as_posix()}"\n'
+                    'Please use a unreal project file (.uproject) as project path in `xf.init_unreal(project_path=...)`'
+                )
         else:
+            assert (
+                self.engine_type != EngineEnum.unreal
+            ), 'Please specify a project path in `xf.init_unreal(project_path=...)` when using unreal engine'
             self.project_path = None
         self.engine_info: Tuple[str, str] = self._get_engine_info(self.engine_exec)
-        if self.engine_type == EngineEnum.unreal and (self.project_path is None or not self.project_path.exists()):
-            raise FileExistsError(f'Project path not valid: "{self.project_path}"')
 
     @property
     def port(self) -> int:
@@ -565,6 +576,7 @@ class UnrealRPCRunner(RPCRunner):
         )
         process = self._popen(cmd)
 
+        # TODO: check if process is running
         self.wait_for_start()
         # logger.info(f'Started {" ".join(self.engine_info)} with RPC server at port {self.port}')
         self.engine_process = process
