@@ -117,7 +117,14 @@ class RPCRunner(ABC):
         if not self.engine_exec.exists() or not self.engine_exec.is_file():
             raise FileExistsError(f'Engine executable not valid: {self.engine_exec}')
         logger.info(f'Using engine executable: "{self.engine_exec.as_posix()}"')
-        self.project_path = Path(project_path).resolve() if project_path else None
+        if project_path:
+            self.project_path = Path(project_path).resolve()
+            assert self.project_path.exists(), (
+                f'Project path not valid: "{self.project_path.as_posix()}"\n'
+                'Please check in `xf.init_blender(project_path=...)` or `xf.init_unreal(project_path=...)`'
+            )
+        else:
+            self.project_path = None
         self.engine_info: Tuple[str, str] = self._get_engine_info(self.engine_exec)
         if self.engine_type == EngineEnum.unreal and (self.project_path is None or not self.project_path.exists()):
             raise FileExistsError(f'Project path not valid: "{self.project_path}"')

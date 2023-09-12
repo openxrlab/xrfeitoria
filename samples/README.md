@@ -1,7 +1,15 @@
 # Samples
 
-## Configure
-First, configure the **executable path** of blender or unreal by execute:
+## Clone
+
+```bash
+git clone https://github.com/openxrlab/xrfeitoria.git
+cd xrfeitoria
+```
+
+## Setup the environment
+
+After [installation](../README.md#Installation), configure the **executable path** of blender or unreal by executing:
 
 ```bash
 python -m samples.setup
