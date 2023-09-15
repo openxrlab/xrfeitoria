@@ -34,6 +34,7 @@ dependencies = [
     "fake-bpy-module-latest",
     "numpy>=1,<2",
     "loguru<1",
+    "packaging>=23,<24",
     "pydantic>=2,<3",
     "psutil>=5,<6",
     "rich>=13,<14",
@@ -63,6 +64,7 @@ doc = [
 [project.urls]
 "Homepage" = "https://github.com/openxrlab/xrfeitoria"
 "Bug Tracker" = "https://github.com/openxrlab/xrfeitoria/issues"
+"Documentation" = "https://xrfeitoria.readthedocs.io/en/latest/"
 
 [project.scripts]
 xf-render = "xrfeitoria.cmd.render:app"

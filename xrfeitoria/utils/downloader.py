@@ -24,6 +24,7 @@ def download(url: str, dst_dir: Path, verbose: bool = True) -> Path:
     Returns:
         Path: The path to the downloaded file.
     """
+    dst_dir = Path(dst_dir).resolve()
     dst_dir.mkdir(parents=True, exist_ok=True)
     filename = url.split('/')[-1]
     dst_path = Path(dst_dir).resolve() / filename
@@ -46,21 +47,21 @@ def download(url: str, dst_dir: Path, verbose: bool = True) -> Path:
         )
         with progress:
             task_id = progress.add_task('download', filename=filename, start=False)
-            logger.info(f'Requesting {url}')
+            logger.info(f'Requesting {url} to "{dst_path.as_posix()}"')
             response = urlopen(url)
             # This will break if the response doesn't contain content length
             progress.update(task_id, total=int(response.info()['Content-length']))
             with open(dst_path, 'wb') as dst_file:
                 progress.start_task(task_id)
-                logger.info(f'Downloading to "{dst_path.as_posix()}"')
+                # logger.info(f'Downloading to "{dst_path.as_posix()}"')
                 for data in iter(partial(response.read, 32768), b''):
                     dst_file.write(data)
                     progress.update(task_id, advance=len(data))
             logger.info(f'Downloaded "{dst_path.as_posix()}"')
 
     except KeyboardInterrupt:
-        logger.info('[red]Cancelling download...')
-        logger.info('[red]Deleting incomplete download...')
+        logger.info('[red]Cancelling download...[/red]')
+        logger.info('[red]Deleting incomplete download...[/red]')
         dst_path.unlink(missing_ok=True)
         exit(1)
 
@@ -68,10 +69,5 @@ def download(url: str, dst_dir: Path, verbose: bool = True) -> Path:
 
 
 if __name__ == '__main__':
-    # Try with https://releases.ubuntu.com/20.04/ubuntu-20.04.6-desktop-amd64.iso
-    import sys
-
-    if sys.argv[1:]:
-        download(sys.argv[-1], './')
-    else:
-        print('Usage:\n\tpython downloader.py URL1 URL2 URL3 (etc)')
+    url = 'https://releases.ubuntu.com/20.04/ubuntu-20.04.6-desktop-amd64.iso'
+    download(url, './')

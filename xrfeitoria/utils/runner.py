@@ -1,5 +1,6 @@
 """Runner for starting blender or unreal as a rpc server."""
 
+import json
 import os
 import platform
 import re
@@ -7,40 +8,39 @@ import shutil
 import subprocess
 import time
 from abc import ABC, abstractmethod
+from bisect import bisect_left
+from functools import lru_cache
 from http.client import RemoteDisconnected
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
+from urllib.error import HTTPError, URLError
 from xmlrpc.client import ProtocolError
 
 from loguru import logger
+from packaging.version import parse
 from rich import get_console
 from rich.prompt import Confirm
 
-from .. import _tls
+from .. import __version__, _tls
 from ..data_structure.constants import EngineEnum, PathLike, plugin_name_blender, plugin_name_unreal, tmp_dir
 from ..rpc import BLENDER_PORT, UNREAL_PORT, remote_blender, remote_unreal
 from .downloader import download
 from .setup import get_exec_path
 
-# XXX: hardcode plugin download url
-unreal_plugin_urls = dict(
-    Windows={
-        '5.1': 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-UE5.1-Windows.zip',
-        '5.2': 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-UE5.2-Windows.zip',
-    },
-    Darwin={},
-    Linux={},
-)
-blender_plugin_url = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy.zip'
+# XXX: hardcode download url
+oss_root = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
+plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
 
 
 def _rmtree(path: Path) -> None:
     """Remove tmp output."""
     if path.is_symlink():
-        path.unlink()
-    else:
-        shutil.rmtree(path)
+        path.unlink(missing_ok=True)
+    elif path.is_file():
+        path.unlink(missing_ok=True)
+    elif path.is_dir():
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def _get_user_addon_path(version: str) -> Path:
@@ -262,19 +262,23 @@ class RPCRunner(ABC):
                 else:
                     _num = 0  # reset tryout times, wait for another 3 minutes
 
-    @property
     @abstractmethod
-    def src_plugin_path(self) -> Path:
-        """Get plugin source path.
+    def get_src_plugin_path(self) -> Path:
+        """Get plugin source path, including downloading or symlinking/copying from
+        local directory.
 
         priority:
             if `self.dev_plugin=False`: download from url > build from source
 
             if `self.dev_plugin=True`: build from source
+
+        Returns:
+            Path: plugin source path
         """
         pass
 
     @property
+    @lru_cache
     def dst_plugin_dir(self) -> Path:
         """Get plugin directory."""
         if self.engine_type == EngineEnum.blender:
@@ -284,16 +288,48 @@ class RPCRunner(ABC):
         else:
             raise NotImplementedError
         dst_plugin_dir.parent.mkdir(exist_ok=True, parents=True)
-        logger.debug(f'Installing plugin to "{dst_plugin_dir.as_posix()}"')
         return dst_plugin_dir
 
-    ##########################
+    def _download(self, url: str, dst_dir: Path) -> Path:
+        """Check if the url is valid and download the plugin to the given directory."""
+        try:
+            dst_path = download(url=url, dst_dir=dst_dir, verbose=False)
+        except HTTPError as e:
+            raise HTTPError(
+                url=e.url,
+                code=e.code,
+                msg=(
+                    'Failed to download plugin.\n'
+                    f'Sorry, pre-built plugin for {"".join(self.engine_info)} in {platform.system()} is not supported.\n'
+                    'Set `dev_plugin=True` in init_blender/init_unreal to build the plugin from source.\n'
+                    'Clone the source code from https://github.com/openxrlab/xrfeitoria.git'
+                ),
+                hdrs=e.hdrs,
+                fp=e.fp,
+            )
+        except URLError:
+            raise RuntimeError(
+                'Network unreachable. Please check your internet connection and try again later.\n'
+                f'Or manually download the plugin from {url} and put it in "{dst_dir.as_posix()}"\n'
+            )
+        except Exception as e:
+            raise RuntimeError(f'Failed to download plugin from {url} to "{dst_dir.as_posix()}"\n{e}')
+        return dst_path
+
     # ----- abstracts ----- #
     ##########################
 
     @staticmethod
     @abstractmethod
     def _get_engine_info(engine_exec: Path) -> Tuple[str, str]:
+        """Get engine type and version.
+
+        Args:
+            engine_exec (Path): path to engine executable.
+
+        Returns:
+            Tuple[str, str]: engine type and version.
+        """
         pass
 
     @abstractmethod
@@ -305,31 +341,43 @@ class RPCRunner(ABC):
         pass
 
     def _get_plugin_url(self) -> Optional[str]:
-        if self.engine_type == EngineEnum.blender:
-            return blender_plugin_url
-        elif self.engine_type == EngineEnum.unreal:
-            engine_version = self.engine_info[1]
-            return unreal_plugin_urls[platform.system()].get(engine_version, None)
+        # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
+        plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
+        plugin_versions = sorted((map(parse, plugin_infos.keys())))
+        _version = parse(__version__)
+
+        # find compatible version, lower bound, e.g. 0.5.1 => 0.5.0
+        if _version in plugin_versions:
+            compatible_version = _version
         else:
-            raise NotImplementedError
+            _idx = bisect_left(plugin_versions, parse(__version__)) - 1
+            compatible_version = plugin_versions[_idx]
+        logger.debug(f'Compatible plugin version: {compatible_version}')
+
+        # get link
+        if self.engine_type == EngineEnum.unreal:
+            _plugin_name = plugin_name_unreal
+            _platform = f'{"".join(self.engine_info)}-{platform.system()}'  # e.g. Unreal5.1-Windows
+        elif self.engine_type == EngineEnum.blender:
+            _plugin_name = plugin_name_blender
+            _platform = 'None-None'
+        _plugin_version = plugin_infos[str(compatible_version)][_plugin_name]
+        # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy-0.5.0-None-None.zip
+        # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
+        return f'{oss_root}/plugins/{_plugin_name}-{_plugin_version}-{_platform}.zip'
 
     def _install_plugin(self) -> None:
         """Install plugin."""
-        dst_plugin_dir = self.dst_plugin_dir
-        # TODO: check version of dst_plugin_dir, if old, set self.replace_plugin = True
-        # skip if plugin already exists
-        if dst_plugin_dir.exists():
-            if self.replace_plugin:
-                if self.engine_type == EngineEnum.unreal:
-                    logger.warning(f'Removing existing plugin {dst_plugin_dir}')
-                    _rmtree(dst_plugin_dir)
-                # skip deleting for blender
-            else:
-                logger.debug(f'Plugin {dst_plugin_dir} already exists')
+        if self.dst_plugin_dir.exists():
+            if not self.replace_plugin:
+                logger.debug(f'Plugin "{self.dst_plugin_dir.as_posix()}" already exists')
                 return
+            elif self.engine_type == EngineEnum.unreal:
+                logger.warning(f'Removing existing plugin "{self.dst_plugin_dir.as_posix()}"')
+                _rmtree(self.dst_plugin_dir)
 
-        src_plugin_path = self.src_plugin_path
-        logger.info(f'Installing plugin from "{src_plugin_path.as_posix()}"')
+        src_plugin_path = self.get_src_plugin_path()
+        logger.info(f'Installing plugin from "{src_plugin_path.as_posix()}" to "{self.dst_plugin_dir.as_posix()}"')
 
         if self.engine_type == EngineEnum.blender:
             _script = f"""
@@ -345,17 +393,17 @@ class RPCRunner(ABC):
         elif self.engine_type == EngineEnum.unreal:
             try:
                 self.dst_plugin_dir.symlink_to(src_plugin_path, target_is_directory=True)
-                logger.debug(f'Symlink {src_plugin_path} => {dst_plugin_dir}')
+                logger.debug(f'Symlink "{src_plugin_path.as_posix()}" => "{self.dst_plugin_dir.as_posix()}"')
             except (OSError, PermissionError):
                 logger.warning(
                     'Failed to create symlink: [u]permission denied[/u]. '
                     'Please consider running on [u]administrator[/u] mode. '
                     'Fallback to copy the plugin.'
                 )
-                shutil.copytree(src=src_plugin_path, dst=dst_plugin_dir)
-                logger.debug(f'copy {src_plugin_path} => {dst_plugin_dir}')
+                shutil.copytree(src=src_plugin_path, dst=self.dst_plugin_dir)
+                logger.debug(f'Copy "{src_plugin_path.as_posix()}" => "{self.dst_plugin_dir.as_posix()}"')
 
-        logger.info(f'Plugin installed in "{dst_plugin_dir}"')
+        logger.info(f'Plugin installed in "{self.dst_plugin_dir.as_posix()}"')
 
     @staticmethod
     @abstractmethod
@@ -364,8 +412,7 @@ class RPCRunner(ABC):
 
 
 class BlenderRPCRunner(RPCRunner):
-    @property
-    def src_plugin_path(self) -> Path:
+    def get_src_plugin_path(self) -> Path:
         """Get plugin source zip path."""
         if self.dev_plugin:
             from .publish_plugins import _make_archive
@@ -374,39 +421,24 @@ class BlenderRPCRunner(RPCRunner):
             src_plugin_path = _make_archive(src_plugin_dir)
         else:
             url = self._get_plugin_url()
-            if url:
-                src_plugin_path = tmp_dir / Path(url).name  # with suffix (.zip)
-                if src_plugin_path.exists() and not self.replace_plugin:
-                    logger.debug(f'Downloaded Plugin {src_plugin_path} exists')
-                    return src_plugin_path
-                else:
-                    src_plugin_path.unlink(missing_ok=True)
+            src_plugin_root = tmp_dir / 'plugins'
+            src_plugin_path = src_plugin_root / Path(url).name  # with suffix (.zip)
+            if src_plugin_path.exists():
+                logger.debug(f'Downloaded Plugin {src_plugin_path} exists')
+                return src_plugin_path
 
-                try:
-                    download(url=url, dst_dir=tmp_dir, verbose=False)
-                except Exception:
-                    raise RuntimeError(
-                        f'Sorry, failed to download plugin from {url}\n'
-                        'Try again later or set `init_blender(dev_plugin=True)` to build the plugin from source.\n'
-                        'Clone the source code from https://github.com/openxrlab/xrfeitoria.git'
-                    )
-            else:
-                # build plugin from source
-                raise FileNotFoundError(
-                    f'Sorry, pre-built plugin for {" ".join(self.engine_info)} in {platform.system()} not found!\n'
-                    'Set `dev_plugin=True` in init_blender to build the plugin from source.\n'
-                    'Clone the source code from https://github.com/openxrlab/xrfeitoria.git'
-                )
+            plugin_path = self._download(url=url, dst_dir=src_plugin_root)
+            if plugin_path != src_plugin_path:
+                shutil.move(plugin_path, src_plugin_path)
         return src_plugin_path
 
     @staticmethod
-    def _get_engine_info(blender_exec: Path) -> Tuple[str, str]:
-        """Get blender version."""
+    def _get_engine_info(engine_exec: Path) -> Tuple[str, str]:
         _version = None
         if platform.system() == 'Darwin':
-            root_dir = blender_exec.parent.parent / 'Resources'
+            root_dir = engine_exec.parent.parent / 'Resources'
         else:
-            root_dir = blender_exec.parent
+            root_dir = engine_exec.parent
         for file in root_dir.iterdir():
             if not file.is_dir():
                 continue
@@ -416,7 +448,7 @@ class BlenderRPCRunner(RPCRunner):
                 break
 
         if _version is None:
-            raise FileNotFoundError(f'Cannot find blender executable in {blender_exec.parent}')
+            raise FileNotFoundError(f'Cannot find blender executable in {engine_exec.parent}')
 
         return 'Blender', _version
 
@@ -479,8 +511,7 @@ class BlenderRPCRunner(RPCRunner):
 class UnrealRPCRunner(RPCRunner):
     """UnrealRPCRunner."""
 
-    @property
-    def src_plugin_path(self) -> Path:
+    def get_src_plugin_path(self) -> Path:
         """Get plugin source directory."""
         if self.dev_plugin:
             src_plugin_path = Path(__file__).resolve().parents[2] / 'src' / plugin_name_unreal
@@ -493,42 +524,29 @@ class UnrealRPCRunner(RPCRunner):
                 )
         else:
             url = self._get_plugin_url()
-            if url:
-                src_plugin_root = tmp_dir / 'plugins'
-                src_plugin_path = src_plugin_root / Path(url).stem  # remove suffix (.zip)
-                if src_plugin_path.exists() and not self.replace_plugin:
-                    logger.debug(f'Downloaded Plugin {src_plugin_path} exists')
-                    return src_plugin_path
-                else:
-                    shutil.rmtree(src_plugin_root, ignore_errors=True)
+            src_plugin_root = tmp_dir / 'plugins'
+            src_plugin_compress = src_plugin_root / Path(url).name  # with suffix (.zip)
+            src_plugin_path = src_plugin_compress.with_suffix('')  # without suffix (.zip)
+            if src_plugin_path.exists():
+                logger.debug(f'Downloaded Plugin "{src_plugin_path.as_posix()}" exists')
+                return src_plugin_path
+            elif src_plugin_compress.exists():
+                logger.debug(f'Downloaded Plugin "{src_plugin_compress.as_posix()}" exists')
+                shutil.unpack_archive(src_plugin_compress, src_plugin_root)
+                assert src_plugin_path.exists(), f'Failed to unzip {src_plugin_compress} to {src_plugin_path}'
+                return src_plugin_path
 
-                try:
-                    plugin_compress = download(url=url, dst_dir=src_plugin_root, verbose=False)
-                except Exception:
-                    raise RuntimeError(
-                        f'Sorry, failed to download plugin from {url}\n'
-                        'Try again later or set `init_unreal(dev_plugin=True)` to build the plugin from source.\n'
-                        'Clone the source code from https://github.com/openxrlab/xrfeitoria.git'
-                    )
-                shutil.unpack_archive(plugin_compress, src_plugin_root)
-                assert src_plugin_path.exists(), f'Plugin download failed to {src_plugin_path}'
-            else:
-                # build plugin from source
-                # TODO: add a instruction (link) to build the plugin
-                raise FileNotFoundError(
-                    f'Sorry, pre-built plugin for {" ".join(self.engine_info)} in {platform.system()} not found!\n'
-                    'Set `dev_plugin=True` in init_unreal to build the plugin from source.\n'
-                    'Clone the source code from https://github.com/openxrlab/xrfeitoria.git'
-                )
+            plugin_compress = self._download(url=url, dst_dir=src_plugin_root)
+            shutil.unpack_archive(plugin_compress, src_plugin_root)
+            assert src_plugin_path.exists(), f'Failed to download plugin to {src_plugin_path}'
         return src_plugin_path
 
     @staticmethod
-    def _get_engine_info(unreal_exec: Path) -> Tuple[str, str]:
-        """Get unreal version."""
+    def _get_engine_info(engine_exec: Path) -> Tuple[str, str]:
         try:
-            _version = re.findall(r'UE_(\d+\.\d+)', unreal_exec.as_posix())[0]
+            _version = re.findall(r'UE_(\d+\.\d+)', engine_exec.as_posix())[0]
         except IndexError:
-            raise FileNotFoundError(f'Cannot find unreal executable in {unreal_exec}')
+            raise FileNotFoundError(f'Cannot find unreal executable in {engine_exec}')
         return 'Unreal', _version
 
     def _get_cmd(
