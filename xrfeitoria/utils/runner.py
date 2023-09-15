@@ -120,17 +120,17 @@ class RPCRunner(ABC):
         if project_path:
             self.project_path = Path(project_path).resolve()
             assert self.project_path.exists(), (
-                f'Project path not valid: "{self.project_path.as_posix()}"\n'
-                'Please check in `xf.init_blender(project_path=...)` or `xf.init_unreal(project_path=...)`'
+                f'Project path is not valid: "{self.project_path.as_posix()}"\n'
+                'Please check `xf.init_blender(project_path=...)` or `xf.init_unreal(project_path=...)`'
             )
             if self.engine_type == EngineEnum.blender:
                 assert self.project_path.suffix == '.blend', (
-                    f'Project path not valid: "{self.project_path.as_posix()}"\n'
+                    f'Project path is not valid: "{self.project_path.as_posix()}"\n'
                     'Please use a blender project file (.blend) file as project path in `xf.init_blender(project_path=...)`'
                 )
             elif self.engine_type == EngineEnum.unreal:
                 assert self.project_path.suffix == '.uproject', (
-                    f'Project path not valid: "{self.project_path.as_posix()}"\n'
+                    f'Project path is not valid: "{self.project_path.as_posix()}"\n'
                     'Please use a unreal project file (.uproject) as project path in `xf.init_unreal(project_path=...)`'
                 )
         else:
