@@ -65,6 +65,10 @@ wget https://graphics.stanford.edu/~mdfisher/Data/Meshes/bunny.obj
 xf-render bunny.obj
 ```
 
+### Documentation
+
+The reference documentation is available on [readthedocs](https://xrfeitoria.readthedocs.io/en/latest/).
+
 ### Tutorials
 
 There are several [tutorials](/tutorials/).
