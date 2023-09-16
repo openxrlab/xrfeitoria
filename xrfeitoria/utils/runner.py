@@ -1,11 +1,11 @@
 """Runner for starting blender or unreal as a rpc server."""
-
 import json
 import os
 import platform
 import re
 import shutil
 import subprocess
+import threading
 import time
 from abc import ABC, abstractmethod
 from bisect import bisect_left
@@ -88,6 +88,7 @@ class RPCRunner(ABC):
         self.console = get_console()
         self.engine_type: EngineEnum = _tls.cache.get('platform', None)
         self.engine_process: Optional[subprocess.Popen] = None
+        self.engine_running: bool = False
         self.new_process = new_process
         self.replace_plugin = replace_plugin
         self.dev_plugin = dev_plugin
@@ -169,6 +170,7 @@ class RPCRunner(ABC):
         process = self.engine_process
         if process is not None:
             logger.info(':bell: [bold red]Exiting RPC Server[/bold red], killing engine process')
+            self.engine_running = False
             for child in psutil.Process(process.pid).children(recursive=True):
                 if child.is_running():
                     logger.debug(f'Killing child process {child.pid}')
@@ -230,14 +232,41 @@ class RPCRunner(ABC):
             status.update(status='[green bold]Installing plugin...')
             self._install_plugin()
             status.update(status=f'[green bold]Starting {" ".join(self.engine_info)} as RPC server...')
-            self._start_rpc(background=self.background, project_path=self.project_path)
+            self.engine_process = self._start_rpc(background=self.background, project_path=self.project_path)
+            self.engine_running = True
             _tls.cache['engine_process'] = self.engine_process
         logger.info(f'RPC server started at port {self.port}')
 
-    def wait_for_start(self) -> None:
+        # check if engine process is alive in a separate thread
+        threading.Thread(target=self.check_engine_alive, daemon=True).start()
+
+    def check_engine_alive(self) -> bool:
+        """Check if the engine process is alive."""
+        while self.engine_running:
+            if self.engine_process.poll() is not None:
+                logger.error(self.get_process_output(self.engine_process))
+                logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
+                os._exit(1)  # exit main thread
+            time.sleep(1)
+
+    @staticmethod
+    def get_process_output(process: subprocess.Popen) -> str:
+        """Get process output when process is exited with non-zero code."""
+        out = (
+            f'Engine process exited with code {process.poll()}\n\n'
+            '>>>> Engine output >>>>\n\n'
+            f'{process.stdout.read().decode("utf-8")}'
+            '\n\n<<<< Engine output <<<<\n'
+        )
+        return out
+
+    def wait_for_start(self, process: subprocess.Popen) -> None:
         """Wait 3 minutes for RPC server to start.
 
         After 3 minutes, ask user if they want to quit if it takes too long.
+
+        Args:
+            process (subprocess.Popen): process to wait for.
         """
         tryout_time = 180  # 3 minutes
         tryout_sec = 1
@@ -245,6 +274,9 @@ class RPCRunner(ABC):
 
         _num = 0
         while True:
+            if process.poll() is not None:
+                logger.error(self.get_process_output(process))
+                raise RuntimeError('RPC server failed to start. Check the engine output above.')
             try:
                 self.test_connection(debug=self.debug)
                 break
@@ -389,7 +421,11 @@ class RPCRunner(ABC):
 
             cmd = self._get_cmd(python_scripts=dedent(_script).replace('\n', ''))
             process = self._popen(cmd)
-            process.wait()
+            _code = process.wait()
+            if _code != 0:
+                logger.error(self.get_process_output(process))
+                raise RuntimeError('Failed to install plugin for blender. Check the engine output above.')
+
         elif self.engine_type == EngineEnum.unreal:
             try:
                 self.dst_plugin_dir.symlink_to(src_plugin_path, target_is_directory=True)
@@ -424,7 +460,7 @@ class BlenderRPCRunner(RPCRunner):
             src_plugin_root = tmp_dir / 'plugins'
             src_plugin_path = src_plugin_root / Path(url).name  # with suffix (.zip)
             if src_plugin_path.exists():
-                logger.debug(f'Downloaded Plugin {src_plugin_path} exists')
+                logger.debug(f'Downloaded Plugin "{src_plugin_path.as_posix()}" exists')
                 return src_plugin_path
 
             plugin_path = self._download(url=url, dst_dir=src_plugin_root)
@@ -472,16 +508,20 @@ class BlenderRPCRunner(RPCRunner):
             f'"{self.engine_exec}"',
             '--background' if background else '',
             f'"{project_path}"' if project_path else '',
+            '--python-exit-code 1',
             f'--python-expr "{python_scripts}"' if python_scripts else '',
         ]
         return ' '.join(map(str, cmd))
 
-    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> None:
+    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> subprocess.Popen:
         """Start rpc server.
 
         Args:
             background (bool, optional): Run blender in background without GUI. Defaults to True.
             project_path (Optional[Path], optional): Path to blender project. Defaults to ''.
+
+        Returns:
+            subprocess.Popen: process of the engine started as rpc server.
         """
         # logger.info(f'Starting {" ".join(self.engine_info)} with RPC server at port {self.port}')
 
@@ -490,9 +530,9 @@ class BlenderRPCRunner(RPCRunner):
         cmd = self._get_cmd(background=background, project_path=project_path, python_scripts=rpc_scripts)
         process = self._popen(cmd)
 
-        self.wait_for_start()
+        self.wait_for_start(process=process)
         # logger.info(f'Started {" ".join(self.engine_info)} with RPC server at port {self.port}')
-        self.engine_process = process
+        return process
 
     @staticmethod
     @remote_blender(default_imports=[])
@@ -582,8 +622,16 @@ class UnrealRPCRunner(RPCRunner):
         ]
         return ' '.join(map(str, cmd))
 
-    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> None:
-        """Start rpc server."""
+    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> subprocess.Popen:
+        """Start rpc server.
+
+        Args:
+            background (bool, optional): Run unreal in background without GUI. Defaults to True.
+            project_path (Optional[Path], optional): Path to unreal project. Defaults to ''.
+
+        Returns:
+            subprocess.Popen: process of the engine started as rpc server.
+        """
         # logger.info(f'Starting {" ".join(self.engine_info)} with RPC server at port {self.port}')
 
         # run server in blocking mode if background
@@ -595,9 +643,9 @@ class UnrealRPCRunner(RPCRunner):
         process = self._popen(cmd)
 
         # TODO: check if process is running
-        self.wait_for_start()
+        self.wait_for_start(process=process)
         # logger.info(f'Started {" ".join(self.engine_info)} with RPC server at port {self.port}')
-        self.engine_process = process
+        return process
 
     @staticmethod
     @remote_unreal(default_imports=[])
