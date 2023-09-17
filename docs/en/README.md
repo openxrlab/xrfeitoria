@@ -5,15 +5,15 @@
 ### Setup Python Environment
 
 ```bash
-pip install -r requirements/docs.txt
+pip install xrfeitoria[doc]
 ```
 
 ### Install Graphviz
 
-- Windows: Download and install from [link](https://graphviz.org/download/#windows),
-and add the `bin` folder to `PATH` environment variable.
+- Windows: [Download](https://graphviz.org/download/#windows) and install,
+and add the `bin` folder to `PATH` environment variable
 
-- Linux: Install with `sudo apt install graphviz`,
+- Linux: `sudo apt install graphviz`
 
 ### Install pandoc
 
