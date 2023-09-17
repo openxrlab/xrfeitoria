@@ -62,7 +62,7 @@ Requirements
 
     src/cli.md
     src/Tutorials.rst
-    src/Samples.rst
+    Samples <https://github.com/openxrlab/xrfeitoria/tree/main/samples>
 
 --------
 
