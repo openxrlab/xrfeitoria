@@ -19,4 +19,6 @@ The following tutorials cover the basic operations needed to render with ``XRFei
 Extra Samples
 --------------
 
-For more advanced examples, see the :ref:`samples` section.
+.. _samples: https://github.com/openxrlab/xrfeitoria/tree/main/samples/
+
+For more advanced examples, see the `samples`_ section.

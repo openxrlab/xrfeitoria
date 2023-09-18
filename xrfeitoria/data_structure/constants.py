@@ -10,27 +10,28 @@ Transform = Tuple[Vector, Vector, Vector]
 PathLike = Union[str, Path]
 actor_info_type = TypedDict('actor_info', {'actor_name': str, 'mask_color': Tuple[int, int, int]})
 
-##### Path Constants #####
-
-tmp_dir = Path.home() / '.tmp' / 'XRFeitoria'
-tmp_dir.mkdir(parents=True, exist_ok=True)
-actor_infos = 'actor_infos'
-cam_param_dir = 'camera_params'
-
-config_dir = Path.home() / '.config' / 'XRFeitoria'
-config_dir.mkdir(parents=True, exist_ok=True)
-config_path = config_dir / 'config.ini'
-ConfigDict = TypedDict('ConfigDict', {'blender_exec': Optional[Path], 'unreal_exec': Optional[Path]})
-
 ##### Package Constants #####
 
+package_name = 'XRFeitoria'
 plugin_name_blender = 'XRFeitoriaBpy'
 plugin_name_unreal = 'XRFeitoriaUnreal'
 xf_obj_name = '[XF]{obj_type}-{obj_idx:03d}'
 
+##### Path Constants #####
+
+tmp_dir = Path.home() / '.tmp' / package_name
+tmp_dir.mkdir(parents=True, exist_ok=True)
+actor_infos = 'actor_infos'
+cam_param_dir = 'camera_params'
+
+config_dir = Path.home() / '.config' / package_name
+config_dir.mkdir(parents=True, exist_ok=True)
+config_path = config_dir / 'config.ini'
+ConfigDict = TypedDict('ConfigDict', {'blender_exec': Optional[Path], 'unreal_exec': Optional[Path]})
+
 ##### Blender Constants #####
 
-default_level_blender = 'XRFeitoria'
+default_level_blender = package_name
 
 ##### Unreal Constants #####
 

@@ -31,7 +31,7 @@ We use the following tools for linting and formatting:
 Style configurations of black and isort can be found in [pyproject.toml](../pyproject.toml).
 
 We use [pre-commit hook](https://pre-commit.com/) that checks and formats for `black`, `isort`, `trailing whitespaces`,
-fixes `end-of-files`, sorts `requirments.txt` automatically on every commit.
+fixes `end-of-files` automatically on every commit.
 The config for a pre-commit hook is stored in [.pre-commit-config](../.pre-commit-config.yaml).
 
 After you clone the repository, you will need to install initialize pre-commit hook.
@@ -47,21 +47,22 @@ pre-commit install
 ```
 
 If you are facing an issue when installing markdown lint, you may install ruby for markdown lint by
-referring to [this repo](https://github.com/innerlee/setup) by following the usage and taking [`zzruby.sh`](https://github.com/innerlee/setup/blob/master/zzruby.sh)
+referring to [this repo](https://github.com/innerlee/setup)
+by following the usage and taking [`zzruby.sh`](https://github.com/innerlee/setup/blob/master/zzruby.sh)
 
- or by the following steps
+or by the following steps
 
- ```shell
+```shell
 # install rvm
 curl -L https://get.rvm.io | bash -s -- --autolibs=read-fail
 rvm autolibs disable
- # install ruby
+# install ruby
 rvm install 2.7.1
 ```
 
 After this on every commit check code linters and formatter will be enforced.
 
-> Before you create a PR, make sure that your code lints and is formatted by yapf.
+> Before you create a PR, make sure that your code lints and is formatted by black.
 
 ### C++ and CUDA
 
