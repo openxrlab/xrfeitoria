@@ -200,6 +200,8 @@ class init_blender(XRFeitoriaBlender):
         )
         self._rpc_runner.start()
         self.utils.init_scene_and_collection(default_level_blender, self._cleanup)
+        self.utils.set_env_color(color=(1.0, 1.0, 1.0, 1.0))
+        self.engine = 'blender'
 
     def __enter__(self) -> 'init_blender':
         return self
@@ -279,6 +281,7 @@ class init_unreal(XRFeitoriaUnreal):
         )
         # xf_runner.Renderer.clear()
         self._rpc_runner.start()
+        self.engine = 'unreal'
 
     def __enter__(self) -> 'init_unreal':
         return self
