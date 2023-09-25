@@ -22,6 +22,11 @@ class ActorUnreal(ActorBase):
 
     _object_utils = ObjectUtilsUnreal
 
+    @property
+    def engine_path(self) -> Vector:
+        """Engine path of the actor."""
+        return self._object_utils._get_engine_path_in_engine(self.name)
+
     @classmethod
     def spawn_from_engine_path(
         cls,
@@ -105,9 +110,16 @@ class ActorUnreal(ActorBase):
             actor_name (str): The name to give to the spawned actor in the world.
         """
         actor_paths = XRFeitoriaUnrealFactory.utils.import_asset(file_path)
-        actor_object = unreal.load_asset(actor_paths[0])
+        actor_path = [path for path in actor_paths if path.split('/')[-1] == path.split('/')[-2]]
+        actor_object = unreal.load_asset(actor_path[0])
         actor = XRFeitoriaUnrealFactory.utils_actor.spawn_actor_from_object(actor_object=actor_object)
         actor.set_actor_label(actor_name)
+        if isinstance(actor, unreal.SkeletalMeshActor):
+            anim_asset_exist = unreal.EditorAssetLibrary.does_asset_exist(f'{actor_path[0]}_Anim')
+            if anim_asset_exist:
+                anim_asset = unreal.load_asset(f'{actor_path[0]}_Anim')
+                actor.skeletal_mesh_component.override_animation_data(anim_asset)
+                actor.skeletal_mesh_component.set_animation_mode(unreal.AnimationMode.ANIMATION_SINGLE_NODE)
 
     @staticmethod
     def _spawn_actor_in_engine(
@@ -138,8 +150,22 @@ class ActorUnreal(ActorBase):
 
     @staticmethod
     def _import_animation_from_file_in_engine(animation_path: str, actor_name: str, action_name: str) -> None:
-        # TODO: complete
-        pass
+        # get actor
+        actor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(actor_name)
+        if not isinstance(actor, unreal.SkeletalMeshActor):
+            raise TypeError(f'Actor "{actor_name}" is not a skeletal mesh actor.')
+        # get actor's engine path
+        actor_engine_path = actor.skeletal_mesh_component.skeletal_mesh.get_path_name().split('.')[0]
+        # import animation
+        animation_engine_path = XRFeitoriaUnrealFactory.utils.import_anim(
+            animation_path, f'{actor_engine_path}_Skeleton'
+        )
+        # set animation
+        anim_asset_exist = unreal.EditorAssetLibrary.does_asset_exist(animation_engine_path[0])
+        if anim_asset_exist:
+            anim_asset = unreal.load_asset(animation_engine_path[0])
+            actor.skeletal_mesh_component.override_animation_data(anim_asset)
+            actor.skeletal_mesh_component.set_animation_mode(unreal.AnimationMode.ANIMATION_SINGLE_NODE)
 
 
 @remote_unreal(dec_class=True, suffix='_in_engine')
