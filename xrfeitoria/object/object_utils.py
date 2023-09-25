@@ -78,6 +78,30 @@ class ObjectUtilsBase(ABC):
         cls.validate_name(name)
         return cls._get_scale_in_engine(name)
 
+    @classmethod
+    def get_dimensions(cls, name: str) -> Vector:
+        """Get dimensions of the object.
+
+        Args:
+            name (str): Name of the object.
+
+        Returns:
+            Vector: Dimensions of the object.
+        """
+        return cls._get_dimensions_in_engine(name)
+
+    @classmethod
+    def get_bound_box(cls, name: str) -> Vector:
+        """Get bounding box of the object.
+
+        Args:
+            name (str): Name of the object.
+
+        Returns:
+            Vector: Bounding box of the object.
+        """
+        return cls._get_bound_box_in_engine(name)
+
     ##########################
     # ------- Setter ------- #
     ##########################
@@ -248,19 +272,6 @@ class ObjectUtilsBlender(ObjectUtilsBase):
     ##########################
 
     @classmethod
-    def get_dimensions(cls, name: str) -> 'Vector':
-        """Get dimensions of the object.
-
-        Args:
-            name (str): Name of the object.
-
-        Returns:
-            Vector: Dimensions of the object.
-        """
-        cls.validate_name(name)
-        return cls._get_dimensions_in_engine(name=name)
-
-    @classmethod
     def get_bbox(cls, name: str) -> 'Dict[Tuple[Vector, Vector]]':
         """Get bounding box of the object across all frames.
 
@@ -325,6 +336,60 @@ class ObjectUtilsBlender(ObjectUtilsBase):
             Vector: Dimensions of the object.
         """
         return bpy.data.objects[name].dimensions.to_tuple()
+
+    @staticmethod
+    def _get_bound_box_in_engine(name: str) -> 'Tuple[Vector, Vector]':
+        """Get bounding box of the object in Blender.
+
+        Args:
+            name (str): Name of the object.
+
+        Returns:
+            Vector: Bounding box of the object.
+        """
+        obj = bpy.data.objects[name]
+
+        if obj.type == 'MESH':
+            vertex_positions = []
+            for vertex in obj.data.vertices:
+                vertex_position = obj.matrix_world @ vertex.co
+                vertex_positions.append(vertex_position)
+
+            bbox_min = (1e9, 1e9, 1e9)
+            bbox_max = (-1e9, -1e9, -1e9)
+            bbox_min = (
+                min(bbox_min[0], min(pos.x for pos in vertex_positions)),
+                min(bbox_min[1], min(pos.y for pos in vertex_positions)),
+                min(bbox_min[2], min(pos.z for pos in vertex_positions)),
+            )
+            bbox_max = (
+                max(bbox_max[0], max(pos.x for pos in vertex_positions)),
+                max(bbox_max[1], max(pos.y for pos in vertex_positions)),
+                max(bbox_max[2], max(pos.z for pos in vertex_positions)),
+            )
+            return bbox_min, bbox_max
+        elif obj.type == 'ARMATURE':
+            bbox_min = (1e9, 1e9, 1e9)
+            bbox_max = (-1e9, -1e9, -1e9)
+            for obj_mesh in obj.children:
+                vertex_positions = []
+                for vertex in obj_mesh.data.vertices:
+                    vertex_position = obj_mesh.matrix_world @ vertex.co
+                    vertex_positions.append(vertex_position)
+
+                bbox_min = (
+                    min(bbox_min[0], min(pos.x for pos in vertex_positions)),
+                    min(bbox_min[1], min(pos.y for pos in vertex_positions)),
+                    min(bbox_min[2], min(pos.z for pos in vertex_positions)),
+                )
+                bbox_max = (
+                    max(bbox_max[0], max(pos.x for pos in vertex_positions)),
+                    max(bbox_max[1], max(pos.y for pos in vertex_positions)),
+                    max(bbox_max[2], max(pos.z for pos in vertex_positions)),
+                )
+                return bbox_min, bbox_max
+        else:
+            raise ValueError(f'Invalid object type: {obj.type}')
 
     @staticmethod
     def _get_transform_in_engine(name: str) -> 'Transform':
@@ -565,7 +630,7 @@ class ObjectUtilsBlender(ObjectUtilsBase):
 
             ## set interpolation mode
             # https://blender.stackexchange.com/questions/260149/set-keyframe-interpolation-constant-while-setting-a-keyframe-in-blender-python
-            if obj.animation_data.action:
+            if obj.animation_data and obj.animation_data.action:
                 obj_action = bpy.data.actions.get(obj.animation_data.action.name)
                 if key['location']:
                     obj_location_fcurve = obj_action.fcurves.find('location')
@@ -642,6 +707,37 @@ class ObjectUtilsUnreal(ObjectUtilsBase):
         actor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
         scale = actor.get_actor_scale3d()
         return scale.to_tuple()
+
+    @staticmethod
+    def _get_dimensions_in_engine(name: str) -> 'Vector':
+        actor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
+        origin, box_extent = actor.get_actor_bounds(only_colliding_components=False)
+        return (box_extent.x * 2 / 100.0, box_extent.y * 2 / 100.0, box_extent.z * 2 / 100.0)
+
+    @staticmethod
+    def _get_bound_box_in_engine(name: str) -> 'Tuple[Vector, Vector]':
+        actor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
+        origin, box_extent = actor.get_actor_bounds(only_colliding_components=False)
+        return (
+            (
+                (origin.x - box_extent.x) / 100.0,
+                (origin.y - box_extent.y) / 100.0,
+                (origin.z - box_extent.z) / 100.0,
+            ),
+            (
+                (origin.x + box_extent.x) / 100.0,
+                (origin.y + box_extent.y) / 100.0,
+                (origin.z + box_extent.z) / 100.0,
+            ),
+        )
+
+    @staticmethod
+    def _get_engine_path_in_engine(name: str) -> str:
+        actor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
+        if isinstance(actor, unreal.StaticMeshActor):
+            return actor.static_mesh_component.static_mesh.get_path_name().split('.')[0]
+        elif isinstance(actor, unreal.SkeletalMeshActor):
+            return actor.skeletal_mesh_component.skeletal_mesh.get_path_name().split('.')[0]
 
     @staticmethod
     def _get_all_objects_in_engine() -> 'List[str]':
