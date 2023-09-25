@@ -194,8 +194,19 @@ class XRFeitoriaBlenderFactory:
                 XRFeitoriaBlenderFactory.set_camera_activity(camera_name=obj.name, scene=level_scene, active=True)
 
         # set level cameras been used in this sequence to active
-        for camera in seq_collection.sequence_properties.level_cameras:
+        for camera_data in seq_collection.sequence_properties.level_cameras:
+            camera = camera_data.camera
             XRFeitoriaBlenderFactory.set_camera_activity(camera_name=camera.name, scene=level_scene, active=True)
+            camera.data.angle = camera_data.sequence_fov
+            if camera_data.sequence_animation:
+                XRFeitoriaBlenderFactory.apply_action_to_actor(action=camera_data.sequence_animation, actor=camera)
+
+        # set level actors' properties
+        for actor_data in seq_collection.sequence_properties.level_actors:
+            actor = actor_data.actor
+            actor.pass_index = actor_data.sequence_stencil_value
+            if actor_data.sequence_animation:
+                XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.sequence_animation, actor=actor)
 
         # set scene to active
         XRFeitoriaBlenderFactory.set_scene_active(level_scene)
@@ -208,13 +219,35 @@ class XRFeitoriaBlenderFactory:
         """Close the active sequence."""
         level_scene = XRFeitoriaBlenderFactory.get_active_scene()
 
+        # deactivate all cameras in this level
         for obj in level_scene.objects:
             if obj.type == 'CAMERA':
                 XRFeitoriaBlenderFactory.set_camera_activity(camera_name=obj.name, scene=level_scene, active=False)
 
+        # clear all sequences in this level
         for collection in level_scene.collection.children:
             if XRFeitoriaBlenderFactory.is_sequence_collecion(collection):
+                # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)
+                # restore level actors' properties
+                for actor_data in collection.sequence_properties.level_actors:
+                    actor = actor_data.actor
+                    actor.pass_index = actor_data.level_stencil_value
+                    if actor_data.level_animation:
+                        XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.level_animation, actor=actor)
+                    else:
+                        actor.animation_data_clear()
+                    actor.location = actor_data.location
+                    actor.rotation_euler = actor_data.rotation
+                    actor.scale = actor_data.scale
+                # restore level cameras' properties
+                for camera_data in collection.sequence_properties.level_cameras:
+                    camera = camera_data.camera
+                    camera.animation_data_clear()
+                    camera.data.angle = camera_data.level_fov
+                    camera.location = camera_data.location
+                    camera.rotation_euler = camera_data.rotation
+                    camera.scale = camera_data.scale
 
     def tag_sequence_collection(collection: 'bpy.types.Collection') -> None:
         """Tag the given collection as the sequence collection.

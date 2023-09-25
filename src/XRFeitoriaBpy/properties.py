@@ -5,13 +5,32 @@ from .core.factory import XRFeitoriaBlenderFactory
 
 
 class LevelCameras(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty()
+    # name: bpy.props.StringProperty()
+    camera: bpy.props.PointerProperty(type=bpy.types.Object)
+    location: bpy.props.FloatVectorProperty(size=3)
+    rotation: bpy.props.FloatVectorProperty(size=3)
+    scale: bpy.props.FloatVectorProperty(size=3)
+    level_fov: bpy.props.FloatProperty()
+    sequence_fov: bpy.props.FloatProperty()
+    sequence_animation: bpy.props.PointerProperty(type=bpy.types.Action)
+
+
+class LevelActors(bpy.types.PropertyGroup):
+    actor: bpy.props.PointerProperty(type=bpy.types.Object)
+    location: bpy.props.FloatVectorProperty(size=3)
+    rotation: bpy.props.FloatVectorProperty(size=3)
+    scale: bpy.props.FloatVectorProperty(size=3)
+    level_animation: bpy.props.PointerProperty(type=bpy.types.Action)
+    level_stencil_value: bpy.props.IntProperty()
+    sequence_animation: bpy.props.PointerProperty(type=bpy.types.Action)
+    sequence_stencil_value: bpy.props.IntProperty()
 
 
 ## sequence properties for collection
 class SequenceProperties(bpy.types.PropertyGroup):
     level: bpy.props.PointerProperty(type=bpy.types.Scene)
     level_cameras: bpy.props.CollectionProperty(type=LevelCameras)
+    level_actors: bpy.props.CollectionProperty(type=LevelActors)
     fps: bpy.props.IntProperty()
     frame_start: bpy.props.IntProperty()
     frame_end: bpy.props.IntProperty()
@@ -55,6 +74,7 @@ class LevelProperties(bpy.types.PropertyGroup):
 
 property_classes = [
     LevelCameras,
+    LevelActors,
     LevelProperties,
     SequenceProperties,
 ]
