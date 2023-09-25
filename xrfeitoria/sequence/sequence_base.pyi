@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 from ..data_structure.constants import EngineEnum, PathLike, Vector
 from ..data_structure.models import RenderPass, TransformKeys
@@ -25,6 +25,16 @@ class SequenceBase(ABC):
     def save(cls) -> None: ...
     @classmethod
     def show(cls) -> None: ...
+    @classmethod
+    def import_actor(
+        cls,
+        file_path: PathLike,
+        actor_name: Optional[str] = ...,
+        location: Vector = ...,
+        rotation: Vector = ...,
+        scale: Vector = ...,
+        stencil_value: int = ...,
+    ) -> ...: ...
     @classmethod
     def spawn_camera(cls, location: Vector, rotation: Vector, fov: float = ..., camera_name: str = ...) -> ...: ...
     @classmethod

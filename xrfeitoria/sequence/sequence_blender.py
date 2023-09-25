@@ -28,39 +28,6 @@ class SequenceBlender(SequenceBase):
     # -------- spawn methods -------- #
 
     @classmethod
-    def import_actor(
-        cls,
-        file_path: PathLike,
-        actor_name: Optional[str] = None,
-        location: 'Vector' = None,
-        rotation: 'Vector' = None,
-        scale: 'Vector' = None,
-        stencil_value: int = 1,
-    ) -> 'ActorBlender':
-        """Import an actor from a file to the sequence.
-
-        Args:
-            name (str): Name of the actor in Blender.
-            path (PathLike): File path used for importing the actor.
-            location (Vector, optional): Location of the actor. Defaults to None.
-            rotation (Vector, optional): Rotation of the actor. Defaults to None.
-            scale (Vector, optional): Scale of the actor. Defaults to None.
-            stencil_value (int in [0, 255], optional): Stencil value of the actor. Defaults to 1.
-                Ref to :ref:`FAQ-stencil-value` for details.
-
-        Returns:
-            ActorBlender: New imported actor.
-        """
-        return ActorBlender.import_from_file(
-            file_path=file_path,
-            actor_name=actor_name,
-            location=location,
-            rotation=rotation,
-            scale=scale,
-            stencil_value=stencil_value,
-        )
-
-    @classmethod
     def import_actor_with_keys(
         cls,
         file_path: PathLike,
@@ -170,6 +137,29 @@ class SequenceBlender(SequenceBase):
 
     # -------- spawn methods -------- #
     @staticmethod
+    def _import_actor_in_engine(
+        file_path: str,
+        transform_keys: 'Union[List[Dict], Dict]',
+        actor_name: str = 'Actor',
+        stencil_value: int = 1,
+    ) -> None:
+        """Import
+
+        Args:
+            file_path (PathLike): _description_
+            transform_keys (Union[List[Dict], Dict]): _description_
+            actor_name (str, optional): _description_. Defaults to 'Actor'.
+            stencil_value (int, optional): _description_. Defaults to 1.
+        """
+        if not isinstance(transform_keys, list):
+            transform_keys = [transform_keys]
+
+        ActorBlender._import_actor_from_file_in_engine(file_path=file_path, actor_name=actor_name)
+        ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=actor_name, transform_keys=transform_keys)
+        # XXX: set stencil value. may use actor property
+        bpy.data.objects[actor_name].pass_index = stencil_value
+
+    @staticmethod
     def _spawn_camera_in_engine(
         transform_keys: 'Union[List[Dict], Dict]',
         fov: float = 90.0,
@@ -243,13 +233,81 @@ class SequenceBlender(SequenceBase):
 
     # -------- use methods -------- #
     @staticmethod
-    def _use_camera_in_engine(camera_name: str) -> None:
+    def _use_camera_in_engine(
+        transform_keys: 'Union[List[Dict], Dict]',
+        fov: float = 90.0,
+        camera_name: str = 'Camera',
+    ) -> None:
         """Use level camera to render in the sequence in the engine.
 
         Args:
             camera_name (str): Name of the camera.
         """
+        import math
+
+        if not isinstance(transform_keys, list):
+            transform_keys = [transform_keys]
+
+        # get actor by name
+        camera = bpy.data.objects[camera_name]
+
+        # set sequence properties
+        collection = XRFeitoriaBlenderFactory.get_active_collection()
+        level_camera_data = collection.sequence_properties.level_cameras.add()
+        level_camera_data.camera = camera
+        level_camera_data.location = actor.location
+        level_camera_data.rotation = actor.rotation_euler
+        level_camera_data.scale = actor.scale
+        level_camera_data.level_fov = camera.data.angle
+        level_camera_data.sequence_fov = math.radians(fov)
+
+        # set level camera's properties
+        CameraBlender._set_camera_fov_in_engine(camera_name=camera_name, fov=fov)
+        ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=camera_name, transform_keys=transform_keys)
+        level_camera_data.sequence_animation = camera.animation_data.action if actor.animation_data else None
+
+        # set camera activity
         scene = XRFeitoriaBlenderFactory.get_active_scene()
         XRFeitoriaBlenderFactory.set_camera_activity(camera_name=camera_name, scene=scene, active=True)
+
+    @staticmethod
+    def _use_actor_in_engine(
+        actor_name: str,
+        transform_keys: 'Union[List[Dict], Dict]',
+        stencil_value: int,
+        anim_asset_path: 'Optional[str]' = None,
+    ):
+        if not isinstance(transform_keys, list):
+            transform_keys = [transform_keys]
+
+        # get actor by name
+        actor = bpy.data.objects[actor_name]
+
+        # if anim_asset_path is None, use the current action of the actor if it has one
+        # else, use the action of the anim_asset_path
+        if anim_asset_path is None:
+            if actor.animation_data and actor.animation_data.action:
+                action = actor.animation_data.action
+            else:
+                action = None
+        else:
+            action = bpy.data.actions[anim_asset_path]
+
+        # set sequence properties
         collection = XRFeitoriaBlenderFactory.get_active_collection()
-        collection.sequence_properties.level_cameras.add().name = camera_name
+        level_actor_data = collection.sequence_properties.level_actors.add()
+        level_actor_data.actor = actor
+        level_actor_data.level_stencil_value = actor.pass_index
+        level_actor_data.sequence_stencil_value = stencil_value
+        level_actor_data.level_animation = actor.animation_data.action if actor.animation_data else None
+        level_actor_data.sequence_animation = action
+        level_actor_data.location = actor.location
+        level_actor_data.rotation = actor.rotation_euler
+        level_actor_data.scale = actor.scale
+
+        # set level actor's properties
+        actor.pass_index = stencil_value
+        if action:
+            XRFeitoriaBlenderFactory.apply_action_to_actor(action=action, actor=actor)
+        ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=actor_name, transform_keys=transform_keys)
+        level_actor_data.sequence_animation = actor.animation_data.action if actor.animation_data else None
