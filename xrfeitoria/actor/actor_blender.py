@@ -31,7 +31,8 @@ class ActorBlender(ActorBase):
     @property
     def dimensions(self) -> Vector:
         """Dimensions of the actor."""
-        return self._object_utils.get_dimensions(self.name)
+        bbox_min, bbox_max = self.bound_box
+        return (bbox_max[0] - bbox_min[0], bbox_max[1] - bbox_min[1], bbox_max[2] - bbox_min[2])
 
     @dimensions.setter
     def dimensions(self, value: 'Vector'):
