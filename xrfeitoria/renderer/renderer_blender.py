@@ -245,6 +245,9 @@ class RendererBlender(RendererBase):
                 logger.debug(f'Arranging outputs for {job.output_path}')
                 cls._arrange_output(job.render_passes, job.output_path, active_cameras)
 
+        # clear render queue
+        cls.clear()
+
     @classmethod
     def _arrange_output(cls, render_passes: 'List[RenderPass]', output_path: PathLike, camera_names: List[str]) -> None:
         """Arrange output images to every camera's folder.

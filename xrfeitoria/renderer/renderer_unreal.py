@@ -155,6 +155,9 @@ class RendererUnreal(RendererBase):
         # post process, including: convert cam params.
         cls._post_process()
 
+        # clear render queue
+        cls.clear()
+
     @classmethod
     def _post_process(cls) -> None:
         import numpy as np  # isort:skip
