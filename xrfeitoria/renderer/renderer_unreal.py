@@ -58,9 +58,16 @@ class RendererUnreal(RendererBase):
             anti_aliasing (Optional[RenderJob.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export skeleton. Defaults to False.
+
+        Note:
+            The motion blur is turned off by default. If you want to turn it on, please set ``r.MotionBlurQuality`` to a non-zero value in ``console_variables``.
         """
         if anti_aliasing is None:
             anti_aliasing = RenderJob.AntiAliasSetting()
+
+        # turn off motion blur by default
+        if 'r.MotionBlurQuality' not in console_variables.keys():
+            console_variables['r.MotionBlurQuality'] = 0
 
         job = RenderJob(
             map_path=map_path,
@@ -96,14 +103,16 @@ class RendererUnreal(RendererBase):
         """Render all jobs in the renderer queue.
 
         This method starts the rendering process by setting up a socket connection with
-        the Unreal Engine, rendering the scene, and then waiting for the engine to send
-        a message indicating that the rendering is complete. If the engine crashes
-        during the rendering process, an error message is logged and the program exits
-        with an error code.
+        the Unreal Engine, rendering the all the render jobs, and then waiting for the
+        engine to send a message indicating that the rendering is complete. If the engine
+        crashes during the rendering process, an error message is logged and the program
+        exits with an error code.
 
         After the rendering is complete, the renderer will perform post-processing in
         the output_path, including converting camera parameters, vertices, and
         actor_infos.
+
+        Also, this method will clear the render queue after rendering.
         """
         if len(cls.render_queue) == 0:
             logger.warning(
@@ -147,7 +156,6 @@ class RendererUnreal(RendererBase):
                         error_txt += f' Check unreal log: "{log_path.as_posix()}"'
 
                 logger.error(error_txt)
-                exit(1)
 
         # cls.clear()
         server.close()
