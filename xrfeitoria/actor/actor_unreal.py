@@ -23,7 +23,7 @@ class ActorUnreal(ActorBase):
     _object_utils = ObjectUtilsUnreal
 
     @property
-    def engine_path(self) -> Vector:
+    def engine_path(self) -> str:
         """Engine path of the actor."""
         return self._object_utils._get_engine_path_in_engine(self.name)
 
