@@ -523,23 +523,11 @@ class XRFeitoriaBlenderFactory:
         """
         if seq_name in bpy.data.collections.keys():
             # delete all objects in seq_collection
-            seq_collection = bpy.data.collections[seq_name]
+            seq_collection = XRFeitoriaBlenderFactory.get_collection(name=seq_name)
             for obj in seq_collection.objects:
                 bpy.data.objects.remove(obj)
             # delete seq_collection
             bpy.data.collections.remove(seq_collection)
-
-        if seq_name in bpy.data.scenes.keys():
-            # unlink other collections from seq_scene
-            seq_scene = bpy.data.scenes[seq_name]
-            for coll in seq_scene.collection.children:
-                # cls.unlink_collection_from_scene(coll, seq_scene)
-                seq_scene.collection.children.unlink(coll)
-            # delete other objects in seq_scene
-            for obj in seq_scene.objects:
-                bpy.data.objects.remove(obj)
-            # delete seq_scene
-            bpy.data.scenes.remove(seq_scene)
 
     def delete_all():
         """Deletes all objects/collections/scenes in the current blend file."""
