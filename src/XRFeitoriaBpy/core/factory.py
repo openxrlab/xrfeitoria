@@ -999,6 +999,17 @@ class XRFeitoriaBlenderFactory:
         except Exception as e:
             raise Exception(f'Failed to import stl: {stl_file}\n{e}')
 
+    def import_glb(glb_file: str) -> None:
+        """Import an glb file.
+
+        Args:
+            glb_file (str): File path of the glb file.
+        """
+        try:
+            bpy.ops.import_scene.gltf(filepath=str(glb_file))
+        except Exception as e:
+            raise Exception(f'Failed to import glb: {glb_file}\n{e}')
+
     def import_mo_json(
         cls,
         mo_json_file: Path,
@@ -1151,18 +1162,102 @@ class XRFeitoriaBlenderFactory:
         old_objs = set(scene.objects)
         yield
         new_objs = list(set(scene.objects) - old_objs)
-        if not new_objs:
+
+        # delete empty
+        new_objs_without_empty = []
+        for new_obj in new_objs:
+            if new_obj.type == 'EMPTY':
+                bpy.data.objects.remove(new_obj)
+            else:
+                new_objs_without_empty.append(new_obj)
+                if new_obj.parent is not None and new_obj.parent.type == 'EMPTY':
+                    new_obj.matrix_local = new_obj.matrix_world
+                    bpy.context.view_layer.update()
+
+        # validate and rename
+        if not new_objs_without_empty:
             if import_path:
                 raise ValueError(f"Failed to import from '{import_path}'")
             else:
                 raise ValueError(f"Failed to spawn '{name}'.")
-        elif len(new_objs) == 1:
-            new_objs[0].name = name
-        elif len(new_objs) >= 2:
-            obj_types = [obj.type for obj in new_objs]
+        elif len(new_objs_without_empty) == 1:
+            new_obj = new_objs_without_empty[0]
+            new_obj.name = name
+            new_obj.rotation_mode = 'XYZ'
+        elif len(new_objs_without_empty) >= 2:
+            obj_types = [obj.type for obj in new_objs_without_empty]
             if 'ARMATURE' not in obj_types:
                 raise ValueError('Unsupported file')
             elif obj_types.count('ARMATURE') >= 2:
                 raise ValueError('Unsupported file')
             elif 'ARMATURE' in obj_types and 'MESH' in obj_types:
-                new_objs[obj_types.index('ARMATURE')].name = name
+                new_obj = new_objs_without_empty[obj_types.index('ARMATURE')]
+                new_obj.name = name
+                new_obj.rotation_mode = 'XYZ'
+
+    #####################################
+    ############## Object ###############
+    #####################################
+    def get_bound_box_in_world_space(
+        obj: 'bpy.types.Object',
+    ) -> 'Tuple[Tuple[float, float, float], Tuple[float, float, float]]':
+        """Get the bounding box of the object in world space.
+
+        Args:
+            obj (bpy.types.Object): Object.
+
+        Raises:
+            ValueError: If the object type is not mesh or armature.
+
+        Returns:
+            Tuple[Tuple[float, float, float], Tuple[float, float, float]]: Min and max point of the bounding box.
+        """
+        if obj.type == 'MESH':
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            evaluated_obj = obj.evaluated_get(depsgraph)
+            evaluated_mesh = evaluated_obj.data
+
+            vertex_positions = []
+            for vertex in evaluated_mesh.vertices:
+                vertex_position = obj.matrix_world @ vertex.co
+                vertex_positions.append(vertex_position)
+
+            bbox_min = (1e9, 1e9, 1e9)
+            bbox_max = (-1e9, -1e9, -1e9)
+            bbox_min = (
+                min(bbox_min[0], min(pos.x for pos in vertex_positions)),
+                min(bbox_min[1], min(pos.y for pos in vertex_positions)),
+                min(bbox_min[2], min(pos.z for pos in vertex_positions)),
+            )
+            bbox_max = (
+                max(bbox_max[0], max(pos.x for pos in vertex_positions)),
+                max(bbox_max[1], max(pos.y for pos in vertex_positions)),
+                max(bbox_max[2], max(pos.z for pos in vertex_positions)),
+            )
+            return bbox_min, bbox_max
+        elif obj.type == 'ARMATURE':
+            bbox_min = (1e9, 1e9, 1e9)
+            bbox_max = (-1e9, -1e9, -1e9)
+            for obj_mesh in obj.children:
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                evaluated_obj = obj_mesh.evaluated_get(depsgraph)
+                evaluated_mesh = evaluated_obj.data
+
+                vertex_positions = []
+                for vertex in evaluated_mesh.vertices:
+                    vertex_position = obj_mesh.matrix_world @ vertex.co
+                    vertex_positions.append(vertex_position)
+
+                bbox_min = (
+                    min(bbox_min[0], min(pos.x for pos in vertex_positions)),
+                    min(bbox_min[1], min(pos.y for pos in vertex_positions)),
+                    min(bbox_min[2], min(pos.z for pos in vertex_positions)),
+                )
+                bbox_max = (
+                    max(bbox_max[0], max(pos.x for pos in vertex_positions)),
+                    max(bbox_max[1], max(pos.y for pos in vertex_positions)),
+                    max(bbox_max[2], max(pos.z for pos in vertex_positions)),
+                )
+            return bbox_min, bbox_max
+        else:
+            raise ValueError(f'Invalid object type: {obj.type}')
