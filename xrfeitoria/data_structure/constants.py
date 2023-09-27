@@ -78,6 +78,7 @@ class ImportFileFormatEnum(EnumBase):
     abc = 'abc'
     ply = 'ply'
     stl = 'stl'
+    glb = 'glb'
     # TODO: Add more
 
 
