@@ -268,23 +268,6 @@ class ObjectUtilsBlender(ObjectUtilsBase):
     """Object utils class for Blender."""
 
     ##########################
-    # ------- Getter ------- #
-    ##########################
-
-    @classmethod
-    def get_bbox(cls, name: str) -> 'Dict[Tuple[Vector, Vector]]':
-        """Get bounding box of the object across all frames.
-
-        Args:
-            name (str): Name of the object.
-
-        Returns:
-            Dict[Tuple[Vector, Vector]]: Bounding box of the object across all frames.
-        """
-        cls.validate_name(name)
-        return cls._get_bbox_in_engine(name=name)
-
-    ##########################
     # ------- Setter ------- #
     ##########################
     @classmethod
@@ -335,7 +318,10 @@ class ObjectUtilsBlender(ObjectUtilsBase):
         Returns:
             Vector: Dimensions of the object.
         """
-        return bpy.data.objects[name].dimensions.to_tuple()
+        # return bpy.data.objects[name].dimensions.to_tuple()
+        obj = bpy.data.objects[name]
+        bbox_min, bbox_max = XRFeitoriaBlenderFactory.get_bound_box_in_world_space(obj)
+        return (bbox_max[0] - bbox_min[0], bbox_max[1] - bbox_min[1], bbox_max[2] - bbox_min[2])
 
     @staticmethod
     def _get_bound_box_in_engine(name: str) -> 'Tuple[Vector, Vector]':
@@ -348,48 +334,7 @@ class ObjectUtilsBlender(ObjectUtilsBase):
             Vector: Bounding box of the object.
         """
         obj = bpy.data.objects[name]
-
-        if obj.type == 'MESH':
-            vertex_positions = []
-            for vertex in obj.data.vertices:
-                vertex_position = obj.matrix_world @ vertex.co
-                vertex_positions.append(vertex_position)
-
-            bbox_min = (1e9, 1e9, 1e9)
-            bbox_max = (-1e9, -1e9, -1e9)
-            bbox_min = (
-                min(bbox_min[0], min(pos.x for pos in vertex_positions)),
-                min(bbox_min[1], min(pos.y for pos in vertex_positions)),
-                min(bbox_min[2], min(pos.z for pos in vertex_positions)),
-            )
-            bbox_max = (
-                max(bbox_max[0], max(pos.x for pos in vertex_positions)),
-                max(bbox_max[1], max(pos.y for pos in vertex_positions)),
-                max(bbox_max[2], max(pos.z for pos in vertex_positions)),
-            )
-            return bbox_min, bbox_max
-        elif obj.type == 'ARMATURE':
-            bbox_min = (1e9, 1e9, 1e9)
-            bbox_max = (-1e9, -1e9, -1e9)
-            for obj_mesh in obj.children:
-                vertex_positions = []
-                for vertex in obj_mesh.data.vertices:
-                    vertex_position = obj_mesh.matrix_world @ vertex.co
-                    vertex_positions.append(vertex_position)
-
-                bbox_min = (
-                    min(bbox_min[0], min(pos.x for pos in vertex_positions)),
-                    min(bbox_min[1], min(pos.y for pos in vertex_positions)),
-                    min(bbox_min[2], min(pos.z for pos in vertex_positions)),
-                )
-                bbox_max = (
-                    max(bbox_max[0], max(pos.x for pos in vertex_positions)),
-                    max(bbox_max[1], max(pos.y for pos in vertex_positions)),
-                    max(bbox_max[2], max(pos.z for pos in vertex_positions)),
-                )
-                return bbox_min, bbox_max
-        else:
-            raise ValueError(f'Invalid object type: {obj.type}')
+        return XRFeitoriaBlenderFactory.get_bound_box_in_world_space(obj)
 
     @staticmethod
     def _get_transform_in_engine(name: str) -> 'Transform':
@@ -469,79 +414,6 @@ class ObjectUtilsBlender(ObjectUtilsBase):
         objs = [obj for obj in bpy.data.objects if obj_type in obj.name and obj.name.startswith(xf_obj_name[:4])]
         # return f'[XF]{obj_type}-{collection.name}-{(len(objs)+1):03}'
         return xf_obj_name.format(obj_type=obj_type, obj_idx=(len(objs) + 1))
-
-    @staticmethod
-    def _get_bbox_in_engine(name: str) -> 'Dict[Tuple[Vector, Vector]]':
-        """Get bounding box of the object across all frames.
-
-        Args:
-            name (str): Name of the object.
-
-        Returns:
-            Dict[Tuple[Vector, Vector]]: Bounding box of the object across all frames.
-        """
-        obj = bpy.data.objects[name]
-
-        keys_range = XRFeitoriaBlenderFactory.get_obj_keys_range(obj)
-
-        bound_box = {}
-        if obj.type == 'MESH':
-            for frame in range(keys_range[0], keys_range[1]):
-                bpy.context.scene.frame_current = frame
-                depsgraph = bpy.context.evaluated_depsgraph_get()
-                evaluated_obj = obj.evaluated_get(depsgraph)
-                evaluated_mesh = evaluated_obj.data
-
-                vertex_positions = []
-                for vertex in evaluated_mesh.vertices:
-                    vertex_position = evaluated_obj.matrix_world @ vertex.co
-                    vertex_positions.append(vertex_position)
-
-                bbox_min = (1e9, 1e9, 1e9)
-                bbox_max = (-1e9, -1e9, -1e9)
-                bbox_min = (
-                    min(bbox_min[0], min(pos.x for pos in vertex_positions)),
-                    min(bbox_min[1], min(pos.y for pos in vertex_positions)),
-                    min(bbox_min[2], min(pos.z for pos in vertex_positions)),
-                )
-                bbox_max = (
-                    max(bbox_max[0], max(pos.x for pos in vertex_positions)),
-                    max(bbox_max[1], max(pos.y for pos in vertex_positions)),
-                    max(bbox_max[2], max(pos.z for pos in vertex_positions)),
-                )
-                bound_box[f'{frame}'] = bbox_min, bbox_max
-        elif obj.type == 'ARMATURE':
-            bound_box = {}
-            for frame in range(keys_range[0], keys_range[1]):
-                bpy.context.scene.frame_current = frame
-
-                bbox_min = (1e9, 1e9, 1e9)
-                bbox_max = (-1e9, -1e9, -1e9)
-                for obj_mesh in obj.children:
-                    depsgraph = bpy.context.evaluated_depsgraph_get()
-                    evaluated_obj = obj_mesh.evaluated_get(depsgraph)
-                    evaluated_mesh = evaluated_obj.data
-
-                    vertex_positions = []
-                    for vertex in evaluated_mesh.vertices:
-                        vertex_position = evaluated_obj.matrix_world @ vertex.co
-                        vertex_positions.append(vertex_position)
-
-                    bbox_min = (
-                        min(bbox_min[0], min(pos.x for pos in vertex_positions)),
-                        min(bbox_min[1], min(pos.y for pos in vertex_positions)),
-                        min(bbox_min[2], min(pos.z for pos in vertex_positions)),
-                    )
-                    bbox_max = (
-                        max(bbox_max[0], max(pos.x for pos in vertex_positions)),
-                        max(bbox_max[1], max(pos.y for pos in vertex_positions)),
-                        max(bbox_max[2], max(pos.z for pos in vertex_positions)),
-                    )
-                bound_box[f'{frame}'] = bbox_min, bbox_max
-        else:
-            raise ValueError(f'Invalid object type: {obj.type}')
-
-        return bound_box
 
     ##########################
     # ------- Setter ------- #
