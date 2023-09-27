@@ -11,6 +11,16 @@ class SequenceBlender(SequenceBase):
     @classmethod
     def use_camera(cls, camera: CameraBlender): ...
     @classmethod
+    def import_actor(
+        cls,
+        file_path: PathLike,
+        actor_name: Optional[str] = ...,
+        location: Vector = ...,
+        rotation: Vector = ...,
+        scale: Vector = ...,
+        stencil_value: int = ...,
+    ) -> ActorBlender: ...
+    @classmethod
     def import_actor_with_keys(
         cls,
         file_path: PathLike,

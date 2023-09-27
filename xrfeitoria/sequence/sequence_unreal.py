@@ -243,8 +243,8 @@ class SequenceUnreal(SequenceBase):
         """Create a new sequence.
 
         Args:
-            level (str): path of the map asset.
             seq_name (str): name of the sequence.
+            level (Optional[str], optional): path of the map asset. Defaults to None.
             seq_dir (Optional[str], optional): path of the sequence asset. Defaults to None.
             seq_fps (Optional[float], optional): FPS of the sequence. Defaults to None.
             seq_length (Optional[int], optional): length of the sequence. Defaults to None.
