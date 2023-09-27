@@ -340,7 +340,7 @@ class SequenceUnreal(SequenceBase):
             transform_keys = [XRFeitoriaUnrealFactory.constants.SequenceTransformKey(**k) for k in transform_keys]
 
         actor_path = XRFeitoriaUnrealFactory.utils.import_asset(file_path)
-        logger.info(f"actor_path: {actor_path}")
+        logger.info(f'actor_path: {actor_path}')
         animation_asset_path = f'{actor_path[0]}_Anim'
         if not unreal.EditorAssetLibrary.does_asset_exist(animation_asset_path):
             animation_asset_path = None

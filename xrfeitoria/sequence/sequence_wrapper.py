@@ -1,11 +1,10 @@
 from contextlib import contextmanager
 from typing import ContextManager, List, Optional, Tuple, Union
 
+from ..data_structure.constants import default_level_blender
 from .sequence_base import SequenceBase
 from .sequence_blender import SequenceBlender
 from .sequence_unreal import SequenceUnreal
-
-from ..data_structure.constants import default_level_blender
 
 
 class SequenceWrapperBase:

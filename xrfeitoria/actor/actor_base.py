@@ -23,7 +23,7 @@ class ActorBase(ABC, ObjectBase):
 
     @property
     def bound_box(self) -> Tuple[Vector, Vector]:
-        """bounding box of the actor."""
+        """Bounding box of the actor."""
         return self._object_utils.get_bound_box(self.name)
 
     @property

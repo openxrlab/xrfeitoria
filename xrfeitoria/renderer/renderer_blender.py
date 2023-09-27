@@ -169,7 +169,8 @@ class RendererBlender(RendererBase):
     @classmethod
     @render_status
     def render_jobs(cls, use_gpu: bool = True) -> None:
-        """Render all jobs in the render queue, and this method will clear the render queue after rendering.
+        """Render all jobs in the render queue, and this method will clear the render
+        queue after rendering.
 
         Args:
             use_gpu (bool, optional): Use GPU to render. Defaults to True.

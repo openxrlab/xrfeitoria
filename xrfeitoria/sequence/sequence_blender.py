@@ -143,7 +143,7 @@ class SequenceBlender(SequenceBase):
         actor_name: str = 'Actor',
         stencil_value: int = 1,
     ) -> None:
-        """Import
+        """Import.
 
         Args:
             file_path (PathLike): _description_

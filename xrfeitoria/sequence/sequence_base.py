@@ -256,8 +256,9 @@ class SequenceBase(ABC):
         rotation: 'Optional[Vector]' = None,
         fov: float = None,
     ) -> None:
-        """Use the specified level camera in the sequence. The location, rotation and fov set in this method are only used in the sequence.
-        The location, rotation and fov of the camera in the level will be restored after the sequence is closed.
+        """Use the specified level camera in the sequence. The location, rotation and
+        fov set in this method are only used in the sequence. The location, rotation and
+        fov of the camera in the level will be restored after the sequence is closed.
 
         Args:
             camera (CameraUnreal or CameraBlender): The camera to use in the sequence.
@@ -285,8 +286,9 @@ class SequenceBase(ABC):
         transform_keys: 'TransformKeys',
         fov: float = None,
     ) -> None:
-        """Use the specified level camera in the sequence. The transform_keys and fov set in this method are only used in the sequence.
-        The location, rotation and fov of the camera in the level will be restored after the sequence is closed.
+        """Use the specified level camera in the sequence. The transform_keys and fov
+        set in this method are only used in the sequence. The location, rotation and fov
+        of the camera in the level will be restored after the sequence is closed.
 
         Args:
             camera (CameraUnreal or CameraBlender): The camera to use.
@@ -317,8 +319,10 @@ class SequenceBase(ABC):
         stencil_value: int = None,
         anim_asset_path: 'Optional[str]' = None,
     ) -> None:
-        """Use the specified level actor in the sequence. The location, rotation, scale, stencil_value and anim_asset set in this method are only used in the sequence.
-        These peoperties of the actor in the level will be restored after the sequence is closed.
+        """Use the specified level actor in the sequence. The location, rotation, scale,
+        stencil_value and anim_asset set in this method are only used in the sequence.
+        These peoperties of the actor in the level will be restored after the sequence
+        is closed.
 
         Args:
             actor (ActorUnreal or ActorBlender): The actor to add to the sequence.
@@ -354,8 +358,10 @@ class SequenceBase(ABC):
         stencil_value: int = None,
         anim_asset_path: 'Optional[str]' = None,
     ) -> None:
-        """Use the specified level actor in the sequence. The transform_keys, stencil_value and anim_asset set in this method are only used in the sequence.
-        These peoperties of the actor in the level will be restored after the sequence is closed.
+        """Use the specified level actor in the sequence. The transform_keys,
+        stencil_value and anim_asset set in this method are only used in the sequence.
+        These peoperties of the actor in the level will be restored after the sequence
+        is closed.
 
         Args:
             actor (ActorUnreal or ActorBlender): The actor to use in the sequence.

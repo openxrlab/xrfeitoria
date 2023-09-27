@@ -104,9 +104,9 @@ class RendererUnreal(RendererBase):
 
         This method starts the rendering process by setting up a socket connection with
         the Unreal Engine, rendering the all the render jobs, and then waiting for the
-        engine to send a message indicating that the rendering is complete. If the engine
-        crashes during the rendering process, an error message is logged and the program
-        exits with an error code.
+        engine to send a message indicating that the rendering is complete. If the
+        engine crashes during the rendering process, an error message is logged and the
+        program exits with an error code.
 
         After the rendering is complete, the renderer will perform post-processing in
         the output_path, including converting camera parameters, vertices, and

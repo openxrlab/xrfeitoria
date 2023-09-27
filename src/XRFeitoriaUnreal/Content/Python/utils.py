@@ -104,15 +104,15 @@ def import_asset(path: Union[str, List[str]], dst_dir_in_engine: Optional[str] =
 
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         import_options = unreal.FbxImportUI()
-        import_options.set_editor_property("import_animations", True)
+        import_options.set_editor_property('import_animations', True)
 
         import_task = unreal.AssetImportTask()
-        import_task.set_editor_property("automated", True)
-        import_task.set_editor_property("destination_name", "")
-        import_task.set_editor_property("destination_path", dst_dir)
-        import_task.set_editor_property("filename", p)
-        import_task.set_editor_property("replace_existing", True)
-        import_task.set_editor_property("options", import_options)
+        import_task.set_editor_property('automated', True)
+        import_task.set_editor_property('destination_name', '')
+        import_task.set_editor_property('destination_path', dst_dir)
+        import_task.set_editor_property('filename', p)
+        import_task.set_editor_property('replace_existing', True)
+        import_task.set_editor_property('options', import_options)
 
         import_tasks = [import_task]
         asset_tools.import_asset_tasks(import_tasks)
