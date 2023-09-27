@@ -255,16 +255,16 @@ class SequenceBlender(SequenceBase):
         collection = XRFeitoriaBlenderFactory.get_active_collection()
         level_camera_data = collection.sequence_properties.level_cameras.add()
         level_camera_data.camera = camera
-        level_camera_data.location = actor.location
-        level_camera_data.rotation = actor.rotation_euler
-        level_camera_data.scale = actor.scale
+        level_camera_data.location = camera.location
+        level_camera_data.rotation = camera.rotation_euler
+        level_camera_data.scale = camera.scale
         level_camera_data.level_fov = camera.data.angle
         level_camera_data.sequence_fov = math.radians(fov)
 
         # set level camera's properties
-        CameraBlender._set_camera_fov_in_engine(camera_name=camera_name, fov=fov)
+        CameraBlender._set_camera_fov_in_engine(name=camera_name, fov=fov)
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=camera_name, transform_keys=transform_keys)
-        level_camera_data.sequence_animation = camera.animation_data.action if actor.animation_data else None
+        level_camera_data.sequence_animation = camera.animation_data.action if camera.animation_data else None
 
         # set camera activity
         scene = XRFeitoriaBlenderFactory.get_active_scene()
