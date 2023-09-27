@@ -1,4 +1,4 @@
-"""Utils for load images and annotations
+"""Utils for load images and annotations.
 
 Requirements:
 
@@ -13,9 +13,8 @@ https://github.com/AcademySoftwareFoundation/openexr/blob/main/INSTALL.md
 from pathlib import Path
 from typing import List, Tuple, Union
 
-from PIL import Image
 import numpy as np
-
+from PIL import Image
 from xrprimer.data_structure.camera import PinholeCameraParameter
 
 try:
@@ -103,8 +102,8 @@ class ExrReader:
 
     @staticmethod
     def float2int(array: np.ndarray) -> np.ndarray:
-        """Convert ndarray to uint8 that can be display as image. Values
-        greater than 255 will be clipped.
+        """Convert ndarray to uint8 that can be display as image. Values greater than
+        255 will be clipped.
 
         Args:
             array (np.ndarray): input ndarray
