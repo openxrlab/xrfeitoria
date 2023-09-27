@@ -19,7 +19,7 @@ bunny_obj = assets_path['bunny']
 
 def actor_test(debug: bool = False, background: bool = False):
     logger = setup_logger(debug=debug)
-    with _init_blender(background=background) as xf_runner:
+    with _init_blender(background=background, replace_plugin=True, dev_plugin=True) as xf_runner:
         with __timer__('import_actor'):
             actor = xf_runner.Actor.import_from_file(
                 actor_name='bunny',

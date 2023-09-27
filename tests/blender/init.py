@@ -18,7 +18,7 @@ def test_blender():
 def init_test(debug: bool = False, dev: bool = False, background: bool = False):
     setup_logger(debug=debug)
     with __timer__('init_blender'):
-        with _init_blender(dev_plugin=dev, background=background) as xf_runner:
+        with _init_blender(background=background) as xf_runner:
             test_blender()
 
     logger.info('🎉 [bold green]init tests passed!')

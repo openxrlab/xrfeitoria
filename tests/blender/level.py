@@ -44,7 +44,9 @@ def seq_simple(xf_runner: XRFeitoriaBlender, seq_name: str = 'seq_simple'):
 
 def level_test(debug=False, background=False):
     setup_logger(debug=debug)
-    with _init_blender(background=background, new_process=True, cleanup=False, project_path=blend_sample) as xf_runner:
+    with _init_blender(
+        background=background, new_process=True, cleanup=False, project_path=blend_sample, dev_plugin=True
+    ) as xf_runner:
         with __timer__('create and sequence'):
             seq_simple(xf_runner)
 
