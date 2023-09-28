@@ -1,41 +1,25 @@
-"""Utils for load images and annotations.
-
-Requirements:
-
-```
-pip install numpy imath openexr flow_vis opencv-python
-```
-
-If you encounter any problems with openexr installation,
-refer to the following link:
-https://github.com/AcademySoftwareFoundation/openexr/blob/main/INSTALL.md
-"""
+"""Utils for load images and annotations."""
 import os
 from pathlib import Path
 from typing import List, Tuple, Union
 
 import numpy as np
 
+from ..data_structure.constants import PathLike
+
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
 
-import cv2
-
 try:
+    import cv2
     import flow_vis
 except ImportError:
-    print('warning: please install flow_vis' ' in order to visualize optical flows.')
-
-PathLike = Union[str, Path]
+    raise ImportError('Failed to import necessary packages. Please install by: \npip install "xrfeitoria[vis]"')
 
 
 class ExrReader:
-    """Utils for exr format data. Load `.exr` format file.
+    """Utils for exr format data.
 
-    Requirements: requirements/synbody.txt
-
-    If you encounter any problems with openexr installation,
-    refer to the following link:
-    https://github.com/AcademySoftwareFoundation/openexr/blob/main/INSTALL.md
+    Load `.exr` format file.
     """
 
     def __init__(self, exr_path: Union[str, Path]):
