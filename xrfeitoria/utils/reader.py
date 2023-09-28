@@ -115,8 +115,8 @@ class ExrReader:
         array = np.clip(array, 0, 255)
         return array.astype(np.uint8)
 
-    def get_mask(self) -> np.ndarray:
-        """Get mask in `.exr` format.
+    def get_rgb(self) -> np.ndarray:
+        """Get RGB channel in `.exr` format.
 
         Returns:
             np.ndarray: masks of shape (H, W, 3)
@@ -190,7 +190,7 @@ class XRFeitoriaReader:
         if not file_path.exists():
             raise ValueError(f'Image of {frame}-frame not found: {file_path}')
         if file_path.suffix == '.exr':
-            return ExrReader(file_path).get_mask()
+            return ExrReader(file_path).get_rgb()
         else:
             img = np.array(Image.open(file_path.as_posix()))
             return img
@@ -212,7 +212,7 @@ class XRFeitoriaReader:
         if not file_path.exists():
             raise ValueError(f'Diffuse image of {frame}-frame not found: {file_path}')
         if file_path.suffix == '.exr':
-            return ExrReader(file_path).get_mask()
+            return ExrReader(file_path).get_rgb()
         else:
             img = np.array(Image.open(file_path.as_posix()))
             return img
@@ -234,7 +234,7 @@ class XRFeitoriaReader:
         if not file_path.exists():
             raise ValueError(f'Mask of {frame}-frame not found: {file_path}')
         if file_path.suffix == '.exr':
-            return ExrReader(file_path).get_mask()
+            return ExrReader(file_path).get_rgb()
         else:
             img = np.array(Image.open(file_path.as_posix()))
             return img
@@ -306,7 +306,7 @@ class XRFeitoriaReader:
         if not file_path.exists():
             raise ValueError(f'Normal map of {frame}-frame not found: {file_path}')
         if file_path.suffix == '.exr':
-            return ExrReader(file_path).get_depth()
+            return ExrReader(file_path).get_rgb()
         else:
             img = np.array(Image.open(file_path.as_posix()))
             return img
