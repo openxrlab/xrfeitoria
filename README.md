@@ -1,7 +1,7 @@
 <br/>
 
 <div align="center">
-    <img src="resources/xrfeitoria-logo.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/openxrlab/xrfeitoria/main/resources/xrfeitoria-logo.png" width="600"/>
 </div>
 
 <br/>
@@ -28,7 +28,7 @@ It is a part of the [OpenXRLab](https://openxrlab.org.cn/) project.
 
 - Support rendering photorealistic images with ground-truth annotations.
 - Support multiple engine backends, including [Unreal Engine](https://www.unrealengine.com/) and [Blender](https://www.blender.org/).
-- Support assets/camera management, including import, export, and delete.
+- Support assets/camera management, including import, import, export, and delete.
 - Support a CLI tool to render images from a mesh file.
 
 ## Installation
