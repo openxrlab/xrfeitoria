@@ -331,7 +331,9 @@ class SequenceBase(ABC):
             scale (Optional[Vector]): The initial scale of the actor. If None, the actor's current scale is used.
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to None.
                 Ref to :ref:`FAQ-stencil-value` for details.
-            anim_asset_path (Optional[str]): The engine path to the animation asset to use for the actor. If None, no animation is used.
+            anim_asset_path (Optional[str]): For blender, this argument is the name of an action(bpy.types.Action).
+            For Unreal Engine, this argument is the engine path to the animation asset to use for the actor.
+            Default to None. If None, the actor's current animation is used, else the specified animation is used.
         """
         actor_name = actor.name
         location = actor.location if location is None else location
@@ -368,7 +370,9 @@ class SequenceBase(ABC):
             transform_keys (Union[TransformKeys, List[TransformKeys]]): The transform keys to use with the actor.
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to None.
                 Ref to :ref:`FAQ-stencil-value` for details.
-            anim_asset_path (Optional[str], optional): The engine path to the animation asset to use. Defaults to None.
+            anim_asset_path (Optional[str]): For blender, this argument is the name of an action(bpy.types.Action).
+            For Unreal Engine, this argument is the engine path to the animation asset to use for the actor.
+            Default to None. If None, the actor's current animation is used, else the specified animation is used.
         """
         actor_name = actor.name
         if not isinstance(transform_keys, list):

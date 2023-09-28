@@ -71,7 +71,7 @@ class SequenceWrapperBlender(SequenceWrapperBase):
     def new(
         cls,
         seq_name: str,
-        level: str = default_level_blender,
+        level: 'Optional[str]' = None,
         seq_fps: int = 30,
         seq_length: int = 1,
         replace: bool = False,
@@ -80,13 +80,15 @@ class SequenceWrapperBlender(SequenceWrapperBase):
 
         Args:
             seq_name (str): Name of the sequence.
-            level (str, optional): Name of the level. Defaults to `default_level_blender`.
+            level (Optional[str], optional): Name of the level. Defaults to None. If None, use the default level named 'XRFeitoria'.
             seq_fps (int, optional): Frame per second of the new sequence. Defaults to 30.
             seq_length (int, optional): Frame length of the new sequence. Defaults to 1.
             replace (bool, optional): Replace the exist same-name sequence. Defaults to False.
         Yields:
             SequenceBase: Sequence object.
         """
+        if level is None:
+            level = default_level_blender
         cls._seq._new(
             seq_name=seq_name,
             level=level,

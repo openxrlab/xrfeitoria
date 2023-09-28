@@ -44,8 +44,29 @@ class SequenceBase(ABC):
         fov: float = ...,
         camera_name: str = ...,
     ) -> ...: ...
+    def use_camera(
+        cls, camera, location: Optional[Vector] = ..., rotation: Optional[Vector] = ..., fov: float = ...
+    ) -> None: ...
     @classmethod
-    def use_camera(cls, camera_name: str) -> None: ...
+    def use_camera_with_keys(cls, camera, transform_keys: TransformKeys, fov: float = ...) -> None: ...
+    @classmethod
+    def use_actor(
+        cls,
+        actor,
+        location: Optional[Vector] = ...,
+        rotation: Optional[Vector] = ...,
+        scale: Optional[Vector] = ...,
+        stencil_value: int = ...,
+        anim_asset_path: Optional[str] = ...,
+    ) -> None: ...
+    @classmethod
+    def use_actor_with_keys(
+        cls,
+        actor,
+        transform_keys: TransformKeys,
+        stencil_value: int = ...,
+        anim_asset_path: Optional[str] = ...,
+    ) -> None: ...
     @classmethod
     def spawn_shape(
         cls,
