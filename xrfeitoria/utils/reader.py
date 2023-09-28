@@ -165,7 +165,7 @@ class XRFeitoriaReader:
     # folder names of each data modal
     MASK = 'mask'
     DEPTH = 'depth'
-    OPTICAL_FLOW = 'optical_flow'
+    OPTICAL_FLOW = 'flow'
     IMG = 'img'
     NORMAL = 'normal'
     DIFFUSE = 'diffuse'
@@ -265,7 +265,7 @@ class XRFeitoriaReader:
             return img
 
     def get_flow(self, camera_name: str, frame: int) -> np.ndarray:
-        """Get optical flow of the given frame ('optical_flow/{frame:04d}.*')
+        """Get optical flow of the given frame ('flow/{frame:04d}.*')
 
         Args:
             camera_name (str): the camera name

@@ -114,7 +114,7 @@ class RenderOutputEnumUnreal(EnumBase):
     img = 'img'
     mask = 'mask'
     depth = 'depth'
-    flow = 'optical_flow'
+    flow = 'flow'
     normal = 'normal'
     diffuse = 'diffuse'
 
