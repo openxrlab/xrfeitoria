@@ -14,30 +14,17 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 import numpy as np
-from PIL import Image
-from xrprimer.data_structure.camera import PinholeCameraParameter
+
+import os
+
+os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+
+import cv2
 
 try:
     import flow_vis
 except ImportError:
     print('warning: please install flow_vis' ' in order to visualize optical flows.')
-
-try:
-    import Imath
-    import OpenEXR
-
-    has_exr = True
-    import_exception = ''
-except (ImportError, ModuleNotFoundError):
-    has_exr = False
-    import traceback
-
-    stack_str = ''
-    for line in traceback.format_stack():
-        if 'frozen' not in line:
-            stack_str += line + '\n'
-    import_exception = traceback.format_exc() + '\n'
-    import_exception = stack_str + import_exception
 
 PathLike = Union[str, Path]
 
@@ -58,47 +45,11 @@ class ExrReader:
         Args:
             exr_path (PathLike): path to `.exr` format file
         """
-        if not has_exr:
-            print(import_exception)
-            print('warning: please install Imath and OpenEXR' ' in order to read .exr format files.')
-            raise ImportError
-        file_ = OpenEXR.InputFile(str(exr_path))
-        dw = file_.header()['dataWindow']
-        size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
-        self.file = file_
-        self.size: Tuple[int, int] = size
-
-    @property
-    def channels(self) -> List[str]:
-        """Get channels in the exr file.
-
-        Returns:
-            List[str]: list of channel names
-        """
-        return self.file.header()['channels']
-
-    def read_channel(self, channel: str) -> np.ndarray:
-        """Read channel's data.
-
-        Args:
-            channel (str): channel's name
-
-        Returns:
-            np.ndarray: channel's data in np.ndarray format with shape (H, W)
-        """
-        ChannelType = self.file.header()['channels'][channel]
-        if ChannelType == Imath.Channel(Imath.PixelType(Imath.PixelType.HALF)):
-            PixType = Imath.PixelType(Imath.PixelType.HALF)
-            dtype = np.float16
-        elif ChannelType == Imath.Channel(Imath.PixelType(Imath.PixelType.FLOAT)):
-            PixType = Imath.PixelType(Imath.PixelType.FLOAT)
-            dtype = np.float32
-        else:
-            raise ValueError('please specify PixelType')
-
-        img = np.frombuffer(self.file.channel(channel, PixType), dtype=dtype)
-        img = np.reshape(img, (self.size[1], self.size[0])).astype(np.float32)
-        return img
+        if isinstance(exr_path, Path):
+            exr_path = exr_path.as_posix()
+        exr_mat = cv2.imread(exr_path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+        exr_mat = cv2.cvtColor(exr_mat, cv2.COLOR_BGR2RGB)
+        self.exr_mat = exr_mat
 
     @staticmethod
     def float2int(array: np.ndarray) -> np.ndarray:
@@ -121,11 +72,8 @@ class ExrReader:
         Returns:
             np.ndarray: masks of shape (H, W, 3)
         """
-        r = self.read_channel('R')
-        g = self.read_channel('G')
-        b = self.read_channel('B')
-        img = np.stack((r, g, b), axis=2)
-        img = self.float2int(img)
+        rgb = self.exr_mat
+        img = self.float2int(rgb)
         return img
 
     def get_flow(self) -> np.ndarray:
@@ -134,9 +82,7 @@ class ExrReader:
         Returns:
             np.ndarray: optical flow data of (H, W, 3) converted to colors
         """
-        flow_r = self.read_channel('R')
-        flow_g = self.read_channel('G')
-        flow = np.stack((flow_r, flow_g), axis=2)
+        flow = self.exr_mat[..., :2]
         img = flow_vis.flow_to_color(flow, convert_to_bgr=False)
         return img
 
@@ -151,11 +97,7 @@ class ExrReader:
         Returns:
             np.ndarray: depth data of shape (H, W, 3)
         """
-        r = self.read_channel('R')
-        g = self.read_channel('G')
-        b = self.read_channel('B')
-        depth = np.stack((r, g, b), axis=2)
-
+        depth = self.exr_mat
         img = self.float2int(depth / depth_rescale)
         img[img == 0] = 255
         return img
@@ -192,7 +134,8 @@ class XRFeitoriaReader:
         if file_path.suffix == '.exr':
             return ExrReader(file_path).get_rgb()
         else:
-            img = np.array(Image.open(file_path.as_posix()))
+            img = cv2.imread(str(file_path))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
 
     def get_diffuse(self, camera_name: str, frame: int) -> np.ndarray:
@@ -214,7 +157,8 @@ class XRFeitoriaReader:
         if file_path.suffix == '.exr':
             return ExrReader(file_path).get_rgb()
         else:
-            img = np.array(Image.open(file_path.as_posix()))
+            img = cv2.imread(str(file_path))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
 
     def get_mask(self, camera_name: str, frame: int) -> np.ndarray:
@@ -236,7 +180,8 @@ class XRFeitoriaReader:
         if file_path.suffix == '.exr':
             return ExrReader(file_path).get_rgb()
         else:
-            img = np.array(Image.open(file_path.as_posix()))
+            img = cv2.imread(str(file_path))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
 
     def get_depth(self, camera_name: str, frame: int, depth_rescale=1.0) -> np.ndarray:
@@ -261,7 +206,8 @@ class XRFeitoriaReader:
         if file_path.suffix == '.exr':
             return ExrReader(file_path).get_depth(depth_rescale=depth_rescale)
         else:
-            img = np.array(Image.open(file_path.as_posix()))
+            img = cv2.imread(str(file_path))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
 
     def get_flow(self, camera_name: str, frame: int) -> np.ndarray:
@@ -286,7 +232,8 @@ class XRFeitoriaReader:
         if file_path.suffix == '.exr':
             return ExrReader(file_path).get_flow()
         else:
-            img = np.array(Image.open(file_path.as_posix()))
+            img = cv2.imread(str(file_path))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
 
     def get_normal(self, camera_name: str, frame: int) -> np.ndarray:
@@ -308,5 +255,6 @@ class XRFeitoriaReader:
         if file_path.suffix == '.exr':
             return ExrReader(file_path).get_rgb()
         else:
-            img = np.array(Image.open(file_path.as_posix()))
+            img = cv2.imread(str(file_path))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
