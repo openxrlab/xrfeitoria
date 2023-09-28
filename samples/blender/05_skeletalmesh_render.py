@@ -37,19 +37,23 @@ def main(debug=False, background=False):
     ####################################################
     ### Create a new sequence with the defined level ###
     ####################################################
-    with xf_runner.Sequence.new(seq_name=seq_name, level='MyLevel', seq_length=200) as seq:
+    seq_length = 200
+    with xf_runner.Sequence.new(seq_name=seq_name, level='MyLevel', seq_length=seq_length) as seq:
         # import an skeletal mesh and set an animation to it
         actor = seq.import_actor(file_path=assets_path['SMPL_XL'], stencil_value=128)
         actor.setup_animation(animation_path=assets_path['motion_2'])
 
-        # get actor's bounding box at each frame
-        actor_bbox = actor.bbox
-
-        # set camera's transform keys to track the actor
+        # use a list to store the transform keys of the cameras
         transform_keys_tracking_camera = []
 
-        for key in actor_bbox.keys():
-            bbox_min, bbox_max = actor_bbox[key]
+        for i in range(seq_length):
+            # set current frame
+            xf_runner.utils.set_frame_current(i)
+
+            # get actor's bounding box at each frame
+            bbox_min, bbox_max = actor.bound_box
+
+            # set camera's location and rotation to track the actor
             actor_location = (
                 (bbox_min[0] + bbox_max[0]) / 2,
                 (bbox_min[1] + bbox_max[1]) / 2,
@@ -59,12 +63,13 @@ def main(debug=False, background=False):
             camera_rotation = xf_runner.utils.get_rotation_to_look_at(location=camera_location, target=actor_location)
             transform_keys_tracking_camera.append(
                 SeqTransKey(
-                    frame=int(key),
+                    frame=i,
                     location=camera_location,
                     rotation=camera_rotation,
                     interpolation='AUTO',
                 )
             )
+            logger.info(f'Frame {i}: {camera_location}, {camera_rotation}')
 
         # add a camera in sequence to render
         camera = seq.spawn_camera_with_keys(transform_keys=transform_keys_tracking_camera, fov=90)
@@ -74,7 +79,7 @@ def main(debug=False, background=False):
 
         # add render job to renderer
         seq.add_to_renderer(
-            output_path=output_path / f'{seq.name}',
+            output_path=output_path,
             render_passes=[
                 RenderPass('img', 'png'),
                 RenderPass('mask', 'png'),

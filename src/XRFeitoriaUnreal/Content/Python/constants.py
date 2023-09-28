@@ -21,7 +21,7 @@ PLUGIN_NAME = 'XRFeitoriaUnreal'
 MATERIAL_PATHS = {
     'depth': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_depth_EXR',
     'mask': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_mask_MRQ',
-    'optical_flow': f'/{PLUGIN_NAME}/Materials/PPM_velocity',
+    'flow': f'/{PLUGIN_NAME}/Materials/PPM_velocity',
     'diffuse': f'/{PLUGIN_NAME}/Materials/PPM_diffusecolor',
     'normal': f'/{PLUGIN_NAME}/Materials/PPM_normal_map',
     'metallic': f'/{PLUGIN_NAME}/Materials/PPM_metallic',
@@ -112,7 +112,7 @@ class UnrealRenderLayerEnum(EnumBase):
     img = 'img'
     mask = 'mask'
     depth = 'depth'
-    flow = 'optical_flow'
+    flow = 'flow'
     normal = 'normal'
     diffuse = 'diffuse'
 

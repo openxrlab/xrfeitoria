@@ -156,7 +156,7 @@ class RendererBlender(RendererBase):
             render_engine = RenderEngineEnumBlender.get(render_engine.lower())
         job = RenderJobBlender(
             sequence_name=sequence_name,
-            output_path=Path(output_path).resolve(),
+            output_path=Path(output_path).resolve() / sequence_name,
             resolution=resolution,
             render_passes=render_passes,
             render_engine=render_engine,
@@ -169,7 +169,8 @@ class RendererBlender(RendererBase):
     @classmethod
     @render_status
     def render_jobs(cls, use_gpu: bool = True) -> None:
-        """Render a rendering job.
+        """Render all jobs in the render queue, and this method will clear the render
+        queue after rendering.
 
         Args:
             use_gpu (bool, optional): Use GPU to render. Defaults to True.
@@ -244,6 +245,9 @@ class RendererBlender(RendererBase):
             if job.arrange_file_structure:
                 logger.debug(f'Arranging outputs for {job.output_path}')
                 cls._arrange_output(job.render_passes, job.output_path, active_cameras)
+
+        # clear render queue
+        cls.clear()
 
     @classmethod
     def _arrange_output(cls, render_passes: 'List[RenderPass]', output_path: PathLike, camera_names: List[str]) -> None:

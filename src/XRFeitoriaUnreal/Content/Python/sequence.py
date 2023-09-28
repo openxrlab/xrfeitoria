@@ -16,6 +16,7 @@ from utils_actor import get_actor_mesh_component
 
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
 EditorAssetSub = SubSystem.EditorAssetSub
+EditorLevelSub = SubSystem.EditorLevelSub
 START_FRAME = -1
 
 ################################################################################
@@ -784,8 +785,8 @@ class Sequence:
     @classmethod
     def new(
         cls,
-        map_path: str,
         seq_name: str,
+        map_path: 'Optional[str]' = None,
         seq_dir: 'Optional[str]' = None,
         seq_fps: 'Optional[float]' = None,
         seq_length: 'Optional[int]' = None,
@@ -794,8 +795,8 @@ class Sequence:
         """Create a new sequence.
 
         Args:
-            map_path (str): path of the map asset.
             seq_name (str): name of the sequence.
+            map_path (Optional[str], optional): path of the map asset. Defaults to None. When None, the current map will be used.
             seq_dir (Optional[str], optional): path of the sequence asset. Defaults to None.
             seq_fps (Optional[float], optional): FPS of the sequence. Defaults to None.
             seq_length (Optional[int], optional): length of the sequence. Defaults to None.
@@ -804,6 +805,8 @@ class Sequence:
         Returns:
             str: path of the data asset of sequence data, containing sequence_path and map_path.
         """
+        if map_path is None:
+            map_path = EditorLevelSub.get_current_level().get_path_name().split('.')[0]
         assert unreal.EditorAssetLibrary.does_asset_exist(map_path), f'Map `{map_path}` does not exist'
         if seq_dir is None:
             seq_dir = DEFAULT_SEQUENCE_PATH

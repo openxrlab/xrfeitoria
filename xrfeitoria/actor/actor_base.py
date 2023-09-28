@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from loguru import logger
 from typing_extensions import Self
@@ -15,6 +15,16 @@ class ActorBase(ABC, ObjectBase):
     """Base class for all actors in the world."""
 
     _object_utils = ObjectUtilsBase
+
+    @property
+    def dimensions(self) -> Vector:
+        """Dimensions of the actor in the world space."""
+        return self._object_utils.get_dimensions(self.name)
+
+    @property
+    def bound_box(self) -> Tuple[Vector, Vector]:
+        """Bounding box of the actor in the world space."""
+        return self._object_utils.get_bound_box(self.name)
 
     @property
     def stencil_value(self) -> int:

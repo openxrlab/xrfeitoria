@@ -194,8 +194,19 @@ class XRFeitoriaBlenderFactory:
                 XRFeitoriaBlenderFactory.set_camera_activity(camera_name=obj.name, scene=level_scene, active=True)
 
         # set level cameras been used in this sequence to active
-        for camera in seq_collection.sequence_properties.level_cameras:
+        for camera_data in seq_collection.sequence_properties.level_cameras:
+            camera = camera_data.camera
             XRFeitoriaBlenderFactory.set_camera_activity(camera_name=camera.name, scene=level_scene, active=True)
+            camera.data.angle = camera_data.sequence_fov
+            if camera_data.sequence_animation:
+                XRFeitoriaBlenderFactory.apply_action_to_actor(action=camera_data.sequence_animation, actor=camera)
+
+        # set level actors' properties
+        for actor_data in seq_collection.sequence_properties.level_actors:
+            actor = actor_data.actor
+            actor.pass_index = actor_data.sequence_stencil_value
+            if actor_data.sequence_animation:
+                XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.sequence_animation, actor=actor)
 
         # set scene to active
         XRFeitoriaBlenderFactory.set_scene_active(level_scene)
@@ -208,13 +219,35 @@ class XRFeitoriaBlenderFactory:
         """Close the active sequence."""
         level_scene = XRFeitoriaBlenderFactory.get_active_scene()
 
+        # deactivate all cameras in this level
         for obj in level_scene.objects:
             if obj.type == 'CAMERA':
                 XRFeitoriaBlenderFactory.set_camera_activity(camera_name=obj.name, scene=level_scene, active=False)
 
+        # clear all sequences in this level
         for collection in level_scene.collection.children:
             if XRFeitoriaBlenderFactory.is_sequence_collecion(collection):
+                # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)
+                # restore level actors' properties
+                for actor_data in collection.sequence_properties.level_actors:
+                    actor = actor_data.actor
+                    actor.pass_index = actor_data.level_stencil_value
+                    if actor_data.level_animation:
+                        XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.level_animation, actor=actor)
+                    else:
+                        actor.animation_data_clear()
+                    actor.location = actor_data.location
+                    actor.rotation_euler = actor_data.rotation
+                    actor.scale = actor_data.scale
+                # restore level cameras' properties
+                for camera_data in collection.sequence_properties.level_cameras:
+                    camera = camera_data.camera
+                    camera.animation_data_clear()
+                    camera.data.angle = camera_data.level_fov
+                    camera.location = camera_data.location
+                    camera.rotation_euler = camera_data.rotation
+                    camera.scale = camera_data.scale
 
     def tag_sequence_collection(collection: 'bpy.types.Collection') -> None:
         """Tag the given collection as the sequence collection.
@@ -490,23 +523,11 @@ class XRFeitoriaBlenderFactory:
         """
         if seq_name in bpy.data.collections.keys():
             # delete all objects in seq_collection
-            seq_collection = bpy.data.collections[seq_name]
+            seq_collection = XRFeitoriaBlenderFactory.get_collection(name=seq_name)
             for obj in seq_collection.objects:
                 bpy.data.objects.remove(obj)
             # delete seq_collection
             bpy.data.collections.remove(seq_collection)
-
-        if seq_name in bpy.data.scenes.keys():
-            # unlink other collections from seq_scene
-            seq_scene = bpy.data.scenes[seq_name]
-            for coll in seq_scene.collection.children:
-                # cls.unlink_collection_from_scene(coll, seq_scene)
-                seq_scene.collection.children.unlink(coll)
-            # delete other objects in seq_scene
-            for obj in seq_scene.objects:
-                bpy.data.objects.remove(obj)
-            # delete seq_scene
-            bpy.data.scenes.remove(seq_scene)
 
     def delete_all():
         """Deletes all objects/collections/scenes in the current blend file."""
@@ -966,6 +987,17 @@ class XRFeitoriaBlenderFactory:
         except Exception as e:
             raise Exception(f'Failed to import stl: {stl_file}\n{e}')
 
+    def import_glb(glb_file: str) -> None:
+        """Import an glb file.
+
+        Args:
+            glb_file (str): File path of the glb file.
+        """
+        try:
+            bpy.ops.import_scene.gltf(filepath=str(glb_file))
+        except Exception as e:
+            raise Exception(f'Failed to import glb: {glb_file}\n{e}')
+
     def import_mo_json(
         cls,
         mo_json_file: Path,
@@ -1118,18 +1150,112 @@ class XRFeitoriaBlenderFactory:
         old_objs = set(scene.objects)
         yield
         new_objs = list(set(scene.objects) - old_objs)
-        if not new_objs:
+
+        # record new_obj's matrix_world
+        matrices_world = {}
+        for new_obj in new_objs:
+            if new_obj.type is not 'EMPTY' and new_obj.parent is not None and new_obj.parent.type == 'EMPTY':
+                bpy.context.view_layer.update()
+                matrices_world[new_obj.name] = new_obj.matrix_world
+
+        # delete empty
+        new_objs_without_empty = []
+        for new_obj in new_objs:
+            if new_obj.type == 'EMPTY':
+                bpy.data.objects.remove(new_obj)
+            else:
+                new_objs_without_empty.append(new_obj)
+
+        # set matrix_world
+        for new_obj in new_objs_without_empty:
+            if new_obj.name in matrices_world.keys():
+                new_obj.matrix_world = matrices_world[new_obj.name]
+                bpy.context.view_layer.update()
+
+        # validate and rename
+        if not new_objs_without_empty:
             if import_path:
                 raise ValueError(f"Failed to import from '{import_path}'")
             else:
                 raise ValueError(f"Failed to spawn '{name}'.")
-        elif len(new_objs) == 1:
-            new_objs[0].name = name
-        elif len(new_objs) >= 2:
-            obj_types = [obj.type for obj in new_objs]
+        elif len(new_objs_without_empty) == 1:
+            new_obj = new_objs_without_empty[0]
+            new_obj.name = name
+            new_obj.rotation_mode = 'XYZ'
+        elif len(new_objs_without_empty) >= 2:
+            obj_types = [obj.type for obj in new_objs_without_empty]
             if 'ARMATURE' not in obj_types:
                 raise ValueError('Unsupported file')
             elif obj_types.count('ARMATURE') >= 2:
                 raise ValueError('Unsupported file')
             elif 'ARMATURE' in obj_types and 'MESH' in obj_types:
-                new_objs[obj_types.index('ARMATURE')].name = name
+                new_obj = new_objs_without_empty[obj_types.index('ARMATURE')]
+                new_obj.name = name
+                new_obj.rotation_mode = 'XYZ'
+
+    #####################################
+    ############## Object ###############
+    #####################################
+    def get_bound_box_in_world_space(
+        obj: 'bpy.types.Object',
+    ) -> 'Tuple[Tuple[float, float, float], Tuple[float, float, float]]':
+        """Get the bounding box of the object in world space.
+
+        Args:
+            obj (bpy.types.Object): Object.
+
+        Raises:
+            ValueError: If the object type is not mesh or armature.
+
+        Returns:
+            Tuple[Tuple[float, float, float], Tuple[float, float, float]]: Min and max point of the bounding box.
+        """
+        if obj.type == 'MESH':
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            evaluated_obj = obj.evaluated_get(depsgraph)
+            evaluated_mesh = evaluated_obj.data
+
+            vertex_positions = []
+            for vertex in evaluated_mesh.vertices:
+                vertex_position = obj.matrix_world @ vertex.co
+                vertex_positions.append(vertex_position)
+
+            bbox_min = (1e9, 1e9, 1e9)
+            bbox_max = (-1e9, -1e9, -1e9)
+            bbox_min = (
+                min(bbox_min[0], min(pos.x for pos in vertex_positions)),
+                min(bbox_min[1], min(pos.y for pos in vertex_positions)),
+                min(bbox_min[2], min(pos.z for pos in vertex_positions)),
+            )
+            bbox_max = (
+                max(bbox_max[0], max(pos.x for pos in vertex_positions)),
+                max(bbox_max[1], max(pos.y for pos in vertex_positions)),
+                max(bbox_max[2], max(pos.z for pos in vertex_positions)),
+            )
+            return bbox_min, bbox_max
+        elif obj.type == 'ARMATURE':
+            bbox_min = (1e9, 1e9, 1e9)
+            bbox_max = (-1e9, -1e9, -1e9)
+            for obj_mesh in obj.children:
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                evaluated_obj = obj_mesh.evaluated_get(depsgraph)
+                evaluated_mesh = evaluated_obj.data
+
+                vertex_positions = []
+                for vertex in evaluated_mesh.vertices:
+                    vertex_position = obj_mesh.matrix_world @ vertex.co
+                    vertex_positions.append(vertex_position)
+
+                bbox_min = (
+                    min(bbox_min[0], min(pos.x for pos in vertex_positions)),
+                    min(bbox_min[1], min(pos.y for pos in vertex_positions)),
+                    min(bbox_min[2], min(pos.z for pos in vertex_positions)),
+                )
+                bbox_max = (
+                    max(bbox_max[0], max(pos.x for pos in vertex_positions)),
+                    max(bbox_max[1], max(pos.y for pos in vertex_positions)),
+                    max(bbox_max[2], max(pos.z for pos in vertex_positions)),
+                )
+            return bbox_min, bbox_max
+        else:
+            raise ValueError(f'Invalid object type: {obj.type}')

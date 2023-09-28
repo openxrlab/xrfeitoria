@@ -29,6 +29,7 @@ except ModuleNotFoundError:
 class SequenceUnreal(SequenceBase):
     """Sequence class for Unreal."""
 
+    _actor = ActorUnreal
     _camera = CameraUnreal
     _object_utils = ObjectUtilsUnreal
     _renderer = RendererUnreal
@@ -182,122 +183,6 @@ class SequenceUnreal(SequenceBase):
         return ActorUnreal(actor_name)
 
     @classmethod
-    def use_camera(
-        cls,
-        camera: CameraUnreal,
-        location: 'Optional[Vector]' = None,
-        rotation: 'Optional[Vector]' = None,
-        fov: float = 90.0,
-    ) -> None:
-        """Uses the specified camera in the Unreal Engine sequence.
-
-        Args:
-            camera (CameraUnreal): The camera to use in the sequence.
-            location (Optional[Vector], optional): The location of the camera. Defaults to None. unit: meter.
-            rotation (Optional[Vector], optional): The rotation of the camera. Defaults to None. unit: degree.
-            fov (float, optional): The field of view of the camera. Defaults to 90.0. unit: degree.
-        """
-        camera_name = camera.name
-        transform_keys = SeqTransKey(frame=0, location=location, rotation=rotation, interpolation='CONSTANT')
-        cls._use_camera_in_engine(
-            transform_keys=transform_keys.model_dump(),
-            fov=fov,
-            camera_name=camera_name,
-        )
-        logger.info(f'[cyan]Used[/cyan] camera "{camera_name}" in sequence "{cls.name}"')
-
-    @classmethod
-    def use_camera_with_keys(
-        cls,
-        camera: CameraUnreal,
-        transform_keys: 'TransformKeys',
-        fov: float = 90.0,
-    ) -> CameraUnreal:
-        """Uses the specified camera in the Unreal Engine with the given transform keys
-        and field of view.
-
-        Args:
-            camera (CameraUnreal): The camera to use.
-            transform_keys (TransformKeys): The transform keys to use.
-            fov (float, optional): The field of view to use. Defaults to 90.0. unit: degree.
-        """
-        camera_name = camera.name
-        if not isinstance(transform_keys, list):
-            transform_keys = [transform_keys]
-        transform_keys = [i.model_dump() for i in transform_keys]
-        cls._use_camera_in_engine(
-            transform_keys=transform_keys,
-            fov=fov,
-            camera_name=camera_name,
-        )
-        logger.info(
-            f'[cyan]Used[/cyan] camera "{camera_name}" with {len(transform_keys)} keys in sequence "{cls.name}"'
-        )
-
-    @classmethod
-    def use_actor(
-        cls,
-        actor: ActorUnreal,
-        location: 'Optional[Vector]' = None,
-        rotation: 'Optional[Vector]' = None,
-        scale: 'Optional[Vector]' = None,
-        stencil_value: int = 1,
-        anim_asset_path: 'Optional[str]' = None,
-    ) -> None:
-        """Adds an actor to the sequence and sets its initial transform.
-
-        Args:
-            actor (ActorUnreal): The actor to add to the sequence.
-            location (Optional[Vector]): The initial location of the actor. If None, the actor's current location is used. unit: meter.
-            rotation (Optional[Vector]): The initial rotation of the actor. If None, the actor's current rotation is used. unit: degree.
-            scale (Optional[Vector]): The initial scale of the actor. If None, the actor's current scale is used.
-            stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
-                Ref to :ref:`FAQ-stencil-value` for details.
-            anim_asset_path (Optional[str]): The engine path to the animation asset to use for the actor. If None, no animation is used.
-        """
-        actor_name = actor.name
-        transform_keys = SeqTransKey(
-            frame=0, location=location, rotation=rotation, scale=scale, interpolation='CONSTANT'
-        )
-        cls._use_actor_in_engine(
-            actor_name=actor_name,
-            transform_keys=transform_keys.model_dump(),
-            stencil_value=stencil_value,
-            anim_asset_path=anim_asset_path,
-        )
-        logger.info(f'[cyan]Used[/cyan] actor "{actor_name}" in sequence "{cls.name}"')
-
-    @classmethod
-    def use_actor_with_keys(
-        cls,
-        actor: ActorUnreal,
-        transform_keys: 'TransformKeys',
-        stencil_value: int = 1,
-        anim_asset_path: 'Optional[str]' = None,
-    ) -> None:
-        """Uses the specified actor with the given transform keys in the Unreal Engine
-        sequence.
-
-        Args:
-            actor (ActorUnreal): The actor to use in the sequence.
-            transform_keys (Union[TransformKeys, List[TransformKeys]]): The transform keys to use with the actor.
-            stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
-                Ref to :ref:`FAQ-stencil-value` for details.
-            anim_asset_path (Optional[str], optional): The engine path to the animation asset to use. Defaults to None.
-        """
-        actor_name = actor.name
-        if not isinstance(transform_keys, list):
-            transform_keys = [transform_keys]
-        transform_keys = [i.model_dump() for i in transform_keys]
-        cls._use_actor_in_engine(
-            actor_name=actor_name,
-            transform_keys=transform_keys,
-            stencil_value=stencil_value,
-            anim_asset_path=anim_asset_path,
-        )
-        logger.info(f'[cyan]Used[/cyan] actor "{actor_name}" with {len(transform_keys)} keys in sequence "{cls.name}"')
-
-    @classmethod
     def get_map_path(cls) -> str:
         """Returns the path to the map corresponding to the sequence in the Unreal
         Engine.
@@ -348,8 +233,8 @@ class SequenceUnreal(SequenceBase):
 
     @staticmethod
     def _new_seq_in_engine(
-        level: str,
         seq_name: str,
+        level: 'Optional[str]' = None,
         seq_dir: 'Optional[str]' = None,
         seq_fps: 'Optional[float]' = None,
         seq_length: 'Optional[int]' = None,
@@ -358,8 +243,8 @@ class SequenceUnreal(SequenceBase):
         """Create a new sequence.
 
         Args:
-            level (str): path of the map asset.
             seq_name (str): name of the sequence.
+            level (Optional[str], optional): path of the map asset. Defaults to None.
             seq_dir (Optional[str], optional): path of the sequence asset. Defaults to None.
             seq_fps (Optional[float], optional): FPS of the sequence. Defaults to None.
             seq_length (Optional[int], optional): length of the sequence. Defaults to None.
@@ -442,6 +327,30 @@ class SequenceUnreal(SequenceBase):
         )
 
     # ------ spawn actor and camera ------ #
+    @staticmethod
+    def _import_actor_in_engine(
+        file_path: str,
+        transform_keys: 'Union[List[Dict], Dict]',
+        actor_name: str = 'Actor',
+        stencil_value: int = 1,
+    ) -> None:
+        if not isinstance(transform_keys, list):
+            transform_keys = [transform_keys]
+        if isinstance(transform_keys[0], dict):
+            transform_keys = [XRFeitoriaUnrealFactory.constants.SequenceTransformKey(**k) for k in transform_keys]
+
+        actor_path = XRFeitoriaUnrealFactory.utils.import_asset(file_path)
+        logger.info(f'actor_path: {actor_path}')
+        animation_asset_path = f'{actor_path[0]}_Anim'
+        if not unreal.EditorAssetLibrary.does_asset_exist(animation_asset_path):
+            animation_asset_path = None
+        XRFeitoriaUnrealFactory.Sequence.add_actor(
+            actor=actor_path[0],
+            animation_asset=animation_asset_path,
+            actor_name=actor_name,
+            transform_keys=transform_keys,
+            stencil_value=stencil_value,
+        )
 
     @staticmethod
     def _spawn_camera_in_engine(
