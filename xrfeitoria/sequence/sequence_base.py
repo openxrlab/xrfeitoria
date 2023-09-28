@@ -80,7 +80,7 @@ class SequenceBase(ABC):
     def save(cls) -> None:
         """Save the sequence."""
         cls._save_seq_in_engine()
-        logger.info(f'++++ [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
+        logger.info(f'++++  [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
 
     @classmethod
     def show(cls) -> None:

@@ -263,7 +263,7 @@ class SequenceTransformKey(BaseModel):
         location: Vector = None,
         rotation: Vector = None,
         scale: Vector = None,
-        interpolation: Literal = ['CONSTANT', 'AUTO', 'LINEAR'],
+        interpolation: Literal['CONSTANT', 'AUTO', 'LINEAR'] = 'AUTO',
     ) -> None:
         """Transform key for Unreal or Blender, which contains frame, location,
         rotation, scale and interpolation type.

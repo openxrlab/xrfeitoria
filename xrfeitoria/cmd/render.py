@@ -13,6 +13,7 @@ from textwrap import dedent
 from typing import List, Optional, Tuple
 
 from click import Choice
+from rich.pretty import pretty_repr
 from typer import Argument, Option, Typer
 from typing_extensions import Annotated
 
@@ -104,7 +105,7 @@ def main(
             click_type=Choice([e.name for e in RenderEngineEnumBlender]),
             help='render engine to be used',
         ),
-    ] = 'eevee',
+    ] = 'cycles',
     background: Annotated[
         bool,
         Option('--background/--no-background', '-b', help='run blender in background mode'),
@@ -153,13 +154,15 @@ def main(
     with xf.init_blender(exec_path=blender_exec, background=background) as xf_runner:
         with xf_runner.Sequence.new(seq_name='seq') as seq:
             actor = seq.import_actor(actor_name='actor', file_path=mesh_path, stencil_value=255)
-            actor.set_origin_to_center()
-            actor.location = (0, 0, 0)
-            actor.rotation = (0, 0, 0)
+            # actor.set_origin_to_center()
+            # actor.location = (0, 0, 0)
+            # actor.rotation = (0, 0, 0)
 
-            radius = max(actor.dimensions)
+            dimensions = actor.dimensions
+            radius = max(dimensions)
+            height = dimensions[2] / 2
             # TODO: more reasonable camera options
-            camera = seq.spawn_camera(camera_name='camera', location=(0, 0, radius), rotation=(0, 0, 0))
+            camera = seq.spawn_camera(camera_name='camera', location=(0, -radius, height), rotation=(90, 0, 0))
             camera_name = camera.name
             # set light
             if hdr_map_path:
@@ -185,11 +188,9 @@ def main(
 
         xf_runner.render()
 
-    img_path = output_path / render_pass[0] / camera_name / f'0000.{img_format}'
-    if not img_path.exists():
-        img_path = output_path
+    img_paths = {rp: (output_path / rp / camera_name / f'0000.{img_format}').as_posix() for rp in render_pass}
     logger.info(
-        f':chequered_flag: [bold green]Finished![/bold green] Check the rendered images in "{img_path.as_posix()}"'
+        f':chequered_flag: [bold green]Finished![/bold green] Check the rendered images in \n"{pretty_repr(img_paths)}"'
     )
 
 

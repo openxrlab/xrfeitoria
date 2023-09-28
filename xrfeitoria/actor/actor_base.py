@@ -79,6 +79,11 @@ class ActorBase(ABC, ObjectBase):
         if scale:
             Validator.validate_vector(scale, 3)
 
+        # judge file path
+        file_path = Path(file_path).resolve()
+        if not file_path.exists():
+            raise FileNotFoundError(f'File "{file_path.as_posix()}" not found')
+
         cls._import_actor_from_file_in_engine(file_path=file_path, actor_name=actor_name)
         actor = cls(actor_name)
         if location:

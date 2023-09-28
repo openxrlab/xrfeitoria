@@ -102,8 +102,8 @@ def import_asset(path: Union[str, List[str]], dst_dir_in_engine: Optional[str] =
         assets: List[unreal.Object] = assetsTools.import_assets_automated(assetImportData)
         asset_paths.extend([asset.get_path_name().split('.')[0] for asset in assets])
 
-    unreal.EditorAssetLibrary.save_directory(dst_dir_in_engine, False, True)  # save assets
-    unreal.log(f'Imported assets: {asset_paths}')
+        unreal.EditorAssetLibrary.save_directory(dst_dir, False, True)  # save assets
+        unreal.log(f'Imported asset: {p}')
     return asset_paths
 
 
@@ -143,7 +143,7 @@ def import_anim(path: str, skeleton_path: str) -> List[str]:
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([import_task])
 
     # save assets
-    unreal.EditorAssetLibrary.save_directory(DEFAULT_ASSET_PATH, False, True)
+    unreal.EditorAssetLibrary.save_directory(dst_path, False, True)
     # return paths
     return [path.split('.')[0] for path in import_task.get_editor_property('imported_object_paths')]
 

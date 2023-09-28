@@ -35,8 +35,9 @@ default_level_blender = package_name
 
 ##### Unreal Constants #####
 
-default_asset_path_unreal = f'/Game/{plugin_name_unreal}'
-default_sequence_path_unreal = f'{default_asset_path_unreal}/Sequences'
+default_path_unreal = f'/Game/{plugin_name_unreal}'
+default_asset_path_unreal = f'{default_path_unreal}/Assets'
+default_sequence_path_unreal = f'{default_path_unreal}/Sequences'
 
 ##### Enum Constants #####
 

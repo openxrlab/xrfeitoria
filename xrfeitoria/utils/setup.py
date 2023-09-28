@@ -14,11 +14,9 @@ from .downloader import download
 
 # XXX: hard-coded blender download url
 blender_compressed_urls = {
-    'Windows': 'https://download.blender.org/release/Blender3.3/blender-3.3.10-windows-x64.zip',
-    # 'Windows': 'https://mirrors.aliyun.com/blender/release/Blender3.3/blender-3.3.10-windows-x64.zip',
+    'Windows': 'https://download.blender.org/release/Blender3.6/blender-3.6.4-windows-x64.zip',
     'Darwin': None,
-    'Linux': 'https://download.blender.org/release/Blender3.3/blender-3.3.10-linux-x64.tar.xz',
-    # 'Linux': 'https://mirror.freedif.org/blender/release/Blender3.3/blender-3.3.10-linux-x64.tar.xz',
+    'Linux': 'https://download.blender.org/release/Blender3.6/blender-3.6.4-linux-x64.tar.xz',
 }
 
 
