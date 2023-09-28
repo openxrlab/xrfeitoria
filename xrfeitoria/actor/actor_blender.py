@@ -28,13 +28,6 @@ class ActorBlender(ActorBase):
 
     _object_utils = ObjectUtilsBlender
 
-    # @property
-    # def bbox(self) -> 'Dict[Tuple[Vector, Vector]]':
-    #     """Bounding box of the actor across all frames."""
-    #     logger.info(f'[cyan]Getting bbox[/cyan] of "{self.name}" across all frames')
-    #     logger.warning('This step is very time-consuming...')
-    #     return self._object_utils.get_bbox(self.name)
-
     def set_origin_to_center(self) -> None:
         """Set origin of the object to its center."""
         self._object_utils.set_origin(self.name)

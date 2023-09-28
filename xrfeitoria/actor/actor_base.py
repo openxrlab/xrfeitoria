@@ -18,12 +18,12 @@ class ActorBase(ABC, ObjectBase):
 
     @property
     def dimensions(self) -> Vector:
-        """Dimensions of the actor."""
+        """Dimensions of the actor in the world space"""
         return self._object_utils.get_dimensions(self.name)
 
     @property
     def bound_box(self) -> Tuple[Vector, Vector]:
-        """Bounding box of the actor."""
+        """Bounding box of the actor in the world space"""
         return self._object_utils.get_bound_box(self.name)
 
     @property
