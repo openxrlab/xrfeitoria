@@ -131,7 +131,7 @@ def seq_shape(xf_runner: XRFeitoriaBlender, seq_name='seq_shape'):
 
 def sequence_test(debug=False, background=False):
     logger = setup_logger(debug=debug)
-    with _init_blender(background=background, replace_plugin=True, dev_plugin=True) as xf_runner:
+    with _init_blender(background=background) as xf_runner:
         with __timer__('seq_actor'):
             seq_actor(xf_runner, seq_name='seq_actor')
 
