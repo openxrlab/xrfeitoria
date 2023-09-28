@@ -1,4 +1,4 @@
-"""Utils for load images and annotations."""
+"""Utils for loading images and annotations."""
 import os
 from pathlib import Path
 from typing import List, Tuple, Union

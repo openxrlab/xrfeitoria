@@ -157,7 +157,6 @@ def main(
             actor.location = (0, 0, 0)
 
             radius = max(actor.dimensions)
-            # TODO: more reasonable camera options
             actor_bbox = actor.bound_box
             actor_bbox_center = (
                 (actor_bbox[0][0] + actor_bbox[1][0]) / 2,
