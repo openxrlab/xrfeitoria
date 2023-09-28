@@ -1151,6 +1151,13 @@ class XRFeitoriaBlenderFactory:
         yield
         new_objs = list(set(scene.objects) - old_objs)
 
+        # record new_obj's matrix_world
+        matrices_world = {}
+        for new_obj in new_objs:
+            if new_obj.type is not 'EMPTY' and new_obj.parent is not None and new_obj.parent.type == 'EMPTY':
+                bpy.context.view_layer.update()
+                matrices_world[new_obj.name] = new_obj.matrix_world
+
         # delete empty
         new_objs_without_empty = []
         for new_obj in new_objs:
@@ -1158,9 +1165,12 @@ class XRFeitoriaBlenderFactory:
                 bpy.data.objects.remove(new_obj)
             else:
                 new_objs_without_empty.append(new_obj)
-                if new_obj.parent is not None and new_obj.parent.type == 'EMPTY':
-                    new_obj.matrix_local = new_obj.matrix_world
-                    bpy.context.view_layer.update()
+
+        # set matrix_world
+        for new_obj in new_objs_without_empty:
+            if new_obj.name in matrices_world.keys():
+                new_obj.matrix_world = matrices_world[new_obj.name]
+                bpy.context.view_layer.update()
 
         # validate and rename
         if not new_objs_without_empty:
