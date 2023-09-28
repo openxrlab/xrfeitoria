@@ -2,6 +2,7 @@
 
 from typing import List, Optional, Tuple, Union
 
+from ...data_structure.constants import Vector
 from ...rpc import remote_unreal
 
 try:
@@ -136,3 +137,23 @@ def open_asset(asset_path: str) -> None:
         asset_path (str): asset path in unreal, e.g. "/Game/Resources/Mat0"
     """
     XRFeitoriaUnrealFactory.utils.open_asset(asset_path)
+
+
+@remote_unreal()
+def get_rotation_to_look_at(location: 'Vector', target: 'Vector') -> 'Vector':
+    """Get the rotation of an object to look at another object.
+
+    Args:
+        location (Vector): Location of the object.
+        target (Vector): Location of the target object.
+
+    Returns:
+        Vector: Rotation of the object.
+    """
+    target = unreal.Vector(x=target[0], y=target[1], z=target[2])
+    forward = target - location
+    z = unreal.Vector(0, 0, -1)
+    right = forward.cross(z)
+    up = forward.cross(right)
+    rotation = unreal.MathLibrary.make_rotation_from_axes(forward, right, up)
+    return rotation.to_tuple()

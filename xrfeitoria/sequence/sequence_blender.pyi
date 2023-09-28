@@ -70,3 +70,29 @@ class SequenceBlender(SequenceBase):
         transparent_background: bool = False,
         arrange_file_structure: bool = True,
     ): ...
+    @classmethod
+    def use_camera(
+        cls, camera: CameraBlender, location: Optional[Vector] = ..., rotation: Optional[Vector] = ..., fov: float = ...
+    ) -> None: ...
+    @classmethod
+    def use_camera_with_keys(
+        cls, camera: CameraBlender, transform_keys: TransformKeys, fov: float = ...
+    ) -> CameraBlender: ...
+    @classmethod
+    def use_actor(
+        cls,
+        actor: ActorBlender,
+        location: Optional[Vector] = ...,
+        rotation: Optional[Vector] = ...,
+        scale: Optional[Vector] = ...,
+        stencil_value: int = ...,
+        anim_asset_path: Optional[str] = ...,
+    ) -> None: ...
+    @classmethod
+    def use_actor_with_keys(
+        cls,
+        actor: ActorBlender,
+        transform_keys: TransformKeys,
+        stencil_value: int = ...,
+        anim_asset_path: Optional[str] = ...,
+    ) -> None: ...

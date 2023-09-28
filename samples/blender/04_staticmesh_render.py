@@ -125,7 +125,7 @@ def main(debug=False, background=False):
 
         # add render job to renderer
         seq.add_to_renderer(
-            output_path=output_path / seq_2_name,
+            output_path=output_path,
             render_passes=[
                 RenderPass('img', 'png'),
                 RenderPass('mask', 'png'),

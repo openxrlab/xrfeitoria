@@ -122,7 +122,7 @@ class CustomMoviePipeline:
             movie_preset (unreal.MoviePipelineMasterConfig): The movie preset to add render passes to.
             render_passes (List[RenderPass]): The render passes to add.
                 The available render passes are defined in `UnrealRenderLayerEnum`: `rgb`, `depth`, `mask`, \
-                `optical_flow`, `diffuse`, `normal`, `metallic`, `roughness`, `specular`, `tangent`, `basecolor`
+                `flow`, `diffuse`, `normal`, `metallic`, `roughness`, `specular`, `tangent`, `basecolor`
         """
 
         # find or add setting
@@ -423,7 +423,7 @@ class CustomMoviePipeline:
                         {'pass_name': 'img', 'enable': True, 'ext': 'jpeg'},
                         {'pass_name': 'depth', 'enable': True, 'ext': 'exr'},
                         {'pass_name': 'mask', 'enable': True, 'ext': 'exr'},
-                        {'pass_name': 'optical_flow', 'enable': True, 'ext': 'exr'},
+                        {'pass_name': 'flow', 'enable': True, 'ext': 'exr'},
                         {'pass_name': 'normal', 'enable': True, 'ext': 'png'}
                     ]
                 }

@@ -28,27 +28,6 @@ class ActorBlender(ActorBase):
 
     _object_utils = ObjectUtilsBlender
 
-    @property
-    def dimensions(self) -> Vector:
-        """Dimensions of the actor."""
-        return self._object_utils.get_dimensions(self.name)
-
-    @dimensions.setter
-    def dimensions(self, value: 'Vector'):
-        """Set dimensions of the actor.
-
-        Args:
-            value (Vector): Dimensions of the actor.
-        """
-        self._object_utils.set_dimensions(self.name, value)
-
-    @property
-    def bbox(self) -> 'Dict[Tuple[Vector, Vector]]':
-        """Bounding box of the actor across all frames."""
-        logger.info(f'[cyan]Getting bbox[/cyan] of "{self.name}" across all frames')
-        logger.warning('This step is very time-consuming...')
-        return self._object_utils.get_bbox(self.name)
-
     def set_origin_to_center(self) -> None:
         """Set origin of the object to its center."""
         self._object_utils.set_origin(self.name)

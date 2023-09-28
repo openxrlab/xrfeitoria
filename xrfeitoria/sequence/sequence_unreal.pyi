@@ -15,6 +15,16 @@ from .sequence_base import SequenceBase as SequenceBase
 
 class SequenceUnreal(SequenceBase):
     @classmethod
+    def import_actor(
+        cls,
+        file_path: PathLike,
+        actor_name: Optional[str] = ...,
+        location: Vector = ...,
+        rotation: Vector = ...,
+        scale: Vector = ...,
+        stencil_value: int = ...,
+    ) -> ActorUnreal: ...
+    @classmethod
     def add_to_renderer(
         cls,
         output_path: PathLike,

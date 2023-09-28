@@ -79,6 +79,7 @@ class ImportFileFormatEnum(EnumBase):
     abc = 'abc'
     ply = 'ply'
     stl = 'stl'
+    glb = 'glb'
     # TODO: Add more
 
 
@@ -114,7 +115,7 @@ class RenderOutputEnumUnreal(EnumBase):
     img = 'img'
     mask = 'mask'
     depth = 'depth'
-    flow = 'optical_flow'
+    flow = 'flow'
     normal = 'normal'
     diffuse = 'diffuse'
 
