@@ -10,14 +10,13 @@ If you encounter any problems with openexr installation,
 refer to the following link:
 https://github.com/AcademySoftwareFoundation/openexr/blob/main/INSTALL.md
 """
+import os
 from pathlib import Path
 from typing import List, Tuple, Union
 
 import numpy as np
 
-import os
-
-os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
 
 import cv2
 
