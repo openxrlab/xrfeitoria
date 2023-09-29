@@ -154,15 +154,22 @@ def main(
     with xf.init_blender(exec_path=blender_exec, background=background) as xf_runner:
         with xf_runner.Sequence.new(seq_name='seq') as seq:
             actor = seq.import_actor(actor_name='actor', file_path=mesh_path, stencil_value=255)
-            # actor.set_origin_to_center()
-            # actor.location = (0, 0, 0)
-            # actor.rotation = (0, 0, 0)
+            actor.set_origin_to_center()
+            actor.location = (0, 0, 0)
 
-            dimensions = actor.dimensions
-            radius = max(dimensions)
-            height = dimensions[2] / 2
-            # TODO: more reasonable camera options
-            camera = seq.spawn_camera(camera_name='camera', location=(0, -radius, height), rotation=(90, 0, 0))
+            radius = max(actor.dimensions)
+            actor_bbox = actor.bound_box
+            actor_bbox_center = (
+                (actor_bbox[0][0] + actor_bbox[1][0]) / 2,
+                (actor_bbox[0][1] + actor_bbox[1][1]) / 2,
+                (actor_bbox[0][2] + actor_bbox[1][2]) / 2,
+            )
+            camera_location = (actor_bbox_center[0], actor_bbox_center[1] - radius, actor_bbox_center[2])
+            camera_rotation = xf_runner.utils.get_rotation_to_look_at(
+                location=camera_location,
+                target=actor_bbox_center,
+            )
+            camera = seq.spawn_camera(camera_name='camera', location=camera_location, rotation=camera_rotation)
             camera_name = camera.name
             # set light
             if hdr_map_path:

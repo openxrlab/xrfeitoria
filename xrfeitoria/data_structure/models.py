@@ -112,7 +112,7 @@ class RenderPass(BaseModel):
             render_layer (Union[RenderLayerEnumBlender, RenderLayerEnumUnreal, str]):
                 Render layer of Unreal or Blender. Should be one of the following enum, or the string of it:
                     `RenderLayerEnumBlender`: `img`, `mask`, `depth`, `denoising_depth`, `flow`, `normal`, `diffuse` \n
-                    `RenderLayerEnumUnreal`: `img`, `mask`, `depth`, `optical_flow`, `normal`, `diffuse`,
+                    `RenderLayerEnumUnreal`: `img`, `mask`, `depth`, `flow`, `normal`, `diffuse`,
                     `metallic`, `roughness`, `specular`, `tangent`, `basecolor`
             image_format (Union[ImageFileFormatEnum, str]):
                 Image format of Unreal or Blender.  Should be element of the enum, or the string of it:

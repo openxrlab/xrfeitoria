@@ -21,7 +21,7 @@ class SequenceWrapperBlender(SequenceWrapperBase):
     def new(
         cls,
         seq_name: str,
-        level: Union[str, List[str]] = ...,
+        level: str = ...,
         seq_fps: int = ...,
         seq_length: int = ...,
         replace: bool = ...,
@@ -30,9 +30,9 @@ class SequenceWrapperBlender(SequenceWrapperBase):
 
         Args:
             seq_name (str): Name of the sequence.
-            level (Union[str, List[str]], optional): Name of the level. Defaults to [].
+            level (Optional[str], optional): Name of the level. Defaults to None. When None, use the default level named 'XRFeitoria'.
             seq_fps (int, optional): Frame per second of the new sequence. Defaults to 60.
-            seq_length (int, optional): Frame length of the new sequence. Defaults to 60.
+            seq_length (int, optional): Frame length of the new sequence. Defaults to 1.
             replace (bool, optional): Replace the exist same-name sequence. Defaults to False.
         Yields:
             SequenceBlender: Sequence object.
@@ -45,7 +45,7 @@ class SequenceWrapperUnreal(SequenceWrapperBase):
     def new(
         cls,
         seq_name: str,
-        level: str,
+        level: str = ...,
         seq_fps: Optional[float] = ...,
         seq_length: Optional[int] = ...,
         replace: bool = ...,

@@ -61,6 +61,8 @@ def import_file(file_path: 'PathLike') -> None:
         XRFeitoriaBlenderFactory.import_ply(ply_file=file_path)
     elif file_type == ImportFileFormatEnum.stl:
         XRFeitoriaBlenderFactory.import_stl(stl_file=file_path)
+    elif file_type == ImportFileFormatEnum.glb:
+        XRFeitoriaBlenderFactory.import_glb(glb_file=file_path)
 
 
 @remote_blender()
