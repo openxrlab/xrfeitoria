@@ -16,6 +16,26 @@ except ImportError:
 
 
 @remote_blender()
+def render_viewport(animation: bool = False) -> None:
+    """Render the current viewport.
+
+    Args:
+        animation (bool, optional): Render animation. Defaults to False.
+    """
+    # disable multiview to avoid error
+    _multiview = bpy.context.scene.render.use_multiview
+    bpy.context.scene.render.use_multiview = False
+
+    if bpy.app.background:
+        bpy.ops.render.render(animation=animation)
+    else:
+        bpy.ops.render.render('INVOKE_DEFAULT', animation=animation)
+
+    # restore multiview
+    bpy.context.scene.render.use_multiview = _multiview
+
+
+@remote_blender()
 def import_file(file_path: 'PathLike') -> None:
     """Import file to blender. This function will not return an instance of the imported actor.
     The file type is determined by the file extension.
