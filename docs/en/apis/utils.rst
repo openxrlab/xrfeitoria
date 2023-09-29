@@ -28,5 +28,6 @@ Tools
     :template: custom-module.rst
 
     xrfeitoria.utils.tools
+    xrfeitoria.utils.viewer
     xrfeitoria.utils.projector
     xrfeitoria.utils.validations

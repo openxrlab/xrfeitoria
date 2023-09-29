@@ -83,6 +83,18 @@ nbsphinx_prolog = """
             padding: 10px;
         }
     </style>
+
+    <div class="admonition note">
+        <p class="admonition-title">
+            Note
+        </p>
+        <p>
+            <a href="{{ env.docname.split('/')|last|e + '.ipynb' }}" download>
+                Download notebook
+            </a>
+            and run it offline.
+        </p>
+    </div>
 """
 
 # Parse `Returns` in docstr with parameter style

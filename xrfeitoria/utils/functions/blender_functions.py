@@ -17,7 +17,8 @@ except ImportError:
 
 @remote_blender()
 def render_viewport(animation: bool = False) -> None:
-    """Render the current viewport.
+    """Render the current viewport. Disable multiview when rendering, and restore it
+    after rendering.
 
     Args:
         animation (bool, optional): Render animation. Defaults to False.

@@ -41,6 +41,9 @@ Installation
 
     pip install xrfeitoria
 
+    # to use visualization tools
+    pip install xrfeitoria[vis]
+
 Requirements
 ^^^^^^^^^^^^
 
