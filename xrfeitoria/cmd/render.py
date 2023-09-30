@@ -62,7 +62,7 @@ def main(
             ),
         ),
     ] = 'low',
-    render_pass: Annotated[
+    render_passes: Annotated[
         List[str],
         Option(
             '--render-pass',
@@ -133,7 +133,7 @@ def main(
             [yellow]# render config[/yellow]
             - resolution: {resolution}
             - render_quality: {render_quality} ({RENDER_SAMPLES[render_quality]} render samples)
-            - render_pass: {render_pass}
+            - render_passes: {render_passes}
             - img_format: {img_format}
             - transparent: {transparent}
             - hdr_map_path: {hdr_map_path}
@@ -151,8 +151,11 @@ def main(
     if background and RenderEngineEnumBlender.get(render_engine) != RenderEngineEnumBlender.cycles:
         logger.warning(':exclamation_mark: Blender in [u]background[/u] using [u]eevee[/u] may cause unexpected error.')
 
+    seq_name = mesh_path.stem
+    camera_name = 'camera'
+
     with xf.init_blender(exec_path=blender_exec, background=background) as xf_runner:
-        with xf_runner.Sequence.new(seq_name='seq') as seq:
+        with xf_runner.Sequence.new(seq_name=seq_name) as seq:
             actor = seq.import_actor(actor_name='actor', file_path=mesh_path, stencil_value=255)
             actor.set_origin_to_center()
             actor.location = (0, 0, 0)
@@ -164,29 +167,33 @@ def main(
                 (actor_bbox[0][1] + actor_bbox[1][1]) / 2,
                 (actor_bbox[0][2] + actor_bbox[1][2]) / 2,
             )
-            camera_location = (actor_bbox_center[0], actor_bbox_center[1] - radius, actor_bbox_center[2])
+            camera_location = (
+                actor_bbox_center[0],
+                actor_bbox_center[1] - radius,
+                actor_bbox_center[2],
+            )
             camera_rotation = xf_runner.utils.get_rotation_to_look_at(
                 location=camera_location,
                 target=actor_bbox_center,
             )
-            camera = seq.spawn_camera(camera_name='camera', location=camera_location, rotation=camera_rotation)
-            camera_name = camera.name
+            seq.spawn_camera(
+                camera_name=camera_name,
+                location=camera_location,
+                rotation=camera_rotation,
+            )
             # set light
             if hdr_map_path:
                 xf_runner.utils.set_hdr_map(hdr_map_path=hdr_map_path)
-            else:
-                xf_runner.utils.set_env_color(color=(1, 1, 1, 1))
 
             # frame range
             frame_start, frame_end = xf_runner.utils.get_keys_range()
             xf_runner.utils.set_frame_range(start=frame_start, end=frame_end)
 
             # add to renderer
-            render_passes = [RenderPass(rp, img_format) for rp in render_pass]
             seq.add_to_renderer(
                 output_path=output_path,
                 resolution=resolution,
-                render_passes=render_passes,
+                render_passes=[RenderPass(render_pass, img_format) for render_pass in render_passes],
                 render_engine=render_engine,
                 render_samples=RENDER_SAMPLES[render_quality],
                 transparent_background=transparent,
@@ -195,9 +202,12 @@ def main(
 
         xf_runner.render()
 
-    img_paths = {rp: (output_path / rp / camera_name / f'0000.{img_format}').as_posix() for rp in render_pass}
+    img_paths = {
+        render_pass: (output_path / seq_name / render_pass / camera_name / f'0000.{img_format}').as_posix()
+        for render_pass in render_passes
+    }
     logger.info(
-        f':chequered_flag: [bold green]Finished![/bold green] Check the rendered images in \n"{pretty_repr(img_paths)}"'
+        f':chequered_flag: [bold green]Finished![/bold green] Check the rendered images in:\n{pretty_repr(img_paths)}'
     )
 
 
