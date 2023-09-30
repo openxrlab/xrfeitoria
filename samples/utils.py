@@ -28,6 +28,7 @@ def visualize_vertices(camera_name, actor_names: List[str], seq_output_path: Pat
         actor_names (List[str]): actor names
         seq_name (str, optional): sequence name. Defaults to {seq_name}
     """
+    # TODO: move to utils.viewer
     try:
         from PIL import Image
     except ImportError:

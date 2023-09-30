@@ -32,7 +32,7 @@ class SequenceBase(ABC):
     def _new(
         cls,
         seq_name: str,
-        level: str,
+        level: Optional[str] = None,
         seq_fps: int = 60,
         seq_length: int = 1,
         replace: bool = False,
@@ -78,7 +78,7 @@ class SequenceBase(ABC):
     def save(cls) -> None:
         """Save the sequence."""
         cls._save_seq_in_engine()
-        logger.info(f'++++ [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
+        logger.info(f'++++  [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
 
     @classmethod
     def show(cls) -> None:

@@ -1,6 +1,7 @@
 """Publish plugins to zip files.
 
->>> python -m xrfeitoria.utils.publish_plugins --unreal -s 0.5.0-UE5.2-Windows
+>>> python -m xrfeitoria.utils.publish_plugins --unreal -s 0.5.0-Unreal5.2-Windows
+>>> python -m xrfeitoria.utils.publish_plugins --blender -s 0.5.0-None-None
 """
 from pathlib import Path
 from typing import Literal, Optional
@@ -14,21 +15,28 @@ root = Path(__file__).parent.resolve()
 project_root = root.parents[1]
 
 
-def _make_archive(plugin_folder: PathLike, dst_name: Optional[str] = None) -> Path:
+def _make_archive(
+    plugin_folder: PathLike,
+    zip_name: Optional[str] = None,
+    folder_name: Optional[str] = None,
+) -> Path:
     """Make archive of plugin folder.
 
     Args:
         plugin_folder (PathLike): path to plugin folder.
-        dst_name (Optional[str], optional): name of the archive file.
-            E.g. ``dst_name='plugin'``, the archive file would be ``plugin.zip``.
+        zip_name (Optional[str], optional): name of the archive file.
+            E.g. dst_name='plugin', the archive file would be ``plugin.zip``.
             Defaults to None, fallback to {plugin_folder.name}.
     """
     import zipfile
 
-    if dst_name is None:
-        dst_name = plugin_folder.name
+    if zip_name is None:
+        zip_name = plugin_folder.name
+    if folder_name is None:
+        folder_name = zip_name
+
     plugin_folder = Path(plugin_folder).resolve()
-    plugin_zip = plugin_folder.parent / f'{dst_name}.zip'
+    plugin_zip = plugin_folder.parent / f'{zip_name}.zip'
     if plugin_zip.exists():
         plugin_zip.unlink()
 
@@ -39,7 +47,9 @@ def _make_archive(plugin_folder: PathLike, dst_name: Optional[str] = None) -> Pa
             if any([folder in file.parts for folder in filter_names]):
                 continue
 
-            arcname = dst_name + '/' + file.relative_to(plugin_folder).as_posix()
+            # in zip, the folder name is the root folder
+            # {folder_name}/a/b/c
+            arcname = folder_name + '/' + file.relative_to(plugin_folder).as_posix()
             zipf.write(file, arcname=arcname)
 
     # plugin_folder = shutil.make_archive(plugin_zip.with_suffix(''), 'zip', plugin_folder.parent, plugin_folder.name)
@@ -50,8 +60,11 @@ def _make_archive(plugin_folder: PathLike, dst_name: Optional[str] = None) -> Pa
 def main(engine: Literal['unreal', 'blender'], suffix: Optional[str] = None):
     if engine == 'blender':
         plugin_name = plugin_name_blender
+        folder_name = plugin_name  # in zip, {XRFeitoriaBpy} is the root folder
     elif engine == 'unreal':
+        # TODO: auto detect binaries
         plugin_name = plugin_name_unreal
+        folder_name = None  # in zip, {XRFeitoriaUnreal-x.x.x-UE5.x-Windows} is the root folder
 
     dir_plugin = project_root / 'src' / plugin_name
 
@@ -60,7 +73,7 @@ def main(engine: Literal['unreal', 'blender'], suffix: Optional[str] = None):
         name += f'-{suffix}'
     else:
         name += f'-{__version__}'
-    plugin_zip = _make_archive(dir_plugin, dst_name=name)
+    plugin_zip = _make_archive(dir_plugin, zip_name=name, folder_name=folder_name)
     logger.info(f'Plugin for {engine}: {plugin_zip}')
 
 

@@ -61,7 +61,8 @@ doc = [
     "enum-tools[sphinx]",
 ]
 vis=[
-    "opencv-python>=4.8,<5",
+    "matplotlib>=3.4,<4",
+    "opencv-python>=4,<5",
     "flow_vis==0.1",
 ]
 

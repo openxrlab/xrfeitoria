@@ -11,7 +11,8 @@ The following tutorials cover the basic operations needed to render with ``XRFei
     :hidden:
 
     tutorials/01_get_started.ipynb
-    tutorials/02_add_cameras.ipynb
+    tutorials/02_randomization.ipynb
+    tutorials/03_human_nerf.ipynb
 
 ---------
 

@@ -218,14 +218,6 @@ class RenderJobUnreal(BaseModel):
 class SequenceTransformKey(BaseModel):
     """Transform key model for object (actor/camera) in sequence.
 
-    Used in methods with suffix ``_with_keys``, such as
-        - :meth:`Sequence.spawn_camera_with_keys <xrfeitoria.sequence.sequence_base.SequenceBase.spawn_camera_with_keys>`
-        - :meth:`Sequence.spawn_shape_with_keys <xrfeitoria.sequence.sequence_base.SequenceBase.spawn_shape_with_keys>`
-        - :meth:`SequenceUnreal.spawn_actor_with_keys <xrfeitoria.sequence.sequence_unreal.SequenceUnreal.spawn_actor_with_keys>`
-        - :meth:`SequenceBlender.import_actor_with_keys <xrfeitoria.sequence.sequence_blender.SequenceBlender.import_actor_with_keys>`
-        - :func:`ObjectUtils.set_transform_keys <xrfeitoria.object.object_utils.ObjectUtilsBlender.set_transform_keys>`
-        - ...
-
     Examples:
 
         .. tabs::
@@ -243,6 +235,14 @@ class SequenceTransformKey(BaseModel):
                         scale=(1, 1, 1),
                         interpolation='AUTO'
                     )
+
+    Used in methods with suffix ``_with_keys``, such as
+        - :meth:`Sequence.spawn_camera_with_keys <xrfeitoria.sequence.sequence_base.SequenceBase.spawn_camera_with_keys>`
+        - :meth:`Sequence.spawn_shape_with_keys <xrfeitoria.sequence.sequence_base.SequenceBase.spawn_shape_with_keys>`
+        - :meth:`SequenceUnreal.spawn_actor_with_keys <xrfeitoria.sequence.sequence_unreal.SequenceUnreal.spawn_actor_with_keys>`
+        - :meth:`SequenceBlender.import_actor_with_keys <xrfeitoria.sequence.sequence_blender.SequenceBlender.import_actor_with_keys>`
+        - :func:`ObjectUtils.set_transform_keys <xrfeitoria.object.object_utils.ObjectUtilsBlender.set_transform_keys>`
+        - ...
     """
 
     frame: int = Field(description='Frame number of the transform key, unit: frame.')
@@ -263,7 +263,7 @@ class SequenceTransformKey(BaseModel):
         location: Vector = None,
         rotation: Vector = None,
         scale: Vector = None,
-        interpolation: Literal = ['CONSTANT', 'AUTO', 'LINEAR'],
+        interpolation: Literal['CONSTANT', 'AUTO', 'LINEAR'] = 'AUTO',
     ) -> None:
         """Transform key for Unreal or Blender, which contains frame, location,
         rotation, scale and interpolation type.

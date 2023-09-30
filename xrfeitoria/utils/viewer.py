@@ -15,6 +15,8 @@ try:
 except ImportError:
     raise ImportError('Failed to import necessary packages. Please install by: \npip install "xrfeitoria[vis]"')
 
+__all__ = ['Viewer']
+
 
 class ExrReader:
     """Utils for exr format data.
@@ -86,16 +88,35 @@ class ExrReader:
         return img
 
 
-class XRFeitoriaReader:
+class Viewer:
+    """Utils for loading images and annotations.
+
+    Examples:
+        >>> viewer = Viewer('/path/to/sequence')
+        >>> camera_name = 'cam'
+        >>> frame = 0
+        >>> img = viewer.get_img(camera_name=camera_name, frame=frame)
+        >>> mask = viewer.get_mask(camera_name=camera_name, frame=frame)
+        >>> depth = viewer.get_depth(camera_name=camera_name, frame=frame)
+        >>> flow = viewer.get_flow(camera_name=camera_name, frame=frame)
+        >>> normal = viewer.get_normal(camera_name=camera_name, frame=frame)
+        >>> diffuse = viewer.get_diffuse(camera_name=camera_name, frame=frame)
+    """
+
     # folder names of each data modal
+    IMG = 'img'
     MASK = 'mask'
     DEPTH = 'depth'
-    OPTICAL_FLOW = 'flow'
-    IMG = 'img'
+    FLOW = 'flow'
     NORMAL = 'normal'
     DIFFUSE = 'diffuse'
 
     def __init__(self, sequence_dir: PathLike) -> None:
+        """Initialize with the sequence directory.
+
+        Args:
+            sequence_dir (PathLike): path to the sequence directory
+        """
         self.sequence_dir = Path(sequence_dir)
 
     def get_img(self, camera_name: str, frame: int) -> np.ndarray:
@@ -206,7 +227,7 @@ class XRFeitoriaReader:
         Returns:
             np.ndarray: optical flow of shape (H, W, 3)
         """
-        folder = self.sequence_dir / self.OPTICAL_FLOW / camera_name
+        folder = self.sequence_dir / self.FLOW / camera_name
         if not folder.exists():
             raise ValueError(f'Folder of depth not found: {folder}')
         file_path = next(folder.glob(f'{frame:04d}.*')).resolve()

@@ -43,6 +43,7 @@ def get_sequence_fps(sequence: unreal.LevelSequence) -> float:
 def get_animation_length(animation_asset: unreal.AnimSequence, seq_fps: float = 30.0) -> int:
     if ENGINE_MAJOR_VERSION == 5:
         # animation fps == sequence fps
+        # TODO: check if this is true
         anim_frame_rate = animation_asset.get_editor_property('target_frame_rate')
         anim_frame_rate = convert_frame_rate_to_fps(anim_frame_rate)
         assert (
@@ -805,7 +806,7 @@ class Sequence:
         Returns:
             str: path of the data asset of sequence data, containing sequence_path and map_path.
         """
-        if map_path is None:
+        if map_path is None or map_path == '' or map_path == 'None':
             map_path = EditorLevelSub.get_current_level().get_path_name().split('.')[0]
         assert unreal.EditorAssetLibrary.does_asset_exist(map_path), f'Map `{map_path}` does not exist'
         if seq_dir is None:

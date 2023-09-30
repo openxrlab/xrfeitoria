@@ -1,6 +1,10 @@
 {
-    "0.5.0":
-    {
+    "0.5.1": {
+        "XRFeitoria": "0.5.1",
+        "XRFeitoriaBpy": "0.5.1",
+        "XRFeitoriaUnreal": "0.5.1"
+    },
+    "0.5.0": {
         "XRFeitoria": "0.5.0",
         "XRFeitoriaBpy": "0.5.0",
         "XRFeitoriaUnreal": "0.5.0"
