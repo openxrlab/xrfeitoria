@@ -4,7 +4,7 @@ from . import constants, operators, properties, ui  # isort:skip
 bl_info = {
     'name': 'XRFeitoriaBpy',
     'author': 'OpenXRLab',
-    'version': (0, 5, 0),
+    'version': (0, 5, 1),
     'blender': (3, 3, 0),
     'category': 'Tools',
 }
