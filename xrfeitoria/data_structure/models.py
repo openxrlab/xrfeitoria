@@ -21,6 +21,46 @@ __all__ = ['RenderPass', 'RenderJobBlender', 'RenderJobUnreal', 'SequenceTransfo
 class RenderPass(BaseModel):
     """Render pass model contains render layer and image format.
 
+    Supported render layer and image format:
+
+        .. tabs::
+            .. tab:: RenderLayerBlender
+
+                :class:`~xrfeitoria.data_structure.constants.RenderOutputEnumBlender`:
+
+                    - img
+                    - mask
+                    - depth
+                    - flow
+                    - normal
+                    - diffuse
+                    - denoising_depth
+
+            .. tab:: RenderLayerUnreal
+
+                :class:`~xrfeitoria.data_structure.constants.RenderOutputEnumUnreal`:
+
+                    - img
+                    - mask
+                    - depth
+                    - flow
+                    - normal
+                    - diffuse
+                    - metallic
+                    - roughness
+                    - specular
+                    - tangent
+                    - basecolor
+
+            .. tab:: ImageFormat
+
+                :class:`~xrfeitoria.data_structure.constants.ImageFileFormatEnum`:
+
+                    - png
+                    - bmp
+                    - jpg
+                    - exr
+
     Used in:
         - :class:`~xrfeitoria.data_structure.models.RenderJobBlender`
         - :class:`~xrfeitoria.data_structure.models.RenderJobUnreal`
@@ -109,10 +149,10 @@ class RenderPass(BaseModel):
         format.
 
         Args:
-            render_layer (Union[RenderLayerEnumBlender, RenderLayerEnumUnreal, str]):
+            render_layer (Union[RenderOutputEnumBlender, RenderOutputEnumUnreal, str]):
                 Render layer of Unreal or Blender. Should be one of the following enum, or the string of it:
-                    `RenderLayerEnumBlender`: `img`, `mask`, `depth`, `denoising_depth`, `flow`, `normal`, `diffuse` \n
-                    `RenderLayerEnumUnreal`: `img`, `mask`, `depth`, `flow`, `normal`, `diffuse`,
+                    `RenderOutputEnumBlender`: `img`, `mask`, `depth`, `denoising_depth`, `flow`, `normal`, `diffuse` \n
+                    `RenderOutputEnumUnreal`: `img`, `mask`, `depth`, `flow`, `normal`, `diffuse`,
                     `metallic`, `roughness`, `specular`, `tangent`, `basecolor`
             image_format (Union[ImageFileFormatEnum, str]):
                 Image format of Unreal or Blender.  Should be element of the enum, or the string of it:
