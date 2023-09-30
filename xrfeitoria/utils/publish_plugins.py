@@ -1,6 +1,6 @@
 """Publish plugins to zip files.
 
->>> python -m xrfeitoria.utils.publish_plugins --unreal -s 0.5.0-UE5.2-Windows
+>>> python -m xrfeitoria.utils.publish_plugins --unreal -s 0.5.0-Unreal5.2-Windows
 >>> python -m xrfeitoria.utils.publish_plugins --blender -s 0.5.0-None-None
 """
 from pathlib import Path
