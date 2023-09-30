@@ -92,7 +92,7 @@ class ActorBase(ABC, ObjectBase):
         # judge file path
         file_path = Path(file_path).resolve()
         if not file_path.exists():
-            raise FileNotFoundError(f'File "{file_path.as_posix()}" not found')
+            raise FileNotFoundError(f'File "{file_path.as_posix()}" is not found')
 
         cls._import_actor_from_file_in_engine(file_path=file_path, actor_name=actor_name)
         actor = cls(actor_name)

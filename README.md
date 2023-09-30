@@ -26,7 +26,7 @@ https://github.com/openxrlab/xrfeitoria/assets/35397764/3a4cbc16-de85-48fa-9e15-
 
 - Support rendering photorealistic images with ground-truth annotations.
 - Support multiple engine backends, including [Unreal Engine](https://www.unrealengine.com/) and [Blender](https://www.blender.org/).
-- Support assets/camera management, including import, import, export, and delete.
+- Support assets/camera management, including import, export, and delete.
 - Support a CLI tool to render images from a mesh file.
 
 ## Installation

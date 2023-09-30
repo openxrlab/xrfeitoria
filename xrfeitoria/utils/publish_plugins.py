@@ -1,6 +1,7 @@
 """Publish plugins to zip files.
 
 >>> python -m xrfeitoria.utils.publish_plugins --unreal -s 0.5.0-UE5.2-Windows
+>>> python -m xrfeitoria.utils.publish_plugins --blender -s 0.5.0-None-None
 """
 from pathlib import Path
 from typing import Literal, Optional
@@ -51,6 +52,7 @@ def main(engine: Literal['unreal', 'blender'], suffix: Optional[str] = None):
     if engine == 'blender':
         plugin_name = plugin_name_blender
     elif engine == 'unreal':
+        # TODO: auto detect binaries
         plugin_name = plugin_name_unreal
 
     dir_plugin = project_root / 'src' / plugin_name
