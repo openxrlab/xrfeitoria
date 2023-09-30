@@ -806,7 +806,7 @@ class Sequence:
         Returns:
             str: path of the data asset of sequence data, containing sequence_path and map_path.
         """
-        if map_path is None:
+        if map_path is None or map_path == '' or map_path == 'None':
             map_path = EditorLevelSub.get_current_level().get_path_name().split('.')[0]
         assert unreal.EditorAssetLibrary.does_asset_exist(map_path), f'Map `{map_path}` does not exist'
         if seq_dir is None:

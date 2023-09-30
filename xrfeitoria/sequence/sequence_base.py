@@ -32,7 +32,7 @@ class SequenceBase(ABC):
     def _new(
         cls,
         seq_name: str,
-        level: str,
+        level: Optional[str] = None,
         seq_fps: int = 60,
         seq_length: int = 1,
         replace: bool = False,

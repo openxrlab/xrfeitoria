@@ -17,11 +17,11 @@ class SequenceWrapperBase:
     def new(
         cls,
         seq_name: str,
-        level: str = None,
+        level: Optional[str] = None,
         seq_fps: int = 30,
         seq_length: int = 1,
         replace: bool = False,
-    ) -> ContextManager[SequenceBase]:
+    ) -> ContextManager[SequenceUnreal]:
         """Create a new sequence and close the sequence after exiting the it.
 
         Args:
@@ -71,11 +71,11 @@ class SequenceWrapperBlender(SequenceWrapperBase):
     def new(
         cls,
         seq_name: str,
-        level: 'Optional[str]' = None,
+        level: Optional[str] = None,
         seq_fps: int = 30,
         seq_length: int = 1,
         replace: bool = False,
-    ) -> ContextManager[SequenceBase]:
+    ) -> ContextManager[SequenceBlender]:
         """Create a new sequence and close the sequence after exiting the it.
 
         Args:
