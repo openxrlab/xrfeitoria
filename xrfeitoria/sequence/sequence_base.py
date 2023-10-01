@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
@@ -98,6 +99,11 @@ class SequenceBase(ABC):
     ) -> ActorBase:
         if actor_name is None:
             actor_name = cls._object_utils.generate_obj_name(obj_type='actor')
+        # judge file path
+        file_path = Path(file_path).resolve()
+        if not file_path.exists():
+            raise FileNotFoundError(f'File "{file_path.as_posix()}" is not found')
+        # set transform keys
         transform_keys = SequenceTransformKey(
             frame=0, location=location, rotation=rotation, scale=scale, interpolation='CONSTANT'
         )

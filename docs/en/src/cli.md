@@ -13,7 +13,7 @@ wget https://graphics.stanford.edu/~mdfisher/Data/Meshes/bunny.obj
 xf-render bunny.obj
 ```
 
-<iframe width="640" height="360" src="https://github.com/openxrlab/xrfeitoria/assets/35397764/65d739d5-0412-4408-8218-fbf9e4b4c6bf" frameborder="0" allowfullscreen></iframe>
+<iframe width="640" height="360" src="https://github.com/openxrlab/xrfeitoria/assets/35397764/430a7264-9337-4327-838d-08e9a354c277" frameborder="0" allowfullscreen></iframe>
 
 
-<iframe width="640" height="360" src="https://github.com/openxrlab/xrfeitoria/assets/35397764/70afb175-f7cc-4462-9e21-b597200085a9" frameborder="0" allowfullscreen></iframe>
+<iframe width="640" height="360" src="https://github.com/openxrlab/xrfeitoria/assets/35397764/9c029eb7-a8be-4d11-890e-b2499ff22caa" frameborder="0" allowfullscreen></iframe>
