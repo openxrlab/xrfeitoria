@@ -20,7 +20,7 @@ It is a part of the `OpenXRLab`_ project.
 
 .. raw:: html
 
-    <iframe width="640" height="360" src="https://github.com/openxrlab/xrfeitoria/assets/35397764/aeec5504-c4da-4a05-91a0-a5511b23359b" frameborder="0" allowfullscreen></iframe>
+    <iframe width="640" height="360" src="https://github.com/openxrlab/xrfeitoria/assets/35397764/d65590a3-c47c-473e-b171-0832c5ddd133" frameborder="0" allowfullscreen></iframe>
 
 --------
 
