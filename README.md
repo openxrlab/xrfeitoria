@@ -20,7 +20,7 @@
 XRFeitoria is a rendering toolbox for generating synthetic data photorealistic with ground-truth annotations.
 It is a part of the [OpenXRLab](https://openxrlab.org.cn/) project.
 
-https://github.com/openxrlab/xrfeitoria/assets/35397764/3a4cbc16-de85-48fa-9e15-3b6c0c3b805d
+https://github.com/openxrlab/xrfeitoria/assets/35397764/d65590a3-c47c-473e-b171-0832c5ddd133
 
 ### Major Features
 
@@ -62,9 +62,9 @@ wget https://graphics.stanford.edu/~mdfisher/Data/Meshes/bunny.obj
 xf-render bunny.obj
 ```
 
-https://github.com/openxrlab/xrfeitoria/assets/35397764/65d739d5-0412-4408-8218-fbf9e4b4c6bf
+https://github.com/openxrlab/xrfeitoria/assets/35397764/430a7264-9337-4327-838d-08e9a354c277
 
-https://github.com/openxrlab/xrfeitoria/assets/35397764/70afb175-f7cc-4462-9e21-b597200085a9
+https://github.com/openxrlab/xrfeitoria/assets/35397764/9c029eb7-a8be-4d11-890e-b2499ff22caa
 
 ### Documentation
 
