@@ -1,7 +1,7 @@
 """Remote functions for blender."""
 
 from pathlib import Path
-from typing import List, Literal, Tuple
+from typing import Dict, List, Literal, Tuple
 
 from ...data_structure.constants import ImportFileFormatEnum, PathLike, Vector
 from ...rpc import remote_blender
@@ -64,6 +64,11 @@ def import_file(file_path: 'PathLike') -> None:
         XRFeitoriaBlenderFactory.import_stl(stl_file=file_path)
     elif file_type == ImportFileFormatEnum.glb:
         XRFeitoriaBlenderFactory.import_glb(glb_file=file_path)
+
+
+@remote_blender()
+def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict]]', actor_name: str) -> None:
+    XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor_name)
 
 
 @remote_blender()

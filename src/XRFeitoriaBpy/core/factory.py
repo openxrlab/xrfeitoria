@@ -998,11 +998,7 @@ class XRFeitoriaBlenderFactory:
         except Exception as e:
             raise Exception(f'Failed to import glb: {glb_file}\n{e}')
 
-    def import_mo_json(
-        cls,
-        mo_json_file: Path,
-        actor_name: str,
-    ) -> None:
+    def import_mo_json(mo_json_file: Path, actor_name: str) -> None:
         """Import an animation from json, and apply the animation to the given actor.
 
         Args:
@@ -1010,16 +1006,9 @@ class XRFeitoriaBlenderFactory:
             actor_name (str): Name of the actor.
         """
         motion_data = json.load(Path(mo_json_file).open('r'))
-        action = bpy.data.actions.new('Action')
-        actor = bpy.data.objects[actor_name]
-        XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor)
-        XRFeitoriaBlenderFactory.apply_motion_data_to_action(motion_data=motion_data, action=action)
+        XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data, actor_name=actor_name)
 
-    def import_mo_blend(
-        mo_blend_file: Path,
-        action_name: str,
-        actor_name: str,
-    ) -> None:
+    def import_mo_blend(mo_blend_file: Path, action_name: str, actor_name: str) -> None:
         """Import an animation from blend, and apply the animation to the given actor.
 
         Args:
@@ -1032,10 +1021,7 @@ class XRFeitoriaBlenderFactory:
         actor = bpy.data.objects[actor_name]
         XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor)
 
-    def import_mo_fbx(
-        mo_fbx_file: Path,
-        actor_name: str,
-    ) -> None:
+    def import_mo_fbx(mo_fbx_file: Path, actor_name: str) -> None:
         """Import an animation from fbx, and apply the animation to the given actor.
 
         Args:
@@ -1118,6 +1104,11 @@ class XRFeitoriaBlenderFactory:
                         # fcurve.keyframe_points[f].co = (f, val)
                         fcurve.keyframe_points.insert(frame=f, value=val, options={'FAST'})
 
+    def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict]]', actor_name: str) -> None:
+        action = bpy.data.actions.new('Action')
+        XRFeitoriaBlenderFactory.apply_motion_data_to_action(motion_data=motion_data, action=action)
+        XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor=bpy.data.objects[actor_name])
+
     #####################################
     ############# validate ##############
     #####################################
@@ -1154,7 +1145,7 @@ class XRFeitoriaBlenderFactory:
         # record new_obj's matrix_world
         matrices_world = {}
         for new_obj in new_objs:
-            if new_obj.type is not 'EMPTY' and new_obj.parent is not None and new_obj.parent.type == 'EMPTY':
+            if new_obj.type != 'EMPTY' and new_obj.parent is not None and new_obj.parent.type == 'EMPTY':
                 bpy.context.view_layer.update()
                 matrices_world[new_obj.name] = new_obj.matrix_world
 
