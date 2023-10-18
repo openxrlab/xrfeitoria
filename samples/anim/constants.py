@@ -128,7 +128,7 @@ NUM_SMPLX_BODYJOINTS = 21
 NUM_SMPLX_HANDJOINTS = 15
 
 SMPLX_HAND_POSES = {
-    "flat": [
+    'flat': [
         [
             0.0,
             0.0,
@@ -224,7 +224,7 @@ SMPLX_HAND_POSES = {
             0.0,
         ],
     ],
-    "relaxed": [
+    'relaxed': [
         [
             0.11167871206998825,
             0.042892176657915115,

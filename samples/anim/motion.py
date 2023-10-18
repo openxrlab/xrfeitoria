@@ -23,9 +23,9 @@ ConverterType = Callable[[np.ndarray], np.ndarray]
 class Converter:
     @classmethod
     def vec_humandata2smplx(cls, vector: np.ndarray) -> np.ndarray:
-        """From humandata transl (in **OpenCV space**) to SMPLX armature's
-        **pelvis local space** in Blender.
-        (The pelvis local space is designed to be the same with **SMPL space**.)
+        """From humandata transl (in **OpenCV space**) to SMPLX armature's **pelvis
+        local space** in Blender. (The pelvis local space is designed to be the same
+        with **SMPL space**.)
 
         [right, front, up]: (-x, -z, -y) ==> (-x, z, y)
 
@@ -40,7 +40,7 @@ class Converter:
         elif vector.ndim == 2 and vector.shape[1] == 3:
             vector = np.array([vector[:, 0], -vector[:, 1], -vector[:, 2]]).T
         else:
-            raise ValueError(f"vector.shape={vector.shape}")
+            raise ValueError(f'vector.shape={vector.shape}')
         return vector
 
     @classmethod
@@ -50,8 +50,8 @@ class Converter:
 
     @classmethod
     def vec_amass2humandata(cls, vector: np.ndarray) -> np.ndarray:
-        """From amass transl (pelvis's local space) to humandata transl
-        (in **OpenCV space**)
+        """From amass transl (pelvis's local space) to humandata transl (in **OpenCV
+        space**)
 
         [right, front, up]: (x, y, z) ==> (-x, -z, -y)
 
@@ -69,13 +69,12 @@ class Converter:
         elif vector.ndim == 2 and vector.shape[1] == 3:
             vector = np.array([-vector[:, 0], -vector[:, 2], -vector[:, 1]]).T
         else:
-            raise ValueError(f"vector.shape={vector.shape}")
+            raise ValueError(f'vector.shape={vector.shape}')
         return vector
 
 
 class Motion:
-    """Wrap motion data. Provide methods to get transform info for 3D
-    calculations.
+    """Wrap motion data. Provide methods to get transform info for 3D calculations.
 
     The motion data will be used along with `Skeleton` instance in retargeting,
     and the local spaces of bones are all defined in such skeletons.
@@ -92,9 +91,7 @@ class Motion:
         n_frames: Optional[int] = None,
         fps: float = 30.0,
     ) -> None:
-        """transl & body_poses are in the space of
-        corresponding `Skeleton` instance.
-        """
+        """Transl & body_poses are in the space of corresponding `Skeleton` instance."""
         transl = transl.reshape([-1, 3])
         body_poses = body_poses.reshape([body_poses.shape[0], -1, 3])
         if n_frames is None:
@@ -103,9 +100,9 @@ class Motion:
         self.body_poses: np.ndarray = body_poses[:n_frames, :, :]
         self.global_orient: np.ndarray = self.body_poses[:, 0, :]
 
-        assert n_frames > 0, f"n_frames={n_frames}"
+        assert n_frames > 0, f'n_frames={n_frames}'
         self.n_frames = n_frames
-        assert fps > 0, f"fps={fps}"
+        assert fps > 0, f'fps={fps}'
         self.fps = fps
 
     def _bone2idx(self, bone_name) -> Optional[int]:
@@ -173,33 +170,33 @@ class Motion:
             self.body_poses = self.body_poses[::scaling, :, :]
             self.global_orient: np.ndarray = self.global_orient[::scaling, :]
             self.n_frames = self.body_poses.shape[0]
-            if hasattr(self, "smpl_data"):
+            if hasattr(self, 'smpl_data'):
                 self.smpl_data = self.convert_fps_smplx_data(self.smpl_data, scaling)
-            if hasattr(self, "smplx_data"):
+            if hasattr(self, 'smplx_data'):
                 self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, scaling)
             self.fps = fps
         elif fps > self.fps:
             # TODO: motion interpolation
-            raise NotImplementedError(f"Not support up sampling from {self.fps}fps to {fps}fps")
+            raise NotImplementedError(f'Not support up sampling from {self.fps}fps to {fps}fps')
         else:
             # TODO: motion interpolation
-            raise NotImplementedError(f"Not support down sampling from {self.fps}fps to {fps}fps")
+            raise NotImplementedError(f'Not support down sampling from {self.fps}fps to {fps}fps')
 
     def slice_motion(self, frame_interval: int):
-        assert isinstance(frame_interval, int), TypeError(f"scaling={frame_interval} should be int")
+        assert isinstance(frame_interval, int), TypeError(f'scaling={frame_interval} should be int')
 
         self.transl = self.transl[::frame_interval, :]
         self.body_poses = self.body_poses[::frame_interval, :, :]
         self.global_orient: np.ndarray = self.global_orient[::frame_interval, :]
         self.n_frames = self.body_poses.shape[0]
-        if hasattr(self, "smpl_data"):
+        if hasattr(self, 'smpl_data'):
             self.smpl_data = self.convert_fps_smplx_data(self.smpl_data, frame_interval)
-        if hasattr(self, "smplx_data"):
+        if hasattr(self, 'smplx_data'):
             self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, frame_interval)
 
     def sample_motion(self, n_frames: int):
-        """randomly sample motion to n_frames"""
-        assert n_frames > 0, f"n_frames={n_frames}"
+        """Randomly sample motion to n_frames."""
+        assert n_frames > 0, f'n_frames={n_frames}'
         if n_frames == self.n_frames:
             return
 
@@ -208,38 +205,38 @@ class Motion:
         self.body_poses = self.body_poses[indices]
         self.global_orient = self.global_orient[indices]
         self.n_frames = n_frames
-        if hasattr(self, "smpl_data"):
+        if hasattr(self, 'smpl_data'):
             for k, v in self.smpl_data.items():
                 if k != 'betas':
                     self.smpl_data[k] = v[indices]
-        if hasattr(self, "smplx_data"):
+        if hasattr(self, 'smplx_data'):
             for k, v in self.smplx_data.items():
                 if k != 'betas':
                     self.smplx_data[k] = v[indices]
         self.insert_rest_pose()
 
     def cut_transl(self):
-        """cut the transl to zero"""
+        """Cut the transl to zero."""
         self.transl = np.zeros_like(self.transl)
-        if hasattr(self, "smpl_data"):
-            self.smpl_data["transl"] = np.zeros_like(self.smpl_data["transl"])
-        if hasattr(self, "smplx_data"):
-            self.smplx_data["transl"] = np.zeros_like(self.smplx_data["transl"])
+        if hasattr(self, 'smpl_data'):
+            self.smpl_data['transl'] = np.zeros_like(self.smpl_data['transl'])
+        if hasattr(self, 'smplx_data'):
+            self.smplx_data['transl'] = np.zeros_like(self.smplx_data['transl'])
 
     def insert_rest_pose(self):
-        """insert rest pose to the first frame"""
+        """Insert rest pose to the first frame."""
         self.transl = np.insert(self.transl, 0, 0, axis=0)
         self.body_poses = np.insert(self.body_poses, 0, 0, axis=0)
         self.global_orient = np.insert(self.global_orient, 0, 0, axis=0)
         self.n_frames += 1
-        if hasattr(self, "smpl_data"):
+        if hasattr(self, 'smpl_data'):
             for key, arr in self.smpl_data.items():
-                if key == "betas":
+                if key == 'betas':
                     continue
                 self.smplx_dat[key] = np.insert(arr, 0, 0, axis=0)
-        if hasattr(self, "smplx_data"):
+        if hasattr(self, 'smplx_data'):
             for key, arr in self.smplx_data.items():
-                if key == "betas":
+                if key == 'betas':
                     continue
                 self.smplx_data[key] = np.insert(arr, 0, 0, axis=0)
 
@@ -252,9 +249,9 @@ class Motion:
                 loc_, quat_, _ = mat_basis.decompose()
                 # equal to ==> transform = frame_motion_data[tgt_bone_name]
                 transform = frame_motion_data.setdefault(bone_name, {})
-                transform["rotation"] = quat_.tolist()
+                transform['rotation'] = quat_.tolist()
                 if self.BONE_NAME_TO_IDX[bone_name] == 0:  # pelvis bone
-                    transform["location"] = loc_.tolist()
+                    transform['location'] = loc_.tolist()
             motion_data.append(frame_motion_data)
         return motion_data
 
@@ -316,17 +313,17 @@ class SMPLMotion(Motion):
         body_pose = _get_smpl('body_pose', shape=[n_frames, -1])
         if body_pose.shape[1] == 63:
             body_pose = np.concatenate([body_pose, np.zeros([n_frames, 6])], axis=1)
-        assert body_pose.shape[1] == 69, f"body_pose.shape={body_pose.shape}"
+        assert body_pose.shape[1] == 69, f'body_pose.shape={body_pose.shape}'
         # Insert the 0 frame as a T-Pose
         smpl_data = {
-            "betas": betas,
-            "transl": transl,
-            "global_orient": global_orient,
-            "body_pose": body_pose,
+            'betas': betas,
+            'transl': transl,
+            'global_orient': global_orient,
+            'body_pose': body_pose,
         }
         if insert_rest_pose:
             for key, arr in smpl_data.items():
-                if key != "betas":
+                if key != 'betas':
                     arr = np.insert(arr, 0, 0, axis=0)
                     smpl_data[key] = arr
 
@@ -445,16 +442,16 @@ class SMPLXMotion(Motion):
 
         # Insert the 0 frame as a T-Pose
         smplx_data = {
-            "betas": betas,
-            "transl": transl,
-            "global_orient": global_orient,
-            "body_pose": body_pose,
-            "left_hand_pose": left_hand_pose,
-            "right_hand_pose": right_hand_pose,
-            "jaw_pose": jaw_pose,
-            "leye_pose": leye_pose,
-            "reye_pose": reye_pose,
-            "expression": expression,
+            'betas': betas,
+            'transl': transl,
+            'global_orient': global_orient,
+            'body_pose': body_pose,
+            'left_hand_pose': left_hand_pose,
+            'right_hand_pose': right_hand_pose,
+            'jaw_pose': jaw_pose,
+            'leye_pose': leye_pose,
+            'reye_pose': reye_pose,
+            'expression': expression,
         }
         if insert_rest_pose:
             for key, arr in smplx_data.items():
@@ -526,26 +523,26 @@ class SMPLXMotion(Motion):
         height_offset = transl[0, 1]
 
         smplx_data = {
-            "betas": betas,
-            "transl": transl,
-            "global_orient": global_orient,
-            "body_pose": body_pose,
-            "left_hand_pose": left_hand_pose,
-            "right_hand_pose": right_hand_pose,
-            "jaw_pose": jaw_pose,
-            "leye_pose": leye_pose,
-            "reye_pose": reye_pose,
-            "expression": expression,
+            'betas': betas,
+            'transl': transl,
+            'global_orient': global_orient,
+            'body_pose': body_pose,
+            'left_hand_pose': left_hand_pose,
+            'right_hand_pose': right_hand_pose,
+            'jaw_pose': jaw_pose,
+            'leye_pose': leye_pose,
+            'reye_pose': reye_pose,
+            'expression': expression,
         }
         if insert_rest_pose:
             for key, arr in smplx_data.items():
                 arr = arr.astype(np.float32)
-                if key != "betas":
+                if key != 'betas':
                     arr = np.insert(arr, 0, 0, axis=0)
-                    if key == "global_orient":
+                    if key == 'global_orient':
                         # make 0-th frame has the same orient with humandata
                         arr[0, :] = [np.pi, 0, 0]
-                    elif key == "transl":
+                    elif key == 'transl':
                         arr[1:, 1] -= height_offset
                         # TODO: handle pelvis height, get pelvis_height, and set frame-0 as T-pose
                         # arr[0, 1] = pelvis_height
@@ -571,7 +568,7 @@ class SMPLXMotion(Motion):
 
 
 def _get_from_smpl_x(key, shape, *, smpl_x_data, dtype=np.float32, required=True) -> np.ndarray:
-    """Get data from smpl-x data dict
+    """Get data from smpl-x data dict.
 
     Args:
         key: key in smpl_x_data
