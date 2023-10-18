@@ -1,7 +1,7 @@
 <br/>
 
 <div align="center">
-    <img src="https://raw.githubusercontent.com/openxrlab/xrfeitoria/main/resources/xrfeitoria-logo.png" width="600"/>
+     <a href="https://github.com/openxrlab/xrfeitoria"><img src="https://raw.githubusercontent.com/openxrlab/xrfeitoria/main/resources/xrfeitoria-logo.png" alt="XRFeitoria" width="600"/></a>
 </div>
 
 <br/>
@@ -26,7 +26,7 @@ https://github.com/openxrlab/xrfeitoria/assets/35397764/1e83bcd4-ae00-4c20-8188-
 
 - Support rendering photorealistic images with ground-truth annotations.
 - Support multiple engine backends, including [Unreal Engine](https://www.unrealengine.com/) and [Blender](https://www.blender.org/).
-- Support assets/camera management, including import, export, and delete.
+- Support assets/camera management, including import, place, export, and delete.
 - Support a CLI tool to render images from a mesh file.
 
 ## Installation
@@ -87,11 +87,11 @@ Please follow the instructions [here](/samples/README.md).
 
 | Project | Teaser | Engine |
 | :---: | :---: | :---: |
-| [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <img src="https://synbody.github.io/static/teaser.png"/> | Unreal Engine / Blender |
-| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"/> | Blender |
-| [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"/> | Blender |
-| [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <img src="https://city-super.github.io/matrixcity/img/teaser.jpg"/> | Unreal Engine |
-| [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <img src="https://skhu101.github.io/HumanLiff/HumanLiff%20-%20Project%20Page_files/SHERF_teaser.png"/> | Blender |
+| [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <a href=https://synbody.github.io/><img src="https://synbody.github.io/static/teaser.png"/></a> | Unreal Engine / Blender |
+| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <a href=https://wenjiawang0312.github.io/projects/zolly/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"/></a> | Blender |
+| [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <a href=https://skhu101.github.io/SHERF/><img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"/></a> | Blender |
+| [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <a href=https://city-super.github.io/matrixcity/><img src="https://city-super.github.io/matrixcity/img/teaser.jpg"/></a> | Unreal Engine |
+| [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <a href=https://skhu101.github.io/HumanLiff/><img src="https://skhu101.github.io/HumanLiff/HumanLiff%20-%20Project%20Page_files/SHERF_teaser.png"/></a> | Blender |
 
 ## License
 

@@ -15,7 +15,7 @@ exclude = ['tests*', 'docs*', 'tutorials*', 'src*']
 [project]
 name = "xrfeitoria"
 authors = [{ name = "OpenXRLab", email = "openxrlab@pjlab.org.cn" }]
-description = ""
+description = "OpenXRLab Synthetic Data Rendering Toolbox"
 readme = "README.md"
 requires-python = ">=3.8, <3.11"
 license = { text = 'Apache License 2.0' }
