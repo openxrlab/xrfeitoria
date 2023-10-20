@@ -1005,7 +1005,8 @@ class XRFeitoriaBlenderFactory:
             mo_json_file (Path): json file path.
             actor_name (str): Name of the actor.
         """
-        motion_data = json.load(Path(mo_json_file).open('r'))
+        with open(mo_json_file, 'r') as f:
+            motion_data = json.load(f)
         XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data, actor_name=actor_name)
 
     def import_mo_blend(mo_blend_file: Path, action_name: str, actor_name: str) -> None:

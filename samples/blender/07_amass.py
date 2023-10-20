@@ -2,8 +2,11 @@
 >>> python -m samples.blender.07_amass
 
 This is a script to demonstrate importing Amass motion and applying it to SMPL-XL model.
-Before running this script, please download SMPL-XL model and Amass dataset first,
+Before running this script, please download `SMPL-XL model` and `Amass dataset` first,
 you can find the download links in the comments in main function.
+
+SMPL-XL: a parametric human model based on SMPL-X in a layered representation, introduced in https://synbody.github.io/
+Amass: a large database of human motion, introduced in https://amass.is.tue.mpg.de/
 
 ** It is recommended to run this script with Blender >= 3.6 **
 """
