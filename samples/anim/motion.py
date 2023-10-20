@@ -160,6 +160,16 @@ class Motion:
         return smplx_data
 
     def convert_fps(self, fps):
+        """Converts the frames per second (fps) of the animation to the specified value.
+
+        Args:
+            fps (int): The desired frames per second.
+
+        Raises:
+            NotImplementedError:
+                - If the desired fps is greater than the current fps, motion interpolation is not supported.
+                - If the desired fps is less than the current fps, motion interpolation is not supported.
+        """
         if fps == self.fps:
             return
 
@@ -183,6 +193,11 @@ class Motion:
             raise NotImplementedError(f'Not support down sampling from {self.fps}fps to {fps}fps')
 
     def slice_motion(self, frame_interval: int):
+        """Slice the motion sequence by a given frame interval.
+
+        Args:
+            frame_interval (int): The frame interval to use for slicing the motion sequence.
+        """
         assert isinstance(frame_interval, int), TypeError(f'scaling={frame_interval} should be int')
 
         self.transl = self.transl[::frame_interval, :]
@@ -195,7 +210,11 @@ class Motion:
             self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, frame_interval)
 
     def sample_motion(self, n_frames: int):
-        """Randomly sample motion to n_frames."""
+        """Randomly sample motion to n_frames.
+
+        Args:
+            n_frames (int): The number of frames to sample. Randomly sampled from the original motion sequence.
+        """
         assert n_frames > 0, f'n_frames={n_frames}'
         if n_frames == self.n_frames:
             return
@@ -241,6 +260,15 @@ class Motion:
                 self.smplx_data[key] = np.insert(arr, 0, 0, axis=0)
 
     def get_motion_data(self) -> List[Dict[str, Dict[str, List[float]]]]:
+        """Returns a list of dictionaries containing motion data for each frame of the
+        animation.
+
+        Each dictionary contains bone names as keys and a nested dictionary as values. The nested dictionary contains
+        'rotation' and 'location' keys, which correspond to the rotation and location of the bone in that frame.
+
+        Returns:
+            List[Dict[str, Dict[str, List[float]]]]: A list of dictionaries containing motion data for each frame of the animation.
+        """
         motion_data: List[Dict[str, Dict[str, List[float]]]] = []
         for frame in range(self.n_frames):
             frame_motion_data = {}
@@ -301,7 +329,7 @@ class SMPLMotion(Motion):
                 whether to insert a rest pose at the 0th-frame.
 
         Returns:
-            Self: _description_
+            SMPLMotion: An instance of SMPLMotion containing the smpl_data.
         """
         smpl_data = dict(smpl_data)
         _get_smpl = partial(_get_from_smpl_x, smpl_x_data=smpl_data, dtype=np.float32)
@@ -402,7 +430,7 @@ class SMPLXMotion(Motion):
         global_orient_adj: Optional[spRotation] = GLOBAL_ORIENT_ADJUSTMENT,
         vector_convertor: Optional[Callable[[np.ndarray], np.ndarray]] = Converter.vec_humandata2smplx,
     ) -> Self:
-        """Create SMPLXMotion instance from smpl_data.
+        """Create SMPLXMotion instance from smplx_data.
 
         `smplx_data` should be a dict like object,
         with required keys:
@@ -424,7 +452,7 @@ class SMPLXMotion(Motion):
             vector_convertor: a function applies to smplx_data's translation.
 
         Returns:
-            Self: _description_
+            SMPLXMotion: An instance of SMPLXMotion containing the smplx_data.
         """
         smplx_data = dict(smplx_data)
         _get_smplx = partial(_get_from_smpl_x, smpl_x_data=smplx_data, dtype=np.float32)
@@ -497,7 +525,19 @@ class SMPLXMotion(Motion):
         return instance
 
     @classmethod
-    def from_amass_data(cls, amass_data, insert_rest_pose: bool):
+    def from_amass_data(cls, amass_data, insert_rest_pose: bool) -> Self:
+        """Create a Motion instance from AMASS data.
+
+        Args:
+            amass_data (dict): A dictionary containing the AMASS data.
+            insert_rest_pose (bool): Whether to insert a rest pose at the beginning of the motion.
+
+        Returns:
+            SMPLXMotion: A SMPLXMotion instance containing the AMASS data.
+
+        Raises:
+            AssertionError: If the surface model type in the AMASS data is not 'smplx'.
+        """
         assert amass_data['surface_model_type'] == 'smplx', f"surface_model_type={amass_data['surface_model_type']}"
         fps = amass_data['mocap_frame_rate']
 

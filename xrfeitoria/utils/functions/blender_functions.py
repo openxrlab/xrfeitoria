@@ -67,7 +67,13 @@ def import_file(file_path: 'PathLike') -> None:
 
 
 @remote_blender()
-def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict]]', actor_name: str) -> None:
+def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float]]]]', actor_name: str) -> None:
+    """Applies motion data to a given actor in Blender.
+
+    Args:
+        motion_data (List[Dict[str, Dict[str, List[float]]]]): A list of dictionaries containing motion data for the actor.
+        actor_name (str): The name of the actor to apply the motion data to.
+    """
     XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor_name)
 
 

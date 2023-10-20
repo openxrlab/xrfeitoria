@@ -1105,7 +1105,13 @@ class XRFeitoriaBlenderFactory:
                         # fcurve.keyframe_points[f].co = (f, val)
                         fcurve.keyframe_points.insert(frame=f, value=val, options={'FAST'})
 
-    def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict]]', actor_name: str) -> None:
+    def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float]]]]', actor_name: str) -> None:
+        """Applies motion data to a given actor.
+
+        Args:
+            motion_data: A list of dictionaries containing motion data for the actor.
+            actor_name: The name of the actor to apply the motion data to.
+        """
         action = bpy.data.actions.new('Action')
         XRFeitoriaBlenderFactory.apply_motion_data_to_action(motion_data=motion_data, action=action)
         XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor=bpy.data.objects[actor_name])
