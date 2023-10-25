@@ -103,14 +103,17 @@ class RPCFactory:
                 # this re.split is used to split the line by the following characters: . ( ) [ ] =
                 # e.g. ret = bpy.data.objects['Cube'] -> ["bpy", "data", "objects", "'Cube'""]
                 if key in re.split('\.|\(|\)|\[|\]|\=|\ = | ', line.strip()):
-                    relative_path = function.__module__.replace('.', os.path.sep)
-                    import_dir = cls.file_path.strip('.py').replace(relative_path, '').strip(os.sep)
+                    __module__ = function.__module__
+                    if __module__ == '__main__':
+                        __module__ = os.path.basename(cls.file_path).replace('.py', '')
+                    relative_path = __module__.replace('.', os.sep)
+                    import_dir = cls.file_path.replace('.py', '').replace(relative_path, '').strip(os.sep)
                     # add the source file to the import code
                     source_import_code = f'sys.path.append(r"{import_dir}")'
                     if source_import_code not in import_code:
                         import_code.append(source_import_code)
                     # relatively import the module from the source file
-                    relative_import_code = f'from {function.__module__} import {key}'
+                    relative_import_code = f'from {__module__} import {key}'
                     if relative_import_code not in import_code:
                         import_code.append(relative_import_code)
 
