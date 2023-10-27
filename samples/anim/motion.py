@@ -627,4 +627,3 @@ def _get_from_smpl_x(key, shape, *, smpl_x_data, dtype=np.float32, required=True
         _data = _data[:, :n_dims]  # XXX: handle the case that n_dims > data.shape[1]
         return _data
     return np.zeros(shape, dtype=dtype)
-    return np.zeros(shape, dtype=dtype)
