@@ -85,7 +85,7 @@ class CameraBase(ABC, ObjectBase):
 
         # dump
         K, R, T = self.get_KRT()
-        camera_param = CameraParameter(K=K, R=R, T=T)
+        camera_param = CameraParameter(K=K, R=R, T=T, world2cam=True)
         camera_param.dump(output_path.as_posix())
         logger.debug(f'Camera parameters dumped to "{output_path.as_posix()}"')
 
