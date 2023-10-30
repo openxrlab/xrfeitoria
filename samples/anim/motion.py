@@ -210,7 +210,8 @@ class Motion:
             self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, frame_interval)
 
     def sample_motion(self, n_frames: int):
-        """Randomly sample motion to n_frames.
+        """Randomly sample motions, picking n_frames from the original motion sequence.
+        The indices are totally random using `np.random.choice`.
 
         Args:
             n_frames (int): The number of frames to sample. Randomly sampled from the original motion sequence.
@@ -235,7 +236,10 @@ class Motion:
         self.insert_rest_pose()
 
     def cut_transl(self):
-        """Cut the transl to zero."""
+        """Cut the transl to zero.
+
+        This will make the animation stay in place, like root motion.
+        """
         self.transl = np.zeros_like(self.transl)
         if hasattr(self, 'smpl_data'):
             self.smpl_data['transl'] = np.zeros_like(self.smpl_data['transl'])
@@ -260,8 +264,8 @@ class Motion:
                 self.smplx_data[key] = np.insert(arr, 0, 0, axis=0)
 
     def get_motion_data(self) -> List[Dict[str, Dict[str, List[float]]]]:
-        """Returns a list of dictionaries containing motion data for each frame of the
-        animation.
+        """Returns a list of dictionaries containing `rotation` and `location` for each
+        bone of each frame in the animation.
 
         Each dictionary contains bone names as keys and a nested dictionary as values. The nested dictionary contains
         'rotation' and 'location' keys, which correspond to the rotation and location of the bone in that frame.

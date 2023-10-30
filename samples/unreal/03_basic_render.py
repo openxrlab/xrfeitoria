@@ -14,7 +14,7 @@ from ..utils import setup_logger
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
-log_path = output_path / 'blender.log'
+log_path = output_path / 'unreal.log'
 
 seq_name = 'seq_preset'
 
