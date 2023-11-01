@@ -107,7 +107,7 @@ class RPCFactory:
                     if __module__ == '__main__':
                         __module__ = os.path.basename(cls.file_path).replace('.py', '')
                     relative_path = __module__.replace('.', os.sep)
-                    import_dir = cls.file_path.replace('.py', '').replace(relative_path, '').strip(os.sep)
+                    import_dir = cls.file_path.replace('.py', '').replace(relative_path, '').rstrip()
                     # add the source file to the import code
                     source_import_code = f'sys.path.append(r"{import_dir}")'
                     if source_import_code not in import_code:
