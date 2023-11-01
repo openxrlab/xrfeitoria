@@ -275,7 +275,14 @@ class RPCRunner(ABC):
         _num = 0
         while True:
             if process.poll() is not None:
-                logger.error(self.get_process_output(process))
+                error_msg = self.get_process_output(process)
+                logger.error(error_msg)
+
+                if 'Unable to open a display' in error_msg:
+                    raise RuntimeError(
+                        'Failed to start RPC server. Please run blender in background mode. '
+                        'Set `background=True` in `init_blender`. '
+                    )
                 raise RuntimeError('RPC server failed to start. Check the engine output above.')
             try:
                 self.test_connection(debug=self.debug)
