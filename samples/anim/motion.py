@@ -293,7 +293,7 @@ class SMPLMotion(Motion):
     NAME_TO_SMPL_IDX = OrderedDict([(v, k) for k, v in SMPL_IDX_TO_NAME.items() if v])
     NAMES = [x for x in SMPL_IDX_TO_NAME.values() if x]
     PARENTS = list(SMPL_PARENT_IDX)
-    BONE_NAMES = SMPLX_JOINT_NAMES[:NUM_SMPLX_BODYJOINTS]
+    BONE_NAMES = SMPLX_JOINT_NAMES[1 : NUM_SMPLX_BODYJOINTS + 1]
     BONE_NAME_TO_IDX: Dict[str, int] = {bone_name: idx for idx, bone_name in enumerate(BONE_NAMES)}
 
     # In order to make the smpl head up to +z
