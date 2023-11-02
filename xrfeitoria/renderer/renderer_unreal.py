@@ -68,7 +68,7 @@ class RendererUnreal(RendererBase):
         # turn off motion blur by default
         if 'r.MotionBlurQuality' not in console_variables.keys():
             logger.warning(
-                "Seems you gave a console variable dict in ``add_to_renderer(console_variables=...)``, "
+                'Seems you gave a console variable dict in ``add_to_renderer(console_variables=...)``, '
                 'and it replaces the default ``r.MotionBlurQuality`` setting, which would open the motion blur in rendering. '
                 "If you want to turn off the motion blur the same as default, set ``console_variables={..., 'r.MotionBlurQuality': 0}``."
             )
@@ -164,7 +164,6 @@ class RendererUnreal(RendererBase):
         # cls.clear()
         server.close()
 
-        # post process, including: convert cam params.
         cls._post_process()
 
         # clear render queue
@@ -172,7 +171,17 @@ class RendererUnreal(RendererBase):
 
     @classmethod
     def _post_process(cls) -> None:
+        """Post-processes the rendered output by:
+            - converting camera parameters: from `.dat` to `.json`
+            - convert actor infos: from `.dat` to `.json`
+            - convert vertices: from `.dat` to `.npz`
+            - convert skeleton: from `.dat` to `.npz`
+
+        This method is called after rendering is complete.
+        """
         import numpy as np  # isort:skip
+        from rich import get_console  # isort:skip
+        from rich.spinner import Spinner  # isort:skip
         from ..camera.camera_parameter import CameraParameter  # isort:skip
 
         def convert_camera(camera_file: Path) -> None:
@@ -186,8 +195,7 @@ class RendererUnreal(RendererBase):
             camera_file.unlink()
 
         def convert_vertices(folder: Path) -> None:
-            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
-            `.npz` file.
+            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one `.npz` file with structures of: {'verts': np.ndarray, 'faces': None}
 
             Args:
                 folder (Path): Path to the folder containing vertices files.
@@ -238,9 +246,20 @@ class RendererUnreal(RendererBase):
             # Remove the folder
             shutil.rmtree(folder)
 
-        for job in cls.render_queue:
+        console = get_console()
+        try:
+            spinner: Spinner = console._live.renderable
+        except AttributeError:
+            status = console.status('[bold green]:rocket: Rendering...[/bold green]')
+            status.start()
+            spinner: Spinner = status.renderable
+
+        for idx, job in enumerate(cls.render_queue):
             seq_name = job.sequence_path.split('/')[-1]
             seq_path = Path(job.output_path).resolve() / seq_name
+
+            text = f'job {idx + 1}/{len(cls.render_queue)}: seq_name="{seq_name}", post-processing...'
+            spinner.update(text=text)
 
             # 1. convert camera parameters from `.bat` to `.json` with xrprimer
             # glob camera files in {seq_path}/{cam_param_dir}/*
@@ -259,6 +278,11 @@ class RendererUnreal(RendererBase):
                     convert_vertices(actor_folder)
 
             # 4. convert skeleton from `.dat` to `.json`
+            if job.export_skeleton:
+                # glob actors in {seq_path}/skeleton/*
+                actor_folders = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.skeleton.value}/*'))
+                for actor_folder in actor_folders:
+                    convert_vertices(actor_folder)
 
     @staticmethod
     def _add_job_in_engine(job: 'Dict[str, Any]') -> None:

@@ -46,9 +46,10 @@ def get_animation_length(animation_asset: unreal.AnimSequence, seq_fps: float = 
         # TODO: check if this is true
         anim_frame_rate = animation_asset.get_editor_property('target_frame_rate')
         anim_frame_rate = convert_frame_rate_to_fps(anim_frame_rate)
-        assert (
-            anim_frame_rate == seq_fps
-        ), f'anim fps {anim_frame_rate} != seq fps {seq_fps}, this would cause animation interpolation.'
+        if anim_frame_rate == seq_fps:
+            unreal.log_warning(
+                f'anim fps {anim_frame_rate} != seq fps {seq_fps}, this would cause animation interpolation.'
+            )
 
         anim_len = animation_asset.get_editor_property('number_of_sampled_frames')
 

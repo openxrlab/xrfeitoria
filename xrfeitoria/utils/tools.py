@@ -68,7 +68,11 @@ class Logger:
 
     @classmethod
     def setup_logging(
-        cls, level: str = 'INFO', log_path: 'Optional[PathLike]' = None, replace: bool = True
+        cls,
+        level: str = 'INFO',
+        log_path: 'Optional[PathLike]' = None,
+        replace: bool = True,
+        log_rpc_code: bool = False,
     ) -> 'loguru.Logger':
         """Setup logging to file and console.
 
@@ -77,7 +81,13 @@ class Logger:
                                     "ERROR", "CRITICAL".
             log_path (Path, optional): path to save the log file. Defaults to None.
             replace (bool, optional): replace the log file if exists. Defaults to True.
+            log_rpc_code (bool, optional): print the rpc code sending to engine. Defaults to False.
         """
+        if log_rpc_code:
+            import os
+
+            os.environ['RPC_DEBUG'] = '1'
+
         if cls.is_setup:
             return logger
 
