@@ -45,6 +45,7 @@ public class XRFeitoriaUnreal : ModuleRules
 				"MovieSceneTools",
 				"MovieSceneTracks",
 				"LevelSequence",
+				"LevelSequenceEditor",
 				"SequencerScripting",
 				"SequencerScriptingEditor",
 			}

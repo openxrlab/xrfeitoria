@@ -5,6 +5,8 @@
 #include "XF_BlueprintFunctionLibrary.h"
 #include "Engine/StaticMeshActor.h"
 #include "Animation/SkeletalMeshActor.h"
+#include "LevelSequenceEditorBlueprintLibrary.h"
+#include "MovieSceneObjectBindingID.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Misc/FileHelper.h"
@@ -21,86 +23,103 @@ void UMoviePipelineMeshOperator::SetupForPipelineImpl(UMoviePipeline* InPipeline
 	ULevelSequence* LevelSequence = GetPipeline()->GetTargetSequence();
 	UMovieSceneSequence* MovieSceneSequence = GetPipeline()->GetTargetSequence();
 	UMovieScene* MovieScene = LevelSequence->GetMovieScene();
-	TArray<FMovieSceneBinding> bindings = MovieScene->GetBindings();
 
-	TArray<FMovieSceneBindingProxy> bindingProxies;
-	for (FMovieSceneBinding binding : bindings)
+	TMap<FString, FGuid> bindingMap;
+	for (int idx = 0; idx < MovieScene->GetSpawnableCount(); idx++)
 	{
-		FGuid guid = binding.GetObjectGuid();
-		bindingProxies.Add(FSequencerBindingProxy(guid, MovieSceneSequence));
+		FMovieSceneSpawnable spawnable = MovieScene->GetSpawnable(idx);
+		FGuid guid = spawnable.GetGuid();
+		FString name = spawnable.GetName();
+
+		bindingMap.Add(name, guid);
 	}
 
-	boundObjects = USequencerToolsFunctionLibrary::GetBoundObjects(
-		GetPipeline()->GetWorld(),
-		LevelSequence,
-		bindingProxies,
-		FSequencerScriptingRange::FromNative(
-			MovieScene->GetPlaybackRange(),
-			MovieScene->GetDisplayRate()
-		)
-	);
-
-	for (FSequencerBoundObjects boundObject : boundObjects)
+	for (int idx = 0; idx < MovieScene->GetPossessableCount(); idx++)
 	{
-		// loop over bound objects
-		UObject* BoundObject = boundObject.BoundObjects[0];  // only have one item
+		FMovieScenePossessable possessable = MovieScene->GetPossessable(idx);
+		FGuid guid = possessable.GetGuid();
+		FString name = possessable.GetName();
+
+		bindingMap.Add(name, guid);
+	}
+
+	for (TPair<FString, FGuid> pair : bindingMap)
+	{
+		FString name = pair.Key;
+		FGuid guid = pair.Value;
+
+		TArray<FSequencerBoundObjects> _boundObjects_ = USequencerToolsFunctionLibrary::GetBoundObjects(
+			GetPipeline()->GetWorld(),
+			LevelSequence,
+			TArray<FMovieSceneBindingProxy>({ FSequencerBindingProxy(guid, MovieSceneSequence) }),
+			FSequencerScriptingRange::FromNative(
+				MovieScene->GetPlaybackRange(),
+				MovieScene->GetDisplayRate()
+			)
+		);
+
+		UObject* BoundObject = _boundObjects_[0].BoundObjects[0];  // only have one item
 		if (BoundObject->IsA(ASkeletalMeshActor::StaticClass()))
 		{
 			ASkeletalMeshActor* SkeletalMeshActor = Cast<ASkeletalMeshActor>(BoundObject);
-			SkeletalMeshComponents.Add(SkeletalMeshActor->GetSkeletalMeshComponent());
+			SkeletalMeshComponents.Add(name, SkeletalMeshActor->GetSkeletalMeshComponent());
 		}
 		else if (BoundObject->IsA(AStaticMeshActor::StaticClass()))
 		{
 			AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(BoundObject);
-			StaticMeshComponents.Add(StaticMeshActor->GetStaticMeshComponent());
+			StaticMeshComponents.Add(name, StaticMeshActor->GetStaticMeshComponent());
 		}
-		else if (BoundObject->IsA(USkeletalMeshComponent::StaticClass()))
-		{
-			USkeletalMeshComponent* SkeletalMeshComponent = Cast<USkeletalMeshComponent>(BoundObject);
-			// check if it's already in the list
-			bool bFound = false;
-			for (USkeletalMeshComponent* SkeletalMeshComponentInList : SkeletalMeshComponents)
-			{
-				if (SkeletalMeshComponentInList == SkeletalMeshComponent)
-				{
-					bFound = true;
-					break;
-				}
-			}
-			if (!bFound) SkeletalMeshComponents.Add(SkeletalMeshComponent);
-		}
-		else if (BoundObject->IsA(UStaticMeshComponent::StaticClass()))
-		{
-			UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(BoundObject);
-			// check if it's already in the list
-			bool bFound = false;
-			for (UStaticMeshComponent* StaticMeshComponentInList : StaticMeshComponents)
-			{
-				if (StaticMeshComponentInList == StaticMeshComponent)
-				{
-					bFound = true;
-					break;
-				}
-			}
-			if (!bFound)
-				StaticMeshComponents.Add(StaticMeshComponent);
-		}
+		//else if (BoundObject->IsA(USkeletalMeshComponent::StaticClass()))
+		//{
+		//	USkeletalMeshComponent* SkeletalMeshComponent = Cast<USkeletalMeshComponent>(BoundObject);
+		//	// check if it's already in the list
+		//	bool bFound = false;
+		//	for (TPair<FString, USkeletalMeshComponent*> SKMPair : SkeletalMeshComponents)
+		//	{
+		//		USkeletalMeshComponent* SkeletalMeshComponentInList = SKMPair.Value;
+		//		if (SkeletalMeshComponentInList == SkeletalMeshComponent)
+		//		{
+		//			bFound = true;
+		//			break;
+		//		}
+		//	}
+		//	if (!bFound) SkeletalMeshComponents.Add(name, SkeletalMeshComponent);
+		//}
+		//else if (BoundObject->IsA(UStaticMeshComponent::StaticClass()))
+		//{
+		//	UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(BoundObject);
+		//	// check if it's already in the list
+		//	bool bFound = false;
+		//	for (TPair<FString, UStaticMeshComponent*> SKMPair : StaticMeshComponents)
+		//	{
+		//		UStaticMeshComponent* StaticMeshComponentInList = SKMPair.Value;
+		//		if (StaticMeshComponentInList == StaticMeshComponent)
+		//		{
+		//			bFound = true;
+		//			break;
+		//		}
+		//	}
+		//	if (!bFound) StaticMeshComponents.Add(name, StaticMeshComponent);
+		//}
 	}
 }
 
 void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutputFrame* InMergedOutputFrame)
 {
-	for (USkeletalMeshComponent* SkeletalMeshComponent : SkeletalMeshComponents)
+	for (TPair<FString, USkeletalMeshComponent*> SKMPair : SkeletalMeshComponents)
 	{
 		// loop over Skeletal mesh components
 		if (!SkeletalMeshOperatorOption.bEnabled) continue;
 
-		// Actor in level
-		FString MeshNameFromLabel = SkeletalMeshComponent->GetOwner()->GetActorNameOrLabel();
-		// Actor spawned from sequence
-		FString MeshNameFromName = SkeletalMeshComponent->GetOwner()->GetFName().GetPlainNameString();
-		// Judge which name is correct
-		FString MeshName = MeshNameFromName.StartsWith("SkeletalMesh") ? MeshNameFromLabel : MeshNameFromName;
+		FString MeshName = SKMPair.Key;
+		USkeletalMeshComponent* SkeletalMeshComponent = SKMPair.Value;
+
+		//// Actor in level
+		//FString MeshNameFromLabel = SkeletalMeshComponent->GetOwner()->GetActorNameOrLabel();
+		//// Actor spawned from sequence
+		//FString MeshNameFromName = SkeletalMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+		//// Judge which name is correct
+		//FString MeshName = MeshNameFromName.StartsWith("SkeletalMesh") ? MeshNameFromLabel : MeshNameFromName;
 
 		if (SkeletalMeshOperatorOption.bSaveVerticesPosition)
 		{
@@ -198,17 +217,20 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 		//	// TODO: export to npz
 		//}
 	}
-	for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
+	for (TPair<FString, UStaticMeshComponent*> SKMPair : StaticMeshComponents)
 	{
 		// loop over static mesh components
 		if (!StaticMeshOperatorOption.bEnabled) continue;
 
-		// Actor in level
-		FString MeshNameFromLabel = StaticMeshComponent->GetOwner()->GetActorNameOrLabel();
-		// Actor spawned from sequence
-		FString MeshNameFromName = StaticMeshComponent->GetOwner()->GetFName().GetPlainNameString();
-		// Judge which name is correct
-		FString MeshName = MeshNameFromName.StartsWith("StaticMesh") ? MeshNameFromLabel : MeshNameFromName;
+		UStaticMeshComponent* StaticMeshComponent = SKMPair.Value;
+		FString MeshName = SKMPair.Key;
+
+		//// Actor in level
+		//FString MeshNameFromLabel = StaticMeshComponent->GetOwner()->GetActorNameOrLabel();
+		//// Actor spawned from sequence
+		//FString MeshNameFromName = StaticMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+		//// Judge which name is correct
+		//FString MeshName = MeshNameFromName.StartsWith("StaticMesh") ? MeshNameFromLabel : MeshNameFromName;
 
 		if (StaticMeshOperatorOption.bSaveVerticesPosition)
 		{
@@ -236,6 +258,7 @@ void UMoviePipelineMeshOperator::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 					StaticMeshOperatorOption.DirectoryVertices / MeshName, "dat", &InMergedOutputFrame->FrameOutputState));
 		}
 	}
+
 	if (bIsFirstFrame) bIsFirstFrame = false;
 }
 
