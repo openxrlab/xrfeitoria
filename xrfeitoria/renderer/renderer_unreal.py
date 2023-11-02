@@ -39,7 +39,7 @@ class RendererUnreal(RendererBase):
         resolution: Tuple[int, int],
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
-        console_variables: Dict[str, float] = {},
+        console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
         anti_aliasing: 'Optional[RenderJob.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
@@ -53,7 +53,7 @@ class RendererUnreal(RendererBase):
             resolution (Tuple[int, int]): Resolution of the output image.
             render_passes (List[RenderPass]): Render passes to render.
             file_name_format (str, optional): File name format of the output image. Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
-            console_variables (Dict[str, float], optional): Console variables to set. Defaults to {}.
+            console_variables (Dict[str, float], optional): Console variables to set. Defaults to ``{'r.MotionBlurQuality': 0}``.
                 Ref to :ref:`FAQ-console-variables` for details.
             anti_aliasing (Optional[RenderJob.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
@@ -67,7 +67,11 @@ class RendererUnreal(RendererBase):
 
         # turn off motion blur by default
         if 'r.MotionBlurQuality' not in console_variables.keys():
-            console_variables['r.MotionBlurQuality'] = 0
+            logger.warning(
+                "Seems you gave a console variable dict in ``add_to_renderer(console_variables=...)``, "
+                'and it replaces the default ``r.MotionBlurQuality`` setting, which would open the motion blur in rendering. '
+                "If you want to turn off the motion blur the same as default, set ``console_variables={..., 'r.MotionBlurQuality': 0}``."
+            )
 
         job = RenderJob(
             map_path=map_path,
@@ -182,7 +186,7 @@ class RendererUnreal(RendererBase):
             camera_file.unlink()
 
         def convert_vertices(folder: Path) -> None:
-            """Convert vertices from `.bin` to `.npz`. Merge all vertices files into one
+            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
             `.npz` file.
 
             Args:
@@ -247,12 +251,14 @@ class RendererUnreal(RendererBase):
             # 2. convert actor infos from `.dat` to `.json`
             convert_actor_infos(folder=seq_path / RenderOutputEnumUnreal.actor_infos.value)
 
-            # 3. convert vertices from `.bin` to `.npz`
+            # 3. convert vertices from `.dat` to `.npz`
             if job.export_vertices:
                 # glob actors in {seq_path}/vertices/*
                 actor_folders = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.vertices.value}/*'))
                 for actor_folder in actor_folders:
                     convert_vertices(actor_folder)
+
+            # 4. convert skeleton from `.dat` to `.json`
 
     @staticmethod
     def _add_job_in_engine(job: 'Dict[str, Any]') -> None:

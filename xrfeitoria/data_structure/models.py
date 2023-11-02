@@ -242,7 +242,7 @@ class RenderJobUnreal(BaseModel):
         description='File name format of the render job.',
     )
     console_variables: Dict[str, float] = Field(
-        default={},
+        default={'r.MotionBlurQuality': 0},
         description='Additional console variables of the render job. Ref to :ref:`FAQ-console-variables` for details.',
     )
     anti_aliasing: AntiAliasSetting = Field(

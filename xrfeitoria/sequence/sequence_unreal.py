@@ -41,7 +41,7 @@ class SequenceUnreal(SequenceBase):
         resolution: Tuple[int, int],
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
-        console_variables: Dict[str, float] = {},
+        console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
         anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
@@ -57,7 +57,7 @@ class SequenceUnreal(SequenceBase):
             render_passes (List[RenderPass]): The list of render passes to be rendered.
             file_name_format (str, optional): The format of the output file name.
                 Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
-            console_variables (Dict[str, float], optional): The console variables to be set before rendering. Defaults to {}.
+            console_variables (Dict[str, float], optional): The console variables to be set before rendering. Defaults to {'r.MotionBlurQuality': 0}.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional):
                 The anti-aliasing settings for the render job. Defaults to None.
@@ -101,8 +101,8 @@ class SequenceUnreal(SequenceBase):
     def spawn_actor(
         cls,
         actor_asset_path: str,
-        location: 'Vector',
-        rotation: 'Vector',
+        location: 'Vector' = None,
+        rotation: 'Vector' = None,
         scale: 'Optional[Vector]' = None,
         actor_name: Optional[str] = None,
         stencil_value: int = 1,

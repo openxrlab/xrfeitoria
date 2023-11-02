@@ -97,6 +97,19 @@ class SequenceBase(ABC):
         scale: 'Vector' = None,
         stencil_value: int = 1,
     ) -> ActorBase:
+        """Imports an actor from a file and adds it to the sequence.
+
+        Args:
+            file_path (PathLike): The path to the file containing the actor to import.
+            actor_name (Optional[str], optional): The name to give the imported actor. If not provided, a name will be generated automatically. Defaults to None.
+            location (Vector, optional): The initial location of the actor. Defaults to None.
+            rotation (Vector, optional): The initial rotation of the actor. Defaults to None.
+            scale (Vector, optional): The initial scale of the actor. Defaults to None.
+            stencil_value (int, optional): The stencil value to use for the actor. Defaults to 1.
+
+        Returns:
+            ActorBase: The imported actor.
+        """
         if actor_name is None:
             actor_name = cls._object_utils.generate_obj_name(obj_type='actor')
         # judge file path

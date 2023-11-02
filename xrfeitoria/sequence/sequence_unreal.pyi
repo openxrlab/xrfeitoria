@@ -30,11 +30,11 @@ class SequenceUnreal(SequenceBase):
         output_path: PathLike,
         resolution: Tuple[int, int],
         render_passes: List[RenderPass],
-        file_name_format: str = ...,
-        console_variables: Dict[str, float] = ...,
-        anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = ...,
-        export_vertices: bool = ...,
-        export_skeleton: bool = ...,
+        file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
+        console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
+        anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
+        export_vertices: bool = False,
+        export_skeleton: bool = False,
     ) -> None: ...
     @classmethod
     def spawn_camera(
