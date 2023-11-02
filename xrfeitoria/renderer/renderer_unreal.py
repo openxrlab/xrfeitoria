@@ -195,7 +195,8 @@ class RendererUnreal(RendererBase):
             camera_file.unlink()
 
         def convert_vertices(folder: Path) -> None:
-            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one `.npz` file with structures of: {'verts': np.ndarray, 'faces': None}
+            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
+            `.npz` file with structure of: {'verts': np.ndarray, 'faces': None}
 
             Args:
                 folder (Path): Path to the folder containing vertices files.
