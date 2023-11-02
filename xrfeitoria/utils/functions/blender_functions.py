@@ -1,7 +1,7 @@
 """Remote functions for blender."""
 
 from pathlib import Path
-from typing import Dict, List, Literal, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 from ...data_structure.constants import ImportFileFormatEnum, PathLike, Vector
 from ...rpc import remote_blender
@@ -314,3 +314,20 @@ def enable_gpu(gpu_num: int = 1):
         gpu_num (int, optional): Number of GPUs to use. Defaults to 1.
     """
     XRFeitoriaBlenderFactory.enable_gpu(gpu_num=gpu_num)
+
+
+@remote_blender()
+def install_plugin(plugin_path: 'PathLike', plugin_name_blender: 'Optional[str]' = None):
+    """Install plugin in blender.
+
+    Args:
+        path (PathLike): Path to the plugin.
+    """
+    bpy.ops.preferences.addon_install(filepath=Path(plugin_path).resolve().as_posix())
+    if plugin_name_blender is None:
+        plugin_name_blender = Path(plugin_path).stem
+        logger.warning(f'Plugin name not specified, use {plugin_name_blender} as default.')
+    bpy.ops.preferences.addon_enable(module=plugin_name_blender)
+    bpy.ops.wm.save_userpref()
+
+    logger.info(f'Plugin {plugin_name_blender} installed successfully.')

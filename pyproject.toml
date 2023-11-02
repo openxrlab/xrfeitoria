@@ -72,7 +72,8 @@ vis=[
 "Documentation" = "https://xrfeitoria.readthedocs.io/en/latest/"
 
 [project.scripts]
-xf-render = "xrfeitoria.cmd.render:app"
+xf-render = "xrfeitoria.cmd.blender.render:app"
+xf-install-plugin = "xrfeitoria.cmd.blender.install_plugin:app"
 
 [tool.black]
 line-length = 120
