@@ -12,9 +12,8 @@ Amass: a large database of human motion, introduced in https://amass.is.tue.mpg.
 """
 import xrfeitoria as xf
 from xrfeitoria.rpc import remote_blender
+from xrfeitoria.utils.anim import load_amass_motion
 from xrfeitoria.utils.tools import Logger
-
-from ..anim.utils import load_amass_motion
 
 
 @remote_blender()
