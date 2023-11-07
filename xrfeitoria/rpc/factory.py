@@ -32,6 +32,14 @@ class RPCFactory:
     registered_function_names = []
 
     @classmethod
+    def clear(cls):
+        cls.rpc_client = None
+        cls.file_path = None
+        cls.remap_pairs = []
+        cls.default_imports = []
+        cls.registered_function_names.clear()
+
+    @classmethod
     def setup(cls, port: int, remap_pairs: List[str] = None, default_imports: List[str] = None):
         """Sets up the RPC factory.
 

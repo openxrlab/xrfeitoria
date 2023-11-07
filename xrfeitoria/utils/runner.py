@@ -165,7 +165,8 @@ class RPCRunner(ABC):
 
     def stop(self) -> None:
         """Stop rpc server."""
-        import psutil
+        import psutil  # isort:skip
+        from ..rpc.factory import RPCFactory  # isort:skip
 
         process = self.engine_process
         if process is not None:
@@ -179,6 +180,9 @@ class RPCRunner(ABC):
             self.engine_process = None
         else:
             logger.info(':bell: [bold red]Exiting runner[/bold red], reused engine process remains')
+
+        # clear rpc server
+        RPCFactory.clear()
 
     def reuse(self) -> bool:
         """Try to reuse existing engine process.
