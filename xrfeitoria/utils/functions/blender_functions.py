@@ -100,8 +100,8 @@ def cleanup_unused():
 
 @remote_blender()
 def save_blend(save_path: 'PathLike' = None, pack: bool = False):
-    """Save the current blend file to the given path.
-    If no path is given, save to the current blend file path.
+    """Save the current blend file to the given path. If no path is given, save to the
+    current blend file path.
 
     Args:
         save_path (PathLike, optional): Path to save the blend file. Defaults to None.
