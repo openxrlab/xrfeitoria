@@ -999,7 +999,8 @@ class XRFeitoriaBlenderFactory:
             raise Exception(f'Failed to import glb: {glb_file}\n{e}')
 
     def import_mo_json(mo_json_file: Path, actor_name: str) -> None:
-        """Import an animation from json, and apply the animation to the given actor.
+        """Import an animation from json, and apply the animation to the given actor. In
+        form of quaternion.
 
         Args:
             mo_json_file (Path): json file path.
@@ -1052,14 +1053,15 @@ class XRFeitoriaBlenderFactory:
         actor.animation_data.action = action
 
     def apply_motion_data_to_action(
-        motion_data: 'List[Dict[str, Dict]]',
+        motion_data: 'List[Dict[str, Dict[str, List[float]]]]',
         action: 'bpy.types.Action',
         scale: float = 1.0,
     ) -> None:
         """Apply motion data in dict to object.
 
         Args:
-            motion_data (List[Dict[str, Dict]]): Motion data in the form of dict, normally imported from json.
+            motion_data (List[Dict[str, Dict]]): Motion data in the form of dict,
+                containing rotation (quaternion) and location.
             action (bpy.types.Action): Action.
             scale (float, optional): Scale of movement in location of animation. Defaults to 1.0.
         """
@@ -1109,7 +1111,7 @@ class XRFeitoriaBlenderFactory:
         """Applies motion data to a given actor.
 
         Args:
-            motion_data: A list of dictionaries containing motion data for the actor.
+            motion_data: A list of dictionaries containing motion data (quaternion) for the actor.
             actor_name: The name of the actor to apply the motion data to.
         """
         action = bpy.data.actions.new('Action')
