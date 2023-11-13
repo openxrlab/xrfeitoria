@@ -934,6 +934,19 @@ class XRFeitoriaBlenderFactory:
     #####################################
     ############### Import ##############
     #####################################
+    def import_texture(texture_file: str) -> bpy.types.Image:
+        """Import an image as a texture
+
+        Args:
+            texture_file (str): File path of the image.
+        Returns:
+            bpy.types.Image: The imported texture.
+        """
+        try:
+            texture = bpy.data.images.load(filepath=str(texture_file))
+        except Exception:
+            raise Exception(f"Failed to import texture: {texture_file}")
+        return texture
 
     def import_fbx(fbx_file: str) -> None:
         """Import an fbx file. Only support binary fbx.
@@ -1259,3 +1272,18 @@ class XRFeitoriaBlenderFactory:
             return bbox_min, bbox_max
         else:
             raise ValueError(f'Invalid object type: {obj.type}')
+
+    #####################################
+    ############# Material ##############
+    #####################################
+    def get_material(mat_name: str) -> 'bpy.types.Material':
+        if mat_name not in bpy.data.materials.keys():
+            raise ValueError(f"Material '{mat_name}' does not exists in this blend file.")
+        return bpy.data.materials[mat_name]
+    
+    def new_mat_node(mat: 'bpy.types.Material', type: str, name: Optional[str] = None) -> bpy.types.Node:
+        _nodes = mat.node_tree.nodes
+        node = _nodes.new(type=type)
+        if name:
+            node.name = name
+        return node

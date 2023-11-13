@@ -9,6 +9,7 @@ from ..rpc import remote_blender
 from ..utils import Validator
 from ..utils.functions import blender_functions
 from .actor_base import ActorBase
+from ..material.material_blender import MaterialBlender
 
 try:
     import bpy  # isort:skip
@@ -42,6 +43,10 @@ class ActorBlender(ActorBase):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
         self._object_utils.set_transform_keys(name=self.name, transform_keys=transform_keys)
+    
+    def set_material(self, mat: MaterialBlender) -> None:
+        self._set_material_in_engine(actor_name=self.name, mat_name=mat._name)
+
 
     #####################################
     ###### RPC METHODS (Private) ########
@@ -127,6 +132,31 @@ class ActorBlender(ActorBase):
             XRFeitoriaBlenderFactory.import_mo_fbx(mo_fbx_file=animation_path, actor_name=actor_name)
         else:
             raise TypeError(f"Invalid anim file, expected 'json', 'blend', or 'fbx' (got {anim_file_ext[1:]} instead).")
+    
+    @staticmethod
+    def _set_material_in_engine(actor_name: str, mat_name: str) -> None:
+        """Set material to an actor. If the actor has multiple meshes, set material to the 1st mesh.
+
+        Args:
+            actor_name (str): Name of the actor.
+            mat_name (str): Name of the material.
+        """
+        actor = bpy.data.objects[actor_name]
+        material = XRFeitoriaBlenderFactory.get_material(mat_name=mat_name)
+
+        if actor.type == "ARMATURE":
+            if len(actor.children) == 0:
+                raise TypeError(f"Actor {actor_name} has no meshes, thus cannot set material to it.")
+            mesh = actor.children[0]
+        elif actor.type == "MESH":
+            mesh = actor
+
+        if mesh.data.materials:
+            # assign to 1-st material slot
+            mesh.data.materials[0] = material
+        else:
+            # no existing slot
+            mesh.data.materials.append(material)
 
 
 @remote_blender(dec_class=True, suffix='_in_engine')
