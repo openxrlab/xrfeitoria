@@ -414,8 +414,11 @@ class XRFeitoriaBlenderFactory:
         Args:
             collection (bpy.types.Collection): The collection to be set as the active collection.
         """
-        layer_collection = bpy.context.view_layer.layer_collection.children[collection.name]
-        bpy.context.view_layer.active_layer_collection = layer_collection
+        if collection.name in bpy.context.view_layer.layer_collection.children.keys():
+            layer_collection = bpy.context.view_layer.layer_collection.children[collection.name]
+            bpy.context.view_layer.active_layer_collection = layer_collection
+        elif collection.name == bpy.context.view_layer.layer_collection.name:
+            bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
     def set_frame_range(scene: 'bpy.types.Scene', start: int, end: int) -> None:
         """Set the frame range of the given scene.
