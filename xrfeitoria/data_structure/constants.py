@@ -178,8 +178,8 @@ class ShapeTypeEnumUnreal(EnumBase):
 
 
 class BSDFNodeLinkEnumBlender(EnumBase):
-    """Shader node link enum of Blender"""
+    """Shader node link enum of Blender."""
 
-    diffuse = "Base Color"
-    normal = "Normal"
-    roughness = "Roughness"
+    diffuse = 'Base Color'
+    normal = 'Normal'
+    roughness = 'Roughness'
