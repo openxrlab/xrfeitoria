@@ -23,6 +23,14 @@ class MaterialBase(ABC):
 
     @classmethod
     def new(cls, mat_name: str) -> Self:
+        """Add a new material.
+
+        Args:
+            mat_name (str): Name of the material.
+
+        Returns:
+            Self: The instance of the material.
+        """
         cls._new_material_in_engine(mat_name)
         return cls(mat_name)
 
@@ -32,7 +40,12 @@ class MaterialBase(ABC):
         texture_file: PathLike,
         texture_name: Optional[str] = None,
     ) -> None:
-        """Add a diffuse texture to the material"""
+        """Add a diffuse texture to the material
+
+        Args:
+            texture_file (PathLike): File path of the texture.
+            texture_name (Optional[str]): Name of the texture. Defaults to None.
+        """
         if texture_name is None:
             texture_name = Path(texture_file).stem
         self._add_diffuse_texture_in_engine(mat_name=self._name, texture_file=texture_file, texture_name=texture_name)
@@ -43,7 +56,12 @@ class MaterialBase(ABC):
         texture_file: PathLike,
         texture_name: Optional[str] = None,
     ) -> None:
-        """Add a normal texture to the material"""
+        """Add a normal texture to the material
+
+        Args:
+            texture_file (PathLike): File path of the texture.
+            texture_name (Optional[str]): Name of the texture. Defaults to None.
+        """
         if texture_name is None:
             texture_name = Path(texture_file).stem
         self._add_normal_texture_in_engine(mat_name=self._name, texture_file=texture_file, texture_name=texture_name)
@@ -54,7 +72,12 @@ class MaterialBase(ABC):
         texture_file: PathLike,
         texture_name: Optional[str] = None,
     ) -> None:
-        """Add a normal texture to the material"""
+        """Add a roughness texture to the material
+
+        Args:
+            texture_file (PathLike): File path of the texture.
+            texture_name (Optional[str]): Name of the texture. Defaults to None.
+        """
         if texture_name is None:
             texture_name = Path(texture_file).stem
         self._add_roughness_texture_in_engine(mat_name=self._name, texture_file=texture_file, texture_name=texture_name)

@@ -32,6 +32,11 @@ class MaterialBlender(MaterialBase):
     ######   Getter   ######
     @staticmethod
     def _new_material_in_engine(mat_name: str) -> None:
+        """Add a new material.
+
+        Args:
+            mat_name (str): Name of the material in Blender.
+        """
         mat = bpy.data.materials.new(name=mat_name)
         mat.use_nodes = True
 
@@ -42,6 +47,13 @@ class MaterialBlender(MaterialBase):
         texture_file: str,
         texture_name: str,
     ) -> None:
+        """Add a diffuse texture to the material
+
+        Args:
+            mat_name (str): Name of the material in Blender.
+            texture_file (PathLike): File path of the texture.
+            texture_name (Optional[str]): Name of the texture. Defaults to None.
+        """
         mat = XRFeitoriaBlenderFactory.get_material(mat_name=mat_name)
         tex_node = XRFeitoriaBlenderFactory.new_mat_node(mat=mat, type="ShaderNodeTexImage", name=texture_name)
         tex_node.image = XRFeitoriaBlenderFactory.import_texture(texture_file=texture_file)
@@ -60,6 +72,13 @@ class MaterialBlender(MaterialBase):
         texture_file: str,
         texture_name: str,
     ) -> None:
+        """Add a normal texture to the material
+
+        Args:
+            mat_name (str): Name of the material in Blender.
+            texture_file (PathLike): File path of the texture.
+            texture_name (Optional[str]): Name of the texture. Defaults to None.
+        """
         mat = XRFeitoriaBlenderFactory.get_material(mat_name=mat_name)
         tex_node = XRFeitoriaBlenderFactory.new_mat_node(mat=mat, type="ShaderNodeTexImage", name=texture_name)
         tex_node.image = XRFeitoriaBlenderFactory.import_texture(texture_file=texture_file)
@@ -88,6 +107,13 @@ class MaterialBlender(MaterialBase):
         texture_file: str,
         texture_name: str,
     ) -> None:
+        """Add a roughness texture to the material
+
+        Args:
+            mat_name (str): Name of the material in Blender.
+            texture_file (PathLike): File path of the texture.
+            texture_name (Optional[str]): Name of the texture. Defaults to None.
+        """
         mat = XRFeitoriaBlenderFactory.get_material(mat_name=mat_name)
         tex_node = XRFeitoriaBlenderFactory.new_mat_node(mat=mat, type="ShaderNodeTexImage", name=texture_name)
         tex_node.image = XRFeitoriaBlenderFactory.import_texture(texture_file=texture_file)
