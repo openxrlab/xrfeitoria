@@ -414,8 +414,11 @@ class XRFeitoriaBlenderFactory:
         Args:
             collection (bpy.types.Collection): The collection to be set as the active collection.
         """
-        layer_collection = bpy.context.view_layer.layer_collection.children[collection.name]
-        bpy.context.view_layer.active_layer_collection = layer_collection
+        if collection.name in bpy.context.view_layer.layer_collection.children.keys():
+            layer_collection = bpy.context.view_layer.layer_collection.children[collection.name]
+            bpy.context.view_layer.active_layer_collection = layer_collection
+        elif collection.name == bpy.context.view_layer.layer_collection.name:
+            bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
     def set_frame_range(scene: 'bpy.types.Scene', start: int, end: int) -> None:
         """Set the frame range of the given scene.
@@ -934,6 +937,19 @@ class XRFeitoriaBlenderFactory:
     #####################################
     ############### Import ##############
     #####################################
+    def import_texture(texture_file: str) -> bpy.types.Image:
+        """Import an image as a texture.
+
+        Args:
+            texture_file (str): File path of the image.
+        Returns:
+            bpy.types.Image: The imported texture.
+        """
+        try:
+            texture = bpy.data.images.load(filepath=str(texture_file))
+        except Exception:
+            raise Exception(f'Failed to import texture: {texture_file}')
+        return texture
 
     def import_fbx(fbx_file: str) -> None:
         """Import an fbx file. Only support binary fbx.
@@ -1259,3 +1275,18 @@ class XRFeitoriaBlenderFactory:
             return bbox_min, bbox_max
         else:
             raise ValueError(f'Invalid object type: {obj.type}')
+
+    #####################################
+    ############# Material ##############
+    #####################################
+    def get_material(mat_name: str) -> 'bpy.types.Material':
+        if mat_name not in bpy.data.materials.keys():
+            raise ValueError(f"Material '{mat_name}' does not exists in this blend file.")
+        return bpy.data.materials[mat_name]
+
+    def new_mat_node(mat: 'bpy.types.Material', type: str, name: Optional[str] = None) -> bpy.types.Node:
+        _nodes = mat.node_tree.nodes
+        node = _nodes.new(type=type)
+        if name:
+            node.name = name
+        return node
