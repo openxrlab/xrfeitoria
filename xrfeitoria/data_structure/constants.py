@@ -175,3 +175,11 @@ class ShapeTypeEnumUnreal(EnumBase):
     cylinder = 'cylinder'
     plane = 'plane'
     sphere = 'sphere'
+
+
+class BSDFNodeLinkEnumBlender(EnumBase):
+    """Shader node link enum of Blender."""
+
+    diffuse = 'Base Color'
+    normal = 'Normal'
+    roughness = 'Roughness'

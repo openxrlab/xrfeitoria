@@ -44,6 +44,7 @@ class XRFeitoriaBlender:
         from .object.object_utils import ObjectUtilsBlender  # isort:skip
         from .camera.camera_blender import CameraBlender  # isort:skip
         from .actor.actor_blender import ActorBlender, ShapeBlenderWrapper  # isort:skip
+        from .material.material_blender import MaterialBlender  # isort:skip
         from .renderer.renderer_blender import RendererBlender  # isort:skip
         from .sequence.sequence_wrapper import SequenceWrapperBlender  # isort:skip
         from .utils.runner import BlenderRPCRunner  # isort:skip
@@ -54,6 +55,7 @@ class XRFeitoriaBlender:
         self.ObjectUtils = ObjectUtilsBlender
         self.Camera = CameraBlender
         self.Actor = ActorBlender
+        self.Material = MaterialBlender
         self.Shape = ShapeBlenderWrapper
         self.Renderer = RendererBlender
         self.render = self.Renderer.render_jobs
@@ -188,6 +190,7 @@ class init_blender(XRFeitoriaBlender):
                 pip install -e .
                 python -c "import xrfeitoria as xf; xf.init_blender(replace_plugin=True, dev_plugin=True)"
         """
+        _tls.cache = {'platform': None, 'engine_process': None, 'unreal_project_path': None}
         _tls.cache['platform'] = EngineEnum.blender
         self._cleanup = cleanup
         super().__init__(
