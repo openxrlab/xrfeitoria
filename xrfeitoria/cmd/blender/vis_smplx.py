@@ -8,14 +8,18 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Tuple
 
-import numpy as np
-from typer import Argument, Option, Typer
-from typing_extensions import Annotated
-
 import xrfeitoria as xf
 from xrfeitoria.rpc import remote_blender
-from xrfeitoria.utils.anim.motion import Motion, SMPLMotion, SMPLXMotion
 from xrfeitoria.utils.tools import Logger
+
+try:
+    import numpy as np
+    from typer import Argument, Option, Typer
+    from typing_extensions import Annotated
+
+    from xrfeitoria.utils.anim.motion import Motion, SMPLMotion, SMPLXMotion
+except (ImportError, NameError):
+    pass
 
 app = Typer(pretty_exceptions_show_locals=False)
 
@@ -97,7 +101,7 @@ def export_fbx(
     return success
 
 
-def read_smpl_x(path: Path) -> Motion:
+def read_smpl_x(path: Path) -> 'Motion':
     """Reads a SMPL/SMPLX motion from a .npz file.
 
     Args:
@@ -113,11 +117,13 @@ def read_smpl_x(path: Path) -> Motion:
     if 'smpl' in smpl_x_data:
         smpl_x_data = smpl_x_data['smpl'].item()
         motion = SMPLMotion.from_smpl_data(smpl_x_data)
+    if 'pose_body' in smpl_x_data:
+        motion = SMPLXMotion.from_amass_data(smpl_x_data, insert_rest_pose=False)
     else:
         try:
             motion = SMPLXMotion.from_smplx_data(smpl_x_data)
         except Exception:
-            raise ValueError(f'Unknown data format of {path}, got {smpl_x_data.keys()}, but expected smpl or smplx')
+            raise ValueError(f'Unknown data format of {path}, got {smpl_x_data.keys()}, but expected "smpl" or "smplx"')
     motion.insert_rest_pose()
     return motion
 
