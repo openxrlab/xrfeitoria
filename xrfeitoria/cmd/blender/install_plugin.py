@@ -2,6 +2,8 @@
 
 >>> xf-install-plugin --help
 >>> xf-render {} [-o {output_path}]
+
+# TODO: install XRFeitoriaBpy
 """
 
 from pathlib import Path
@@ -27,7 +29,7 @@ def main(
             file_okay=True,
             dir_okay=False,
             resolve_path=True,
-            help='filepath of the mesh to be renderer',
+            help='filepath of the plugin (.zip) to be installed',
         ),
     ],
     plugin_name_blender: Annotated[
