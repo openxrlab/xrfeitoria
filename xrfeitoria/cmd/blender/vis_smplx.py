@@ -21,8 +21,8 @@ app = Typer(pretty_exceptions_show_locals=False)
 
 
 @remote_blender()
-def add_smplx(betas: "Tuple[float, ...]" = [0.0] * 10, gender: str = "neutral") -> str:
-    """Add smplx mesh to scene and return the name of the armature and the mesh
+def add_smplx(betas: 'Tuple[float, ...]' = [0.0] * 10, gender: str = 'neutral') -> str:
+    """Add smplx mesh to scene and return the name of the armature and the mesh.
 
     Args:
         betas (Tuple[float, ...]): betas of smplx model
@@ -33,18 +33,18 @@ def add_smplx(betas: "Tuple[float, ...]" = [0.0] * 10, gender: str = "neutral") 
     """
     import bpy
 
-    assert hasattr(bpy.ops.scene, "smplx_add_gender"), "Please install smplx addon first"
+    assert hasattr(bpy.ops.scene, 'smplx_add_gender'), 'Please install smplx addon first'
 
-    bpy.data.window_managers["WinMan"].smplx_tool.smplx_gender = gender
-    bpy.data.window_managers["WinMan"].smplx_tool.smplx_handpose = "flat"
+    bpy.data.window_managers['WinMan'].smplx_tool.smplx_gender = gender
+    bpy.data.window_managers['WinMan'].smplx_tool.smplx_handpose = 'flat'
     bpy.ops.scene.smplx_add_gender()
 
-    bpy.data.window_managers["WinMan"].smplx_tool.smplx_texture = "smplx_texture_f_alb.png"
+    bpy.data.window_managers['WinMan'].smplx_tool.smplx_texture = 'smplx_texture_f_alb.png'
     bpy.ops.object.smplx_set_texture()
 
     smplx_mesh = bpy.context.selected_objects[0]
     for index, beta in enumerate(betas):
-        smplx_mesh.data.shape_keys.key_blocks[f"Shape{index:03d}"].value = beta
+        smplx_mesh.data.shape_keys.key_blocks[f'Shape{index:03d}'].value = beta
     bpy.ops.object.smplx_update_joint_locations()
     bpy.ops.object.smplx_set_handpose()
 
@@ -54,20 +54,20 @@ def add_smplx(betas: "Tuple[float, ...]" = [0.0] * 10, gender: str = "neutral") 
 @remote_blender()
 def export_fbx(
     tgt_rig_name: str,
-    save_path: "Path",
+    save_path: 'Path',
     with_mesh: bool = False,
     use_better_fbx: bool = True,
     **options,
 ) -> bool:
     import bpy
 
-    if use_better_fbx and not hasattr(bpy.ops, "better_export"):
-        raise RuntimeError("Unable to found better_fbx addon!")
+    if use_better_fbx and not hasattr(bpy.ops, 'better_export'):
+        raise RuntimeError('Unable to found better_fbx addon!')
 
     target_rig = bpy.data.objects[tgt_rig_name]
 
     save_path = Path(save_path).resolve()
-    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.mode_set(mode='OBJECT')
     # re-select the armature
     # bpy.ops.object.select_all(action='DESELECT')
     for obj in bpy.data.objects:
@@ -75,7 +75,7 @@ def export_fbx(
     bpy.context.view_layer.objects.active = target_rig
     if with_mesh:
         # select the mesh for export
-        bpy.ops.object.select_grouped(type="CHILDREN_RECURSIVE")
+        bpy.ops.object.select_grouped(type='CHILDREN_RECURSIVE')
     target_rig.select_set(True)
 
     if save_path.exists():
@@ -107,17 +107,17 @@ def read_smpl_x(path: Path) -> Motion:
         SMPLXMotion: The motion.
     """
     smpl_x_data = np.load(path, allow_pickle=True)
-    if "smplx" in smpl_x_data:
-        smpl_x_data = smpl_x_data["smplx"].item()
+    if 'smplx' in smpl_x_data:
+        smpl_x_data = smpl_x_data['smplx'].item()
         motion = SMPLXMotion.from_smplx_data(smpl_x_data)
-    if "smpl" in smpl_x_data:
-        smpl_x_data = smpl_x_data["smpl"].item()
+    if 'smpl' in smpl_x_data:
+        smpl_x_data = smpl_x_data['smpl'].item()
         motion = SMPLMotion.from_smpl_data(smpl_x_data)
     else:
         try:
             motion = SMPLXMotion.from_smplx_data(smpl_x_data)
         except Exception:
-            raise ValueError(f"Unknown data format of {path}, got {smpl_x_data.keys()}, but expected smpl or smplx")
+            raise ValueError(f'Unknown data format of {path}, got {smpl_x_data.keys()}, but expected smpl or smplx')
     motion.insert_rest_pose()
     return motion
 
@@ -133,22 +133,22 @@ def main(
             file_okay=True,
             dir_okay=False,
             resolve_path=True,
-            help="filepath of the smplx motion (.npz) to be retargeted",
+            help='filepath of the smplx motion (.npz) to be retargeted',
         ),
     ],
     # engine config
     blender_exec: Annotated[
         Path,
-        Option("--blender-exec", help="path to blender executable, e.g. /usr/bin/blender"),
+        Option('--blender-exec', help='path to blender executable, e.g. /usr/bin/blender'),
     ] = None,
     # misc
     debug: Annotated[
         bool,
-        Option("--debug/--no-debug", help="log in debug mode"),
+        Option('--debug/--no-debug', help='log in debug mode'),
     ] = False,
 ):
     """Visualize a SMPL-X motion with a command line interface."""
-    logger = Logger.setup_logging(level="DEBUG" if debug else "INFO")
+    logger = Logger.setup_logging(level='DEBUG' if debug else 'INFO')
     logger.info(
         dedent(
             f"""\
@@ -166,20 +166,21 @@ def main(
     )
 
     with xf.init_blender(exec_path=blender_exec, background=True) as xf_runner:
-        logger.info(f"Loading motion data: {smplx_path} ...")
+        logger.info(f'Loading motion data: {smplx_path} ...')
         motion = read_smpl_x(smplx_path)
 
-        logger.info("Adding smplx actor using smplx_addon ...")
+        logger.info('Adding smplx actor using smplx_addon ...')
         smplx_rig_name = add_smplx()
 
-        logger.info("Applying motion data to actor ...")
+        logger.info('Applying motion data to actor ...')
         xf_runner.utils.apply_motion_data_to_actor(motion_data=motion.get_motion_data(), actor_name=smplx_rig_name)
 
-        logger.info("Saving it to blend file ...")
-        xf_runner.utils.save_blend(smplx_path.with_name(f"{smplx_path.stem}.blend"))
+        blend_file = smplx_path.with_name(f'{smplx_path.stem}.blend')
+        logger.info(f'Saving it to blend file "{blend_file}" ...')
+        xf_runner.utils.save_blend(blend_file)
 
-    logger.info(":tada: [green]Installation of plugin completed![/green]")
+    logger.info(':tada: [green]Visualization finished[/green]!')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app()
