@@ -87,17 +87,18 @@ def import_asset(path: 'Union[str, List[str]]', dst_dir_in_engine: 'Optional[str
 
 
 @remote_unreal()
-def import_anim(path: str, skeleton_path: str) -> 'List[str]':
+def import_anim(path: str, skeleton_path: str, dest_path: 'Optional[str]' = None) -> 'List[str]':
     """Import animation to the default asset path.
 
     Args:
-        path (str): a file path to import, e.g. "D:/assets/SMPL_XL-Animation.fbx"
-        skeleton_path (str): a path to the skeleton, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL_Skeleton"
+        path (str): The file path to import, e.g. "D:/assets/SMPL_XL-Animation.fbx".
+        skeleton_path (str): The path to the skeleton, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL_Skeleton".
+        dest_path (str, optional): The destination directory in the engine. Defaults to None, falls back to {skeleton_path.parent}/Animation.
 
     Returns:
-        str: a path to the imported animation, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL-Animation"
+        List[str]: A list of paths to the imported animations, e.g. ["/Game/XRFeitoriaUnreal/Assets/SMPL_XL-Animation"].
     """
-    return XRFeitoriaUnrealFactory.utils.import_anim(path, skeleton_path)
+    return XRFeitoriaUnrealFactory.utils.import_anim(path, skeleton_path, dest_path)
 
 
 @remote_unreal()
