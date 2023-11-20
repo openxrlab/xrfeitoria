@@ -256,7 +256,7 @@ class Motion:
             for key, arr in self.smpl_data.items():
                 if key == 'betas':
                     continue
-                self.smplx_dat[key] = np.insert(arr, 0, 0, axis=0)
+                self.smpl_data[key] = np.insert(arr, 0, 0, axis=0)
         if hasattr(self, 'smplx_data'):
             for key, arr in self.smplx_data.items():
                 if key == 'betas':
@@ -339,7 +339,7 @@ class SMPLMotion(Motion):
         _get_smpl = partial(_get_from_smpl_x, smpl_x_data=smpl_data, dtype=np.float32)
 
         n_frames = smpl_data['body_pose'].shape[0]
-        betas = _get_smpl('betas', shape=[10])
+        betas = _get_smpl('betas', shape=[1, 10])
         transl = _get_smpl('transl', shape=[n_frames, 3], required=False)
         global_orient = _get_smpl('global_orient', shape=[n_frames, 3])
         body_pose = _get_smpl('body_pose', shape=[n_frames, -1])
@@ -529,7 +529,7 @@ class SMPLXMotion(Motion):
         return instance
 
     @classmethod
-    def from_amass_data(cls, amass_data, insert_rest_pose: bool) -> Self:
+    def from_amass_data(cls, amass_data, insert_rest_pose: bool, flat_hand_mean: bool = True) -> Self:
         """Create a Motion instance from AMASS data.
 
         Args:
@@ -596,7 +596,7 @@ class SMPLXMotion(Motion):
             smplx_data,
             insert_rest_pose=False,
             fps=fps,
-            flat_hand_mean=True,
+            flat_hand_mean=flat_hand_mean,
         )
 
     def get_parent_bone_name(self, bone_name) -> Optional[str]:
@@ -628,6 +628,7 @@ def _get_from_smpl_x(key, shape, *, smpl_x_data, dtype=np.float32, required=True
         _data = smpl_x_data[key].astype(dtype)
         n_frames, n_dims = shape
         _data = _data.reshape([n_frames, -1])
-        _data = _data[:, :n_dims]  # XXX: handle the case that n_dims > data.shape[1]
+        if not n_dims < 0:
+            _data = _data[:, :n_dims]  # XXX: handle the case that n_dims > data.shape[1]
         return _data
     return np.zeros(shape, dtype=dtype)

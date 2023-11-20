@@ -180,6 +180,7 @@ def main(
 
         logger.info('Applying motion data to actor ...')
         xf_runner.utils.apply_motion_data_to_actor(motion_data=motion.get_motion_data(), actor_name=smplx_rig_name)
+        xf_runner.utils.set_frame_range(start=0, end=motion.n_frames)
 
         blend_file = smplx_path.with_name(f'{smplx_path.stem}.blend')
         logger.info(f'Saving it to blend file "{blend_file}" ...')
