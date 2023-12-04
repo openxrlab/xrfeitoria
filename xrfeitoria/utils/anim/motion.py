@@ -535,6 +535,7 @@ class SMPLXMotion(Motion):
         Args:
             amass_data (dict): A dictionary containing the AMASS data.
             insert_rest_pose (bool): Whether to insert a rest pose at the beginning of the motion.
+            flat_hand_mean (bool): Whether to use the flat hand mean pose.
 
         Returns:
             SMPLXMotion: A SMPLXMotion instance containing the AMASS data.
