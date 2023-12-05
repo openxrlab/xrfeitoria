@@ -24,7 +24,7 @@ from rich.prompt import Confirm
 
 from .. import __version__, _tls
 from ..data_structure.constants import EngineEnum, PathLike, plugin_name_blender, plugin_name_unreal, tmp_dir
-from ..rpc import BLENDER_PORT, UNREAL_PORT, remote_blender, remote_unreal
+from ..rpc import BLENDER_PORT, UNREAL_PORT, factory, remote_blender, remote_unreal
 from .downloader import download
 from .setup import get_exec_path
 
@@ -70,6 +70,7 @@ class RPCRunner(ABC):
         new_process: bool = False,
         engine_exec: Optional[PathLike] = None,
         project_path: PathLike = '',
+        reload_rpc_code: bool = False,
         replace_plugin: bool = False,
         dev_plugin: bool = False,
         background: bool = True,
@@ -80,6 +81,9 @@ class RPCRunner(ABC):
             new_process (bool, optional): whether to start a new process. Defaults to False.
             engine_exec (Optional[PathLike], optional): path to engine executable. Defaults to None.
             project_path (PathLike, optional): path to project. Defaults to ''.
+            reload_rpc_code (bool, optional): whether to reload the registered rpc functions and classes.
+                If you are developing the package or writing a custom remote function, set this to True to reload the code.
+                This will only be in effect when `new_process=False` if the engine process is reused. Defaults to False.
             replace_plugin (bool, optional): whether to replace the plugin installed for the engine. Defaults to False.
             dev_plugin (bool, optional): Whether to use the plugin under local directory.
                 If False, would use the plugin downloaded from a remote server. Defaults to False.
@@ -93,7 +97,12 @@ class RPCRunner(ABC):
         self.replace_plugin = replace_plugin
         self.dev_plugin = dev_plugin
         self.background = background
-        self.debug = os.environ.get('RPC_DEBUG', '0') == '1'  # logger.level('DEBUG')
+        self.debug = logger._core.min_level <= 10  # DEBUG level
+
+        if reload_rpc_code:
+            # clear registered functions and classes for reloading
+            factory.RPCFactory.registered_function_names.clear()
+            factory.RPCFactory.reload_rpc_code = True
 
         if self.dev_plugin:
             self.replace_plugin = True
@@ -227,22 +236,21 @@ class RPCRunner(ABC):
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return process
 
-    def start(self):
-        """Start rpc server."""
-        if not self.new_process:
-            return
+    def _receive_stdout(self) -> None:
+        """Receive output from the subprocess, and log it if `self.debug=True`.
 
-        with self.console.status('Initializing RPC server...') as status:
-            status.update(status='[green bold]Installing plugin...')
-            self._install_plugin()
-            status.update(status=f'[green bold]Starting {" ".join(self.engine_info)} as RPC server...')
-            self.engine_process = self._start_rpc(background=self.background, project_path=self.project_path)
-            self.engine_running = True
-            _tls.cache['engine_process'] = self.engine_process
-        logger.info(f'RPC server started at port {self.port}')
-
-        # check if engine process is alive in a separate thread
-        threading.Thread(target=self.check_engine_alive, daemon=True).start()
+        This function should be called in a separate thread.
+        """
+        # start receiving
+        while True:
+            try:
+                data = self.engine_process.stdout.readline().decode()
+            except AttributeError:
+                break
+            if not data:
+                break
+            # log in debug level
+            logger.trace(f'\[blender] {data.strip()}')
 
     def check_engine_alive(self) -> bool:
         """Check if the engine process is alive."""
@@ -263,6 +271,24 @@ class RPCRunner(ABC):
             '\n\n<<<< Engine output <<<<\n'
         )
         return out
+
+    def start(self) -> None:
+        """Start rpc server."""
+        if not self.new_process:
+            return
+
+        with self.console.status('Initializing RPC server...') as status:
+            status.update(status='[green bold]Installing plugin...')
+            self._install_plugin()
+            status.update(status=f'[green bold]Starting {" ".join(self.engine_info)} as RPC server...')
+            self.engine_process = self._start_rpc(background=self.background, project_path=self.project_path)
+            self.engine_running = True
+            _tls.cache['engine_process'] = self.engine_process
+        logger.info(f'RPC server started at port {self.port}')
+
+        # check if engine process is alive in a separate thread
+        threading.Thread(target=self._receive_stdout).start()
+        threading.Thread(target=self.check_engine_alive, daemon=True).start()
 
     def wait_for_start(self, process: subprocess.Popen) -> None:
         """Wait 3 minutes for RPC server to start.

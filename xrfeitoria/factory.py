@@ -2,6 +2,7 @@ from typing import Optional
 
 from . import _tls
 from .data_structure.constants import EngineEnum, PathLike, default_level_blender
+from .utils import setup_logger
 
 __all__ = ['init_blender', 'init_unreal']
 
@@ -25,6 +26,7 @@ class XRFeitoriaBlender:
         engine_exec: Optional[PathLike] = None,
         project_path: Optional[PathLike] = None,
         background: bool = False,
+        reload_rpc_code: bool = False,
         replace_plugin: bool = False,
         dev_plugin: bool = False,
         new_process: bool = False,
@@ -36,6 +38,9 @@ class XRFeitoriaBlender:
             exec_path (Optional[PathLike], optional): Path to Blender executable. Defaults to None.
             project_path (Optional[PathLike], optional): Path to Blender project. Defaults to None.
             background (bool, optional): Whether to start Blender in background. Defaults to False.
+            reload_rpc_code (bool, optional): whether to reload the registered rpc functions and classes.
+                If you are developing the package or writing a custom remote function, set this to True to reload the code.
+                This will only be in effect when `new_process=False` if the engine process is reused. Defaults to False.
             replace_plugin (bool, optional): Whether to replace the plugin. Defaults to False.
             dev_plugin (bool, optional): Whether to use the plugin under local directory.
                 If False, would use the plugin downloaded from a remote server. Defaults to False.
@@ -49,9 +54,8 @@ class XRFeitoriaBlender:
         from .sequence.sequence_wrapper import SequenceWrapperBlender  # isort:skip
         from .utils.runner import BlenderRPCRunner  # isort:skip
         from .utils.functions import blender_functions  # isort:skip
-        from .utils.tools import Logger  # isort:skip
 
-        self.logger = Logger.setup_logging()  # default level is INFO
+        self.logger = setup_logger()  # default level is INFO
         self.ObjectUtils = ObjectUtilsBlender
         self.Camera = CameraBlender
         self.Actor = ActorBlender
@@ -64,6 +68,7 @@ class XRFeitoriaBlender:
         self._rpc_runner = BlenderRPCRunner(
             engine_exec=engine_exec,
             project_path=project_path,
+            reload_rpc_code=reload_rpc_code,
             replace_plugin=replace_plugin,
             dev_plugin=dev_plugin,
             background=background,
@@ -90,6 +95,7 @@ class XRFeitoriaUnreal:
         engine_exec: Optional[PathLike] = None,
         project_path: Optional[PathLike] = None,
         background: bool = False,
+        reload_rpc_code: bool = False,
         replace_plugin: bool = False,
         dev_plugin: bool = False,
         new_process: bool = False,
@@ -100,6 +106,9 @@ class XRFeitoriaUnreal:
             exec_path (Optional[PathLike], optional): Path to Unreal executable. Defaults to None.
             project_path (Optional[PathLike], optional): Path to Unreal project. Defaults to None.
             background (bool, optional): Whether to start Unreal in background. Defaults to False.
+            reload_rpc_code (bool, optional): whether to reload the registered rpc functions and classes.
+                If you are developing the package or writing a custom remote function, set this to True to reload the code.
+                This will only be in effect when `new_process=False` if the engine process is reused. Defaults to False.
             replace_plugin (bool, optional): Whether to replace the plugin. Defaults to False.
             dev_plugin (bool, optional): Whether to use the plugin under local directory.
                 If False, would use the plugin downloaded from a remote server. Defaults to False.
@@ -112,9 +121,8 @@ class XRFeitoriaUnreal:
         from .sequence.sequence_wrapper import SequenceWrapperUnreal  # isort:skip
         from .utils.runner import UnrealRPCRunner  # isort:skip
         from .utils.functions import unreal_functions  # isort:skip
-        from .utils.tools import Logger  # isort:skip
 
-        self.logger = Logger.setup_logging()  # default level is INFO
+        self.logger = setup_logger()  # default level is INFO
         self.ObjectUtils = ObjectUtilsUnreal
         self.Camera = CameraUnreal
         self.Actor = ActorUnreal
@@ -126,6 +134,7 @@ class XRFeitoriaUnreal:
         self._rpc_runner = UnrealRPCRunner(
             engine_exec=engine_exec,
             project_path=project_path,
+            reload_rpc_code=reload_rpc_code,
             replace_plugin=replace_plugin,
             dev_plugin=dev_plugin,
             background=background,
@@ -161,6 +170,7 @@ class init_blender(XRFeitoriaBlender):
         exec_path: Optional[PathLike] = None,
         project_path: Optional[PathLike] = None,
         background: bool = False,
+        reload_rpc_code: bool = False,
         replace_plugin: bool = False,
         dev_plugin: bool = False,
         cleanup: bool = True,
@@ -172,6 +182,9 @@ class init_blender(XRFeitoriaBlender):
             exec_path (Optional[PathLike], optional): Path to Blender executable. Defaults to None.
             project_path (Optional[PathLike], optional): Path to Blender project. Defaults to None.
             background (bool, optional): Whether to start Blender in background. Defaults to False.
+            reload_rpc_code (bool, optional): whether to reload the registered rpc functions and classes.
+                If you are developing the package or writing a custom remote function, set this to True to reload the code.
+                This will only be in effect when `new_process=False` if the engine process is reused. Defaults to False.
             replace_plugin (bool, optional): Whether to replace the plugin. Defaults to False.
             dev_plugin (bool, optional): Whether to use the plugin under local directory.
                 If False, would use the plugin downloaded from a remote server. Defaults to False.
@@ -190,12 +203,12 @@ class init_blender(XRFeitoriaBlender):
                 pip install -e .
                 python -c "import xrfeitoria as xf; xf.init_blender(replace_plugin=True, dev_plugin=True)"
         """
-        _tls.cache = {'platform': None, 'engine_process': None, 'unreal_project_path': None}
         _tls.cache['platform'] = EngineEnum.blender
         self._cleanup = cleanup
         super().__init__(
             engine_exec=exec_path,
             project_path=project_path,
+            reload_rpc_code=reload_rpc_code,
             replace_plugin=replace_plugin,
             dev_plugin=dev_plugin,
             background=background,
@@ -243,6 +256,7 @@ class init_unreal(XRFeitoriaUnreal):
         exec_path: Optional[PathLike] = None,
         project_path: Optional[PathLike] = None,
         background: bool = False,
+        reload_rpc_code: bool = False,
         replace_plugin: bool = False,
         dev_plugin: bool = False,
         new_process: bool = False,
@@ -253,6 +267,9 @@ class init_unreal(XRFeitoriaUnreal):
             exec_path (Optional[PathLike], optional): Path to Unreal executable. Defaults to None.
             project_path (Optional[PathLike], optional): Path to Unreal project. Defaults to None.
             background (bool, optional): Whether to start Unreal in background. Defaults to False.
+            reload_rpc_code (bool, optional): whether to reload the registered rpc functions and classes.
+                If you are developing the package or writing a custom remote function, set this to True to reload the code.
+                This will only be in effect when `new_process=False` if the engine process is reused. Defaults to False.
             replace_plugin (bool, optional): Whether to replace the plugin. Defaults to False.
             dev_plugin (bool, optional): Whether to use the plugin under local directory.
                 If False, would use the plugin downloaded from a remote server. Defaults to False.
@@ -276,6 +293,7 @@ class init_unreal(XRFeitoriaUnreal):
         super().__init__(
             engine_exec=exec_path,
             project_path=project_path,
+            reload_rpc_code=reload_rpc_code,
             replace_plugin=replace_plugin,
             dev_plugin=dev_plugin,
             background=background,

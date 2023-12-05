@@ -26,6 +26,7 @@ from .validations import (
 
 class RPCFactory:
     rpc_client: RPCClient = None
+    reload_rpc_code: bool = False
     file_path = None
     remap_pairs = []
     default_imports = []
@@ -52,9 +53,6 @@ class RPCFactory:
             cls.rpc_client = RPCClient(port)
         cls.remap_pairs = remap_pairs
         cls.default_imports = default_imports or []
-        if os.environ.get('RPC_RELOAD'):
-            # clear the registered functions, so they can be re-registered
-            cls.registered_function_names.clear()
 
     @staticmethod
     def _get_docstring(code: List[str], function_name: str) -> str:
@@ -172,7 +170,7 @@ class RPCFactory:
         from loguru import logger
 
         # if function registered, skip it
-        if function.__name__ in cls.registered_function_names:
+        if function.__name__ in cls.registered_function_names and not cls.reload_rpc_code:
             logger.debug(f'Function "{function.__name__}" has already been registered with the server!')
             return []
 
@@ -188,10 +186,9 @@ class RPCFactory:
 
             response = cls.rpc_client.proxy.add_new_callable(function.__name__, '\n'.join(code), additional_paths)
             cls.registered_function_names.append(function.__name__)
-            if os.environ.get('RPC_DEBUG'):
-                _code = '\n'.join(code)
-                logger.debug(f'code:\n{_code}')
-                logger.debug(f'response: {response}')
+            _code = '\n'.join(code)
+            logger.log('RPC', f'code:\n{_code}')
+            logger.log('RPC', f'response: {response}')
 
         except ConnectionRefusedError:
             server_name = os.environ.get(f'RPC_SERVER_{cls.rpc_client.port}', cls.rpc_client.port)
