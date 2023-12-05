@@ -7,9 +7,9 @@ from pathlib import Path
 
 import xrfeitoria as xf
 from xrfeitoria.rpc import remote_unreal
+from xrfeitoria.utils import setup_logger
 
 from ..config import unreal_exec, unreal_project
-from ..utils import setup_logger
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'
@@ -41,7 +41,7 @@ def add_cubes_in_unreal():
 
 
 def main(debug=False, background=False):
-    logger = setup_logger(debug=debug, log_path=log_path)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=log_path)
     xf_runner = xf.init_unreal(exec_path=unreal_exec, project_path=unreal_project, background=background)
 
     # The function `add_cubes_in_unreal` decorated with `@remote_unreal` will be executed in blender.

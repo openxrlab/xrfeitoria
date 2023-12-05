@@ -2,7 +2,7 @@
 
 
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, Tuple, Union
+from typing import Iterable, Literal, Optional, Sequence, Tuple, Union
 
 import loguru
 from loguru import logger
@@ -23,10 +23,10 @@ from rich.text import Text
 
 from ..data_structure.constants import PathLike
 
-__all__ = ['Logger']
+__all__ = ['setup_logger']
 
 
-class Logger:
+class LoggerWrapper:
     """A wrapper for logger tools."""
 
     is_setup = False
@@ -69,27 +69,23 @@ class Logger:
     @classmethod
     def setup_logging(
         cls,
-        level: str = 'INFO',
+        level: Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'] = 'INFO',
         log_path: 'Optional[PathLike]' = None,
         replace: bool = True,
-        log_rpc_code: bool = False,
     ) -> 'loguru.Logger':
         """Setup logging to file and console.
 
         Args:
-            level (str, optional): logging level. Defaults to "INFO", can be "DEBUG", "INFO", "WARNING",
-                                    "ERROR", "CRITICAL".
+            level (Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], optional):
+                logging level. Defaults to "INFO", find more in https://loguru.readthedocs.io/en/stable/api/logger.html.
             log_path (Path, optional): path to save the log file. Defaults to None.
             replace (bool, optional): replace the log file if exists. Defaults to True.
-            log_rpc_code (bool, optional): print the rpc code sending to engine. Defaults to False.
         """
-        if log_rpc_code:
-            import os
-
-            os.environ['RPC_DEBUG'] = '1'
-
         if cls.is_setup:
             return logger
+
+        # add custom level called RPC, which is the minimum level
+        logger.level('RPC', no=1, color='<white>', icon='📢')
 
         logger.remove()  # remove default logger
         logger.add(sink=lambda msg: rprint(msg, end=''), level=level, format=cls.logger_format)
@@ -104,6 +100,28 @@ class Logger:
             logger.info(f'Python Logging to "{log_path.as_posix()}"')
         cls.is_setup = True
         return logger
+
+
+def setup_logger(
+    level: Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'] = 'INFO',
+    log_path: 'Optional[PathLike]' = None,
+    replace: bool = True,
+) -> 'loguru.Logger':
+    """Setup logging to file and console.
+
+    Args:
+        level (Literal['TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], optional): logging level.
+            Defaults to 'INFO', find more in https://loguru.readthedocs.io/en/stable/api/logger.html.
+            The order of the levels is:
+                'RPC' (custom level): logging RPC messages which are sent by RPC protocols.
+                'TRACE': logging engine output like console output of blender.
+                'DEBUG': logging debug messages.
+                'INFO': logging info messages.
+                ...
+        log_path (Path, optional): path to save the log file. Defaults to None.
+        replace (bool, optional): replace the log file if exists. Defaults to True.
+    """
+    return LoggerWrapper.setup_logging(level, log_path, replace)
 
 
 #### (rich) progress bar ####

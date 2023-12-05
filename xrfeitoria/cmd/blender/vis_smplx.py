@@ -10,7 +10,7 @@ from typing import Tuple
 
 import xrfeitoria as xf
 from xrfeitoria.rpc import remote_blender
-from xrfeitoria.utils.tools import Logger
+from xrfeitoria.utils import setup_logger
 
 try:
     import numpy as np
@@ -154,7 +154,7 @@ def main(
     ] = False,
 ):
     """Visualize a SMPL-X motion with a command line interface."""
-    logger = Logger.setup_logging(level='DEBUG' if debug else 'INFO')
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     logger.info(
         dedent(
             f"""\

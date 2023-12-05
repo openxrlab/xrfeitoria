@@ -18,7 +18,7 @@ class UniqueFilter(logging.Filter):
             return False
 
 
-def setup_logging(level: str = 'INFO') -> 'logging.Logger':
+def setup_logger(level: str = 'INFO') -> 'logging.Logger':
     """Setup logging to file and console.
 
     Args:
@@ -36,11 +36,6 @@ def setup_logging(level: str = 'INFO') -> 'logging.Logger':
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     logger.addFilter(UniqueFilter())
-    return logger
-
-
-def setup_logger(level: str = 'INFO'):
-    logger = setup_logging(level=level)
     return logger
 
 

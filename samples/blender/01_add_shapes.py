@@ -6,9 +6,9 @@ This is a script to add shapes in blender.
 from pathlib import Path
 
 import xrfeitoria as xf
+from xrfeitoria.utils import setup_logger
 
 from ..config import blender_exec
-from ..utils import setup_logger
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/blender/{file_name}'
@@ -18,7 +18,7 @@ output_blend_file = output_path / 'source.blend'
 
 
 def main(debug=False, background=False):
-    logger = setup_logger(debug=debug, log_path=log_path)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=log_path)
 
     # The blender will start in a separate process in RPC Server mode automatically,
     # and close when calling `xf_runner.close()`.

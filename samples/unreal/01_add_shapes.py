@@ -9,9 +9,9 @@ from pathlib import Path
 from loguru import logger
 
 import xrfeitoria as xf
+from xrfeitoria.utils import setup_logger
 
 from ..config import unreal_exec, unreal_project
-from ..utils import setup_logger
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'

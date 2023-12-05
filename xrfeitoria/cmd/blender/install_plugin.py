@@ -13,7 +13,7 @@ from typer import Argument, Option, Typer
 from typing_extensions import Annotated
 
 import xrfeitoria as xf
-from xrfeitoria.utils.tools import Logger
+from xrfeitoria.utils import setup_logger
 
 app = Typer(pretty_exceptions_show_locals=False)
 
@@ -52,7 +52,7 @@ def main(
     ] = False,
 ):
     """Install a blender plugin with a command line interface."""
-    logger = Logger.setup_logging(level='DEBUG' if debug else 'INFO')
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     logger.info(
         dedent(
             f"""\

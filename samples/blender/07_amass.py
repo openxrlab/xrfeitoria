@@ -12,8 +12,8 @@ Amass: a large database of human motion, introduced in https://amass.is.tue.mpg.
 """
 import xrfeitoria as xf
 from xrfeitoria.rpc import remote_blender
+from xrfeitoria.utils import setup_logger
 from xrfeitoria.utils.anim import load_amass_motion
-from xrfeitoria.utils.tools import Logger
 
 
 @remote_blender()
@@ -26,7 +26,7 @@ def apply_scale(actor_name: str):
 
 
 def main():
-    logger = Logger.setup_logging()
+    logger = setup_logger()
 
     # Download Amass from https://amass.is.tue.mpg.de/download.php
     # For example, download ACCAD (SMPL-X N), and use any motion file from the uncompressed folder

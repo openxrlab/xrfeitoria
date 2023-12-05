@@ -9,9 +9,9 @@ from pathlib import Path
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
+from xrfeitoria.utils import setup_logger, visualize_vertices
 
 from ..config import assets_path, unreal_exec, unreal_project
-from ..utils import setup_logger, visualize_vertices
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'
@@ -26,7 +26,7 @@ seq_2_name = 'seq_staticmesh_2'
 
 
 def main(debug=False, background=False):
-    logger = setup_logger(debug=debug, log_path=log_path)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=log_path)
     xf_runner = xf.init_unreal(exec_path=unreal_exec, project_path=unreal_project, background=background)
 
     # duplicate the level to a new level
