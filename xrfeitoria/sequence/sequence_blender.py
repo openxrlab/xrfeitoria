@@ -146,10 +146,10 @@ class SequenceBlender(SequenceBase):
         """Import.
 
         Args:
-            file_path (PathLike): _description_
-            transform_keys (Union[List[Dict], Dict]): _description_
-            actor_name (str, optional): _description_. Defaults to 'Actor'.
-            stencil_value (int, optional): _description_. Defaults to 1.
+            file_path (PathLike): Path of the imported file.
+            transform_keys (Union[List[Dict], Dict]): Transform keys of the imported actor.
+            actor_name (str, optional): Name of the actor. Defaults to 'Actor'.
+            stencil_value (int, optional): Stencil value of the actor. Defaults to 1.
         """
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
@@ -157,7 +157,10 @@ class SequenceBlender(SequenceBase):
         ActorBlender._import_actor_from_file_in_engine(file_path=file_path, actor_name=actor_name)
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=actor_name, transform_keys=transform_keys)
         # XXX: set stencil value. may use actor property
-        bpy.data.objects[actor_name].pass_index = stencil_value
+        actor = bpy.data.objects[actor_name]
+        actor.pass_index = stencil_value
+        for child in actor.children:
+            child.pass_index = stencil_value
 
     @staticmethod
     def _spawn_camera_in_engine(
@@ -229,7 +232,10 @@ class SequenceBlender(SequenceBase):
         )
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=shape_name, transform_keys=transform_keys)
         # XXX: set stencil value. may use actor property
-        bpy.data.objects[shape_name].pass_index = stencil_value
+        actor = bpy.data.objects[shape_name]
+        actor.pass_index = stencil_value
+        for child in actor.children:
+            child.pass_index = stencil_value
 
     # -------- use methods -------- #
     @staticmethod
@@ -307,6 +313,8 @@ class SequenceBlender(SequenceBase):
 
         # set level actor's properties
         actor.pass_index = stencil_value
+        for child in actor.children:
+            child.pass_index = stencil_value
         if action:
             XRFeitoriaBlenderFactory.apply_action_to_actor(action=action, actor=actor)
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=actor_name, transform_keys=transform_keys)
