@@ -87,7 +87,7 @@ Please follow the instructions [here](/samples/README.md).
 
 | Project | Teaser | Engine |
 | :---: | :---: | :---: |
-| [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <a href=https://synbody.github.io/><img src="https://synbody.github.io/static/teaser.png"></a> | Unreal Engine / Blender |
+| [SynBody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <a href=https://synbody.github.io/><img src="https://synbody.github.io/static/teaser.png"></a> | Unreal Engine / Blender |
 | [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <a href=https://wenjiawang0312.github.io/projects/zolly/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"></a> | Blender |
 | [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <a href=https://skhu101.github.io/SHERF/><img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"></a> | Blender |
 | [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <a href=https://city-super.github.io/matrixcity/><img src="https://city-super.github.io/matrixcity/img/teaser.jpg"></a> | Unreal Engine |
