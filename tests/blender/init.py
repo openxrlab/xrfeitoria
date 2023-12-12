@@ -2,8 +2,6 @@
 >>> python -m tests.blender.init
 """
 
-from loguru import logger
-
 from xrfeitoria.rpc import remote_blender
 from xrfeitoria.utils import setup_logger
 

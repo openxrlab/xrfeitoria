@@ -30,7 +30,8 @@ def setup_logger(level: str = 'INFO') -> 'logging.Logger':
     logger = logging.getLogger(__name__)
     logger.handlers.clear()
     logger.setLevel(level)
-    logger_format = '{asctime} | ' + '{levelname:^8} | ' + '[blender] {message}'
+    # logger_format = '{asctime} | ' + '{levelname:^8} | ' + '[blender] {message}'
+    logger_format = '{message}'
     formatter = logging.Formatter(logger_format, style='{', datefmt='%Y-%m-%d %H:%M:%S')
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)

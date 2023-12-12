@@ -171,7 +171,7 @@ class RPCFactory:
 
         # if function registered, skip it
         if function.__name__ in cls.registered_function_names and not cls.reload_rpc_code:
-            logger.debug(f'Function "{function.__name__}" has already been registered with the server!')
+            logger.log('RPC', f'Function "{function.__name__}" has already been registered with the server!')
             return []
 
         code = cls._get_code(function)

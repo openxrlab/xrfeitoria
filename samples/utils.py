@@ -87,7 +87,7 @@ _init_blender = partial(
     xf.init_blender,
     exec_path=blender_exec,
     new_process=False,
-    replace_plugin=True,
+    replace_plugin=False,
     dev_plugin=False,
 )
 _init_unreal = partial(
@@ -95,6 +95,6 @@ _init_unreal = partial(
     exec_path=unreal_exec,
     project_path=unreal_project,
     new_process=False,
-    replace_plugin=True,
+    replace_plugin=False,
     dev_plugin=False,
 )

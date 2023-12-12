@@ -251,7 +251,7 @@ class RPCRunner(ABC):
             if not data:
                 break
             # log in debug level
-            logger.trace(f'\[engine] {data.strip()}')
+            logger.trace(f'(engine) {data.strip()}')
             self.engine_outputs.append(data)
 
     def check_engine_alive(self) -> bool:

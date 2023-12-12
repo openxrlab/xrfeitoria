@@ -15,9 +15,10 @@ root = Path(__file__).parent
 
 
 def main(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug, log_path=root / 'unreal.log')
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=root / 'unreal.log')
+
+    init_test(debug=debug, background=background, dev=True)
     with _init_unreal(background=background) as xf_runner:
-        init_test(debug=debug, background=background)
         actor_test(debug=debug, background=background)
         camera_test(debug=debug, background=background)
         sequence_test(debug=debug, background=background)

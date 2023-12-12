@@ -96,7 +96,8 @@ class LoggerWrapper:
             log_path.parent.mkdir(parents=True, exist_ok=True)
             if replace and log_path.exists():
                 log_path.unlink(missing_ok=True)
-            logger.add(log_path, level='DEBUG', filter=cls.filter_unique, format=cls.logger_format, encoding='utf-8')
+            _level = 'RPC' if level == 'RPC' else 'TRACE'
+            logger.add(log_path, level=_level, filter=cls.filter_unique, format=cls.logger_format, encoding='utf-8')
             logger.info(f'Python Logging to "{log_path.as_posix()}"')
         cls.is_setup = True
         return logger

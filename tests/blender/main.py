@@ -18,9 +18,10 @@ output_path = root / 'output' / Path(__file__).parent.relative_to(root)
 
 
 def main(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug, log_path=output_path / 'blender.log')
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=output_path / 'blender.log')
+
+    init_test(debug=debug, background=background, dev=True)
     with _init_blender(background=background) as xf_runner:
-        init_test(debug=debug)
         actor_test(debug=debug)
         camera_test(debug=debug)
         sequence_test(debug=debug)
