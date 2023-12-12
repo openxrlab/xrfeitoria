@@ -407,7 +407,7 @@ class SMPLMotion(Motion):
             else:
                 return self.BONE_NAMES[parent_idx]
 
-    def dump_motion_data(
+    def dump_humandata(
         self,
         filepath: PathLike,
         betas: np.ndarray,
@@ -417,9 +417,11 @@ class SMPLMotion(Motion):
         root_location_t0: Optional[np.ndarray] = None,
         pelvis_location_t0: Optional[np.ndarray] = None,
     ) -> None:
-        """Dump the motion data to a motion data file at the given `filepath`.
+        """Dump the motion data to a humandata file at the given `filepath`.
 
-        The motion data file is a npz file containing the following keys:
+        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
+
+        The humandata file is a npz file containing the following keys:
         ```
         motion_data = {
             '__data_len__': n_frames,
@@ -679,6 +681,8 @@ class SMPLXMotion(Motion):
         pelvis_location_t0: Optional[np.ndarray] = None,
     ) -> None:
         """Dump the motion data to a humandata file at the given `filepath`.
+
+        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
 
         The humandata file is a npz file containing the following keys:
         ```python
