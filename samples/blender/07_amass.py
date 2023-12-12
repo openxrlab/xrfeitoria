@@ -26,11 +26,11 @@ root = Path('.cache/sample-amass')  # modify this to your own path
 # and use `ACCAD/s001/EricCamper04_stageii.npz` from the uncompressed folder
 amass_file = root / 'EricCamper04_stageii.npz'
 
-# 2. Download SMPL-XL model from https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.fbx
+# 2.1 Download SMPL-XL model from https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.fbx
 # or from https://openxlab.org.cn/datasets/OpenXDLab/SynBody/tree/main/Assets
 # With downloading this, you are agreeing to CC BY-NC-SA 4.0 License (https://creativecommons.org/licenses/by-nc-sa/4.0/).
-# Plus, download the meta information from https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.npz
 smpl_xl_file = root / 'SMPL-XL-001.fbx'
+# 2.2 Download the meta information from https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.npz
 smpl_xl_meta_file = root / 'SMPL-XL-001.npz'
 
 # 3. Define the output file path
