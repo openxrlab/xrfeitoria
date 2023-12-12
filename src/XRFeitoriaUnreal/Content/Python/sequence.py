@@ -378,6 +378,52 @@ def add_animation_to_binding(
     set_animation_by_section(animation_section, animation_asset, animation_length, seq_fps)
 
 
+def add_fk_motion_to_binding(
+    binding: unreal.SequencerBindingProxy,
+    motion_data: List[Dict[str, Dict[str, List[float]]]],
+) -> None:
+    """Add FK motion to the given actor binding.
+
+    Args:
+        binding (unreal.SequencerBindingProxy): The binding of actor in sequence to add FK motion to.
+        motion_data (List[Dict[str, Dict[str, List[float]]]]): The FK motion data to add.
+    """
+    rig_track: unreal.MovieSceneControlRigParameterTrack = (
+        unreal.ControlRigSequencerLibrary.find_or_create_control_rig_track(
+            world=get_world(),
+            level_sequence=binding.sequence,
+            control_rig_class=unreal.FKControlRig,
+            binding=binding,
+        )
+    )
+    rig_section: unreal.MovieSceneControlRigParameterSection = rig_track.get_section_to_key()
+    param_names = list(rig_section.get_parameter_names())
+    bone_names = list(motion_data[0].keys())
+    assert all([f'{bone}_CONTROL' in param_names for bone in bone_names]), RuntimeError(
+        f'Not All bone names (from json): {bone_names} not in param names (from seq FK): {param_names}'
+    )
+
+    def get_transform_from_bone_data(bone_data):
+        quat: Tuple[float, float, float, float] = bone_data.get('rotation')
+        location: Tuple[float, float, float] = bone_data.get('location', (0, 0, 0))  # default location is (0, 0, 0)
+
+        # HACK: convert space
+        location = [location[0] * 100, -location[1] * 100, location[2] * 100]  # cm -> m, y -> -y
+        quat = (-quat[1], quat[2], -quat[3], quat[0])  # (w, x, y, z) -> (-x, y, -z, w)
+
+        transform = unreal.Transform(location=location, rotation=unreal.Quat(*quat).rotator())
+        return transform
+
+    for frame, motion_frame in enumerate(motion_data):
+        for bone_name, bone_data in motion_frame.items():
+            # TODO: set key type to STATIC
+            rig_section.add_transform_parameter_key(
+                parameter_name=f'{bone_name}_CONTROL',
+                time=get_time(binding.sequence, frame),
+                value=get_transform_from_bone_data(bone_data),
+            )
+
+
 def get_spawnable_actor_from_binding(
     sequence: unreal.MovieSceneSequence,
     binding: unreal.SequencerBindingProxy,
@@ -605,15 +651,21 @@ def add_actor_to_sequence(
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     animation_asset: Optional[unreal.AnimSequence] = None,
+    motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
+    assert not (
+        animation_asset is not None and motion_data is not None
+    ), 'Cannot provide both animation_asset and motion_data'
     # get sequence settings
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
     if seq_length is None:
         if animation_asset:
             seq_length = get_animation_length(animation_asset, seq_fps)
+        if motion_data:
+            seq_length = len(motion_data)
         else:
             seq_length = sequence.get_playback_end()
 
@@ -635,6 +687,10 @@ def add_actor_to_sequence(
     # add animation
     if animation_asset:
         add_animation_to_binding(actor_binding, animation_asset, seq_length, seq_fps)
+
+    # add motion data (FK / ControlRig)
+    if motion_data:
+        add_fk_motion_to_binding(actor_binding, motion_data)
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(actor_binding)
@@ -659,17 +715,23 @@ def add_spawnable_actor_to_sequence(
     actor_name: str,
     actor_asset: Union[unreal.SkeletalMesh, unreal.StaticMesh],
     animation_asset: Optional[unreal.AnimSequence] = None,
+    motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
+    assert not (
+        animation_asset is not None and motion_data is not None
+    ), 'Cannot provide both animation_asset and motion_data'
     # get sequence settings
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
     if seq_length is None:
         if animation_asset:
             seq_length = get_animation_length(animation_asset, seq_fps)
+        if motion_data:
+            seq_length = len(motion_data)
         else:
             seq_length = sequence.get_playback_end()
 
@@ -694,6 +756,10 @@ def add_spawnable_actor_to_sequence(
     # add animation
     if animation_asset:
         add_animation_to_binding(actor_binding, animation_asset, seq_length, seq_fps)
+
+    # add motion data (FK / ControlRig)
+    if motion_data:
+        add_fk_motion_to_binding(actor_binding, motion_data)
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(actor_binding)
@@ -935,17 +1001,26 @@ class Sequence:
         transform_keys: 'Optional[TransformKeys]' = None,
         stencil_value: int = 1,
         animation_asset: 'Optional[Union[str, unreal.AnimSequence]]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> None:
         """Spawn an actor in sequence.
 
         Args:
-            actor (Union[str, unreal.Actor]): actor path (e.g. '/Game/Cube') / loaded asset (via `unreal.load_asset('/Game/Cube')`)
-            animation_asset (Union[str, unreal.AnimSequence]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
-            actor_name (str, optional): Name of actor to set in sequence. Defaults to "Actor".
-            transform_keys (TransformKeys, optional): List of transform keys. Defaults to None.
-            actor_stencil_value (int, optional): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
+            actor_name (str): The name of the actor.
+            actor (Optional[Union[str, unreal.Actor]]): actor path (e.g. '/Game/Cube') / loaded asset (via `unreal.load_asset('/Game/Cube')`)
+            transform_keys (Optional[TransformKeys]): List of transform keys. Defaults to None.
+            stencil_value (int): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
+            animation_asset (Optional[Union[str, unreal.AnimSequence]]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
+            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
+
+        Raises:
+            AssertionError: If `cls.sequence` is not initialized.
+            AssertionError: If `animation_asset` and `motion_data` are both provided. Only one can be provided.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
+        assert not (
+            animation_asset is not None and motion_data is not None
+        ), 'Cannot provide both animation_asset and motion_data'
         if animation_asset and isinstance(animation_asset, str):
             animation_asset = unreal.load_asset(animation_asset)
         if isinstance(actor, str):
@@ -957,6 +1032,7 @@ class Sequence:
                 actor_name=actor_name,
                 actor_asset=actor,
                 animation_asset=animation_asset,
+                motion_data=motion_data,
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
@@ -970,6 +1046,7 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
                 animation_asset=animation_asset,
+                motion_data=motion_data,
             )
             cls.bindings[actor_name] = bindings
 

@@ -107,6 +107,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine at the specified location, rotation, and
         scale.
@@ -121,10 +122,18 @@ class SequenceUnreal(SequenceBase):
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
+            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor object.
+
+        Raises:
+            AssertionError: If both `anim_asset_path` and `motion_data` are provided. Only one of them can be provided.
         """
+        assert not (
+            anim_asset_path is not None and motion_data is not None
+        ), 'Cannot provide both `anim_asset_path` and `motion_data`'
+
         transform_keys = SeqTransKey(
             frame=0, location=location, rotation=rotation, scale=scale, interpolation='CONSTANT'
         )
@@ -134,6 +143,7 @@ class SequenceUnreal(SequenceBase):
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys.model_dump(),
             anim_asset_path=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             stencil_value=stencil_value,
         )
@@ -148,6 +158,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine with the given asset path, transform
         keys, actor name, stencil value, and animation asset path.
@@ -159,10 +170,18 @@ class SequenceUnreal(SequenceBase):
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
+            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor.
+
+        Raises:
+            AssertionError: If both `anim_asset_path` and `motion_data` are provided. Only one of them can be provided.
         """
+        assert not (
+            anim_asset_path is not None and motion_data is not None
+        ), 'Cannot provide both `anim_asset_path` and `motion_data`'
+
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
@@ -174,6 +193,7 @@ class SequenceUnreal(SequenceBase):
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys,
             anim_asset_path=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             stencil_value=stencil_value,
         )
@@ -375,6 +395,7 @@ class SequenceUnreal(SequenceBase):
         actor_asset_path: str,
         transform_keys: 'Union[List[Dict], Dict]',
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
         actor_name: str = 'Actor',
         stencil_value: int = 1,
     ) -> None:
@@ -391,6 +412,7 @@ class SequenceUnreal(SequenceBase):
         XRFeitoriaUnrealFactory.Sequence.add_actor(
             actor=actor_asset_path,
             animation_asset=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             transform_keys=transform_keys,
             stencil_value=stencil_value,

@@ -50,6 +50,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = ...,
         stencil_value: int = ...,
         anim_asset_path: Optional[str] = ...,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> ActorUnreal: ...
     @classmethod
     def spawn_actor_with_keys(
@@ -59,6 +60,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = ...,
         stencil_value: int = ...,
         anim_asset_path: Optional[str] = ...,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> ActorUnreal: ...
     @classmethod
     def use_camera(

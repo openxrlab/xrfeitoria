@@ -1,5 +1,5 @@
 """
->>> python -m samples.blender.07_amass
+>>> python -m samples.unreal.07_amass
 
 This is a script to demonstrate importing Amass motion and applying it to SMPL-XL model.
 Before running this script, please download `SMPL-XL model` and `Amass dataset` first,
@@ -7,15 +7,14 @@ you can find the download links in the comments in main function.
 
 SMPL-XL: a parametric human model based on SMPL-X in a layered representation, introduced in https://synbody.github.io/
 Amass: a large database of human motion, introduced in https://amass.is.tue.mpg.de/
-
-** It is recommended to run this script with Blender >= 3.6 **
 """
 from pathlib import Path
 
 import xrfeitoria as xf
-from xrfeitoria.rpc import remote_blender
 from xrfeitoria.utils import setup_logger
 from xrfeitoria.utils.anim.utils import dump_humandata, load_amass_motion
+
+from ..config import unreal_exec, unreal_project
 
 # prepare the assets
 ####################
@@ -34,17 +33,7 @@ smpl_xl_file = root / 'SMPL-XL-001.fbx'
 smpl_xl_meta_file = root / 'SMPL-XL-001.npz'
 
 # 3. Define the output file path
-saved_blend_file = root / 'output.blend'
 saved_humandata_file = root / 'output.npz'
-
-
-@remote_blender()
-def apply_scale(actor_name: str):
-    import bpy
-
-    bpy.ops.object.select_all(action='DESELECT')
-    bpy.data.objects[actor_name].select_set(True)
-    bpy.ops.object.transform_apply(scale=True)
 
 
 def main(background: bool = False):
@@ -54,36 +43,36 @@ def main(background: bool = False):
     motion.convert_fps(30)  # convert the motion from 120fps (amass) to 30fps
     motion_data = motion.get_motion_data()
 
-    # modify this to your blender executable path
-    xf_runner = xf.init_blender(
-        exec_path='C:/Program Files/Blender Foundation/Blender 3.6/blender.exe', background=background
-    )
+    xf_runner = xf.init_unreal(exec_path=unreal_exec, project_path=unreal_project, background=background)
 
     # Import SMPL-XL model
-    actor = xf_runner.Actor.import_from_file(smpl_xl_file)
-    apply_scale(actor.name)  # SMPL-XL model is imported with scale, we need to apply scale to it
+    actor_path = xf_runner.utils.import_asset(smpl_xl_file)
 
-    # Apply motion data to the actor
-    logger.info('Applying motion data')
-    xf_runner.utils.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor.name)
+    with xf_runner.Sequence.new(
+        seq_name='seq_amass', level='/Game/Levels/Playground', seq_length=200, replace=True
+    ) as seq:
+        seq.show()
+
+        # Spawn the actor, and add motion data as FK animation
+        actor = seq.spawn_actor(
+            actor_asset_path=actor_path,
+            location=(0, 0, 0),
+            rotation=(0, 0, 0),
+            stencil_value=1,
+            motion_data=motion_data,
+        )
+
     # Save the motion data as annotation in humandata format defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
     dump_humandata(motion, save_filepath=saved_humandata_file, meta_filepath=smpl_xl_meta_file)
 
-    # Modify the frame range to the length of the motion
-    frame_start, frame_end = xf_runner.utils.get_keys_range()
-    xf_runner.utils.set_frame_range(frame_start, frame_end)
-
-    # Save the blend file
-    xf_runner.utils.save_blend(saved_blend_file, pack=True)
-
     logger.info('🎉 [bold green]Success!')
     if not background:
-        input('You can check the result in the blender window. Press Any Key to Exit...')
+        input('You can check the result in the unreal window. Press Any Key to Exit...')
 
-    # Close the blender process
+    # Close the unreal process
     xf_runner.close()
 
-    logger.info(f'You can use Blender to check the result in "{saved_blend_file.as_posix()}"')
+    logger.info(f'You can use Unreal to check the result in "{unreal_project.as_posix()}"')
 
 
 if __name__ == '__main__':

@@ -145,7 +145,7 @@ class RendererUnreal(RendererBase):
                     break
                 if 'Render completed. Success: True' in data:
                     break
-                logger.info(f'\[unreal] {data}')
+                logger.info(f'(engine) {data}')
             except BlockingIOError:
                 pass
             except ConnectionResetError:
