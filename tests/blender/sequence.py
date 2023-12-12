@@ -9,9 +9,10 @@ from loguru import logger
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
 from xrfeitoria.factory import XRFeitoriaBlender
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path
-from ..utils import __timer__, _init_blender, setup_logger
+from ..utils import __timer__, _init_blender
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
@@ -130,7 +131,7 @@ def seq_shape(xf_runner: XRFeitoriaBlender, seq_name='seq_shape'):
 
 
 def sequence_test(debug=False, background=False):
-    logger = setup_logger(debug=debug)
+    setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_blender(background=background) as xf_runner:
         with __timer__('seq_actor'):
             seq_actor(xf_runner, seq_name='seq_actor')

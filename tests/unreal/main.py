@@ -3,7 +3,9 @@
 """
 from pathlib import Path
 
-from ..utils import _init_unreal, setup_logger
+from xrfeitoria.utils import setup_logger
+
+from ..utils import _init_unreal
 from .actor import actor_test
 from .camera import camera_test
 from .init import init_test

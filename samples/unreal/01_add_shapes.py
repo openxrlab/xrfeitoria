@@ -6,8 +6,6 @@ This is a script to add shapes in unreal.
 
 from pathlib import Path
 
-from loguru import logger
-
 import xrfeitoria as xf
 from xrfeitoria.utils import setup_logger
 
@@ -20,7 +18,7 @@ default_level = '/Game/Levels/Default'
 
 
 def main(debug=False, background=False):
-    setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
 
     # unreal will start in a separate process in RPC Server mode automatically,
     # and close using `xf_runner.close()`
