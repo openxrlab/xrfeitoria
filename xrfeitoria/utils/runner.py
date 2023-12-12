@@ -13,7 +13,7 @@ from functools import lru_cache
 from http.client import RemoteDisconnected
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from xmlrpc.client import ProtocolError
 
@@ -93,6 +93,7 @@ class RPCRunner(ABC):
         self.engine_type: EngineEnum = _tls.cache.get('platform', None)
         self.engine_process: Optional[subprocess.Popen] = None
         self.engine_running: bool = False
+        self.engine_outputs: List[str] = []
         self.new_process = new_process
         self.replace_plugin = replace_plugin
         self.dev_plugin = dev_plugin
@@ -250,7 +251,8 @@ class RPCRunner(ABC):
             if not data:
                 break
             # log in debug level
-            logger.trace(f'\[blender] {data.strip()}')
+            logger.trace(f'\[engine] {data.strip()}')
+            self.engine_outputs.append(data)
 
     def check_engine_alive(self) -> bool:
         """Check if the engine process is alive."""
@@ -261,14 +263,15 @@ class RPCRunner(ABC):
                 os._exit(1)  # exit main thread
             time.sleep(1)
 
-    @staticmethod
-    def get_process_output(process: subprocess.Popen) -> str:
+    def get_process_output(self, process: subprocess.Popen) -> str:
         """Get process output when process is exited with non-zero code."""
+        # engine_out = process.stdout.read().decode("utf-8")
+        engine_out = ''.join(self.engine_outputs)
         out = (
             f'Engine process exited with code {process.poll()}\n\n'
-            '>>>> Engine output >>>>\n\n'
-            f'{process.stdout.read().decode("utf-8")}'
-            '\n\n<<<< Engine output <<<<\n'
+            '[gray]>>>> Engine output >>>>\n\n[/gray]'
+            f'{engine_out}\n'
+            '[gray]<<<< Engine output <<<<\n[/gray]'
         )
         return out
 
