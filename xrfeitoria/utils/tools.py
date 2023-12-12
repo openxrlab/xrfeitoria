@@ -113,11 +113,12 @@ def setup_logger(
         level (Literal['TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], optional): logging level.
             Defaults to 'INFO', find more in https://loguru.readthedocs.io/en/stable/api/logger.html.
             The order of the levels is:
-                'RPC' (custom level): logging RPC messages which are sent by RPC protocols.
-                'TRACE': logging engine output like console output of blender.
-                'DEBUG': logging debug messages.
-                'INFO': logging info messages.
-                ...
+
+                - 'RPC' (custom level): logging RPC messages which are sent by RPC protocols.
+                - 'TRACE': logging engine output like console output of blender.
+                - 'DEBUG': logging debug messages.
+                - 'INFO': logging info messages.
+                - ...
         log_path (Path, optional): path to save the log file. Defaults to None.
         replace (bool, optional): replace the log file if exists. Defaults to True.
     """
