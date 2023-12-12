@@ -53,8 +53,7 @@ def load_humandata_motion(input_humandata_path: PathLike) -> Union[SMPLMotion, S
 
 
 def dump_humandata(motion: SMPLXMotion, save_filepath: PathLike, meta_filepath: PathLike):
-    """
-    Dump human data to a file.
+    """Dump human data to a file.
 
     Args:
         motion (SMPLXMotion): The SMPLXMotion object containing the motion data.
@@ -93,9 +92,7 @@ def dump_humandata(motion: SMPLXMotion, save_filepath: PathLike, meta_filepath: 
 
 
 if __name__ == '__main__':
-    """
-    python -m xrfeitoria.utils.anim.utils
-    """
+    """Python -m xrfeitoria.utils.anim.utils."""
     motion = load_amass_motion('.cache/ACCAD/s001/EricCamper04_stageii.npz')
     motion_data = motion.get_motion_data()
     dump_humandata(motion, '.cache/SMPL-XL_test.npz', '.cache/SMPL-XL-001.npz')

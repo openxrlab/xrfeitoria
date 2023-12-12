@@ -758,8 +758,7 @@ def _transform_transl_global_orient_(
     root_location_t0: Optional[np.ndarray] = None,
     pelvis_location_t0: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Transform the global orientation and translation based on the given offsets.
+    """Transform the global orientation and translation based on the given offsets.
 
     Args:
         global_orient (np.ndarray): Global orientation array.
@@ -797,8 +796,7 @@ def get_humandata(
     root_location_t0: Optional[np.ndarray] = None,
     pelvis_location_t0: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
-    """
-    Get human data for a given set of parameters.
+    """Get human data for a given set of parameters.
 
     Args:
         smpl_x_data (Dict[str, np.ndarray]): Dictionary containing the SMPL-X data.
