@@ -13,6 +13,7 @@ Amass: a large database of human motion, introduced in https://amass.is.tue.mpg.
 from pathlib import Path
 
 import xrfeitoria as xf
+from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.rpc import remote_blender
 from xrfeitoria.utils import setup_logger
 from xrfeitoria.utils.anim.utils import dump_humandata, load_amass_motion
@@ -34,8 +35,11 @@ smpl_xl_file = root / 'SMPL-XL-001.fbx'
 smpl_xl_meta_file = root / 'SMPL-XL-001.npz'
 
 # 3. Define the output file path
-saved_blend_file = root / 'output.blend'
-saved_humandata_file = root / 'output.npz'
+seq_name = 'seq_amass'
+output_path = Path(__file__).parents[2].resolve() / 'output/samples/blender' / Path(__file__).stem
+output_path.mkdir(parents=True, exist_ok=True)
+saved_humandata_file = output_path / 'output.npz'
+saved_blend_file = output_path / 'output.blend'
 
 
 @remote_blender()
@@ -59,24 +63,43 @@ def main(background: bool = False):
         exec_path='C:/Program Files/Blender Foundation/Blender 3.6/blender.exe', background=background
     )
 
-    # Import SMPL-XL model
-    actor = xf_runner.Actor.import_from_file(smpl_xl_file)
-    apply_scale(actor.name)  # SMPL-XL model is imported with scale, we need to apply scale to it
+    with xf_runner.Sequence.new(seq_name=seq_name, seq_length=motion.n_frames) as seq:
+        # Import SMPL-XL model
+        actor = xf_runner.Actor.import_from_file(smpl_xl_file)
+        apply_scale(actor.name)  # SMPL-XL model is imported with scale, we need to apply scale to it
 
-    # Apply motion data to the actor
-    logger.info('Applying motion data')
-    xf_runner.utils.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor.name)
-    # Save the motion data as annotation in humandata format defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
-    dump_humandata(motion, save_filepath=saved_humandata_file, meta_filepath=smpl_xl_meta_file)
+        # Apply motion data to the actor
+        logger.info('Applying motion data')
+        xf_runner.utils.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor.name)
+        # Save the motion data as annotation in humandata format defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
+        dump_humandata(motion, save_filepath=saved_humandata_file, meta_filepath=smpl_xl_meta_file)
 
-    # Modify the frame range to the length of the motion
-    frame_start, frame_end = xf_runner.utils.get_keys_range()
-    xf_runner.utils.set_frame_range(frame_start, frame_end)
+        # Modify the frame range to the length of the motion
+        frame_start, frame_end = xf_runner.utils.get_keys_range()
+        xf_runner.utils.set_frame_range(frame_start, frame_end)
+        # env
+        xf_runner.utils.set_env_color(color=(1, 1, 1, 1))
+
+        #
+        camera = xf_runner.Camera.spawn(location=(0, -2.5, 0.6), rotation=(90, 0, 0))
+
+        seq.add_to_renderer(
+            output_path=output_path,
+            resolution=(1920, 1080),
+            render_passes=[RenderPass('img', 'png')],
+            render_engine='eevee',
+        )
 
     # Save the blend file
     xf_runner.utils.save_blend(saved_blend_file, pack=True)
 
+    # render
+    xf_runner.render()
+
     logger.info('🎉 [bold green]Success!')
+    output_img = output_path / seq_name / 'img' / camera.name / '0000.png'
+    if output_img.exists():
+        logger.info(f'Check the output in "{output_img.as_posix()}"')
     if not background:
         input('You can check the result in the blender window. Press Any Key to Exit...')
 

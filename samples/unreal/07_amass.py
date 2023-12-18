@@ -11,6 +11,7 @@ Amass: a large database of human motion, introduced in https://amass.is.tue.mpg.
 from pathlib import Path
 
 import xrfeitoria as xf
+from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.utils import setup_logger
 from xrfeitoria.utils.anim.utils import dump_humandata, load_amass_motion
 
@@ -33,7 +34,10 @@ smpl_xl_file = root / 'SMPL-XL-001.fbx'
 smpl_xl_meta_file = root / 'SMPL-XL-001.npz'
 
 # 3. Define the output file path
-saved_humandata_file = root / 'output.npz'
+seq_name = 'seq_amass'
+output_path = Path(__file__).parents[2].resolve() / 'output/samples/unreal' / Path(__file__).stem
+output_path.mkdir(parents=True, exist_ok=True)
+saved_humandata_file = output_path / 'output.npz'
 
 
 def main(background: bool = False):
@@ -48,9 +52,7 @@ def main(background: bool = False):
     # Import SMPL-XL model
     actor_path = xf_runner.utils.import_asset(smpl_xl_file)
 
-    with xf_runner.Sequence.new(
-        seq_name='seq_amass', level='/Game/Levels/Playground', seq_length=200, replace=True
-    ) as seq:
+    with xf_runner.Sequence.new(seq_name=seq_name, level='/Game/Levels/Playground', seq_length=motion.n_frames) as seq:
         seq.show()
 
         # Spawn the actor, and add motion data as FK animation
@@ -62,17 +64,35 @@ def main(background: bool = False):
             motion_data=motion_data,
         )
 
+        camera = seq.spawn_camera(
+            location=(0, 2.5, 0.6),
+            rotation=(0, 0, -90),
+        )
+
+        # Add render job to renderer
+        seq.add_to_renderer(
+            output_path=output_path,
+            resolution=(1920, 1080),
+            render_passes=[RenderPass('img', 'png')],
+        )
+
     # Save the motion data as annotation in humandata format defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
     dump_humandata(motion, save_filepath=saved_humandata_file, meta_filepath=smpl_xl_meta_file)
 
+    # render
+    xf_runner.render()
+
     logger.info('🎉 [bold green]Success!')
+    output_img = output_path / seq_name / 'img' / camera.name / '0000.png'
+    if output_img.exists():
+        logger.info(f'Check the output in "{output_img.as_posix()}"')
     if not background:
         input('You can check the result in the unreal window. Press Any Key to Exit...')
 
     # Close the unreal process
     xf_runner.close()
 
-    logger.info(f'You can use Unreal to check the result in "{unreal_project.as_posix()}"')
+    logger.info(f'You can use Unreal to check the result in "{Path(unreal_project).as_posix()}"')
 
 
 if __name__ == '__main__':
