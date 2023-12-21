@@ -93,6 +93,7 @@ def receive_stdout(
                     break
                 text = f'[bold green]:rocket: Rendering Job{job_info}: frame {frame_count}/{frame_length}[/bold green]'
                 spinner.update(text=text)
+                logger.debug(f'(XF-Rendering) Job{job_info}: frame {frame_count}/{frame_length}')
                 # reset
                 first_trigger = second_trigger = False
         else:
@@ -114,6 +115,7 @@ def receive_stdout(
                     break
                 text = f'[bold green]:rocket: Rendering Job{job_info}: frame {frame_count}/{frame_length}[/bold green]'
                 spinner.update(text=text)
+                logger.debug(f'(XF-Rendering) Job{job_info}: frame {frame_count}/{frame_length}')
                 # reset
                 first_trigger = second_trigger = False
 
