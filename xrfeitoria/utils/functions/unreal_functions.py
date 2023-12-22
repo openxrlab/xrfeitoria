@@ -121,6 +121,30 @@ def duplicate_asset(src_path: str, dst_path: str, replace: bool = False) -> None
 
 
 @remote_unreal()
+def new_seq_data(asset_path: str, sequence_path: str, map_path: str) -> None:
+    """Create a new data asset of sequence data.
+
+    Args:
+        asset_path (str): path of the data asset.
+        sequence_path (str): path of the sequence asset.
+        map_path (str): path of the map asset.
+
+    Returns:
+        unreal.DataAsset: the created data asset.
+
+    Notes:
+        SequenceData Properties:
+            - "SequencePath": str
+            - "MapPath": str
+    """
+    XRFeitoriaUnrealFactory.Sequence.new_data_asset(
+        asset_path=asset_path,
+        sequence_path=sequence_path,
+        map_path=map_path,
+    )
+
+
+@remote_unreal()
 def delete_asset(asset_path: str) -> None:
     """Delete asset.
 

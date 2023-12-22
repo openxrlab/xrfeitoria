@@ -221,6 +221,19 @@ class SequenceUnreal(SequenceBase):
         """
         return cls._get_seq_path_in_engine()
 
+    @classmethod
+    def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> None:
+        """Open an exist sequence.
+
+        Args:
+            seq_name (str): Name of the sequence.
+            seq_dir (Optional[str], optional): Path of the sequence.
+                Defaults to None and fallback to the default path '/Game/XRFeitoriaUnreal/Sequences'.
+        """
+        cls._open_seq_in_engine(seq_name=seq_name, seq_dir=seq_dir)
+        cls.name = seq_name
+        logger.info(f'>>>> [cyan]Opened[/cyan] sequence "{cls.name}" >>>>')
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################

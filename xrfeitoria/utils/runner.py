@@ -598,7 +598,7 @@ class UnrealRPCRunner(RPCRunner):
             if not src_plugin_path.exists():
                 raise FileNotFoundError(
                     f'Plugin source code not found in {src_plugin_path}, '
-                    'please set `dev_plugin=False` to download the pre-built plugin. '
+                    'please set `dev_plugin=False` to download the pre-built plugin. \n'
                     'Or clone the source code and build the plugin from source. '
                     'https://github.com/openxrlab/xrfeitoria.git'
                 )

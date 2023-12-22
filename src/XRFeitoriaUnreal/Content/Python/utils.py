@@ -88,10 +88,10 @@ def import_asset(path: Union[str, List[str]], dst_dir_in_engine: Optional[str] =
 
     asset_paths = []
     for path in paths:
+        assert Path(path).exists(), f'File does not exist: {path}'
         name = Path(path).stem
-        dst_dir = unreal.Paths.combine([dst_dir_in_engine, Path(path).stem])
-        # check if asset exists
-        dst_path = unreal.Paths.combine([dst_dir, name])
+        dst_dir = unreal.Paths.combine([dst_dir_in_engine, name])
+        dst_path = unreal.Paths.combine([dst_dir, name])  # check if asset exists
         if unreal.EditorAssetLibrary.does_asset_exist(dst_path):
             asset_paths.append(dst_path)
             continue
@@ -136,6 +136,7 @@ def import_anim(path: str, skeleton_path: str, dest_path: Optional[str] = None) 
     Returns:
         str: a path to the imported animation, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL"
     """
+    assert Path(path).exists(), f'File does not exist: {path}'
     # init task
     import_task = unreal.AssetImportTask()
     import_task.set_editor_property('filename', path)

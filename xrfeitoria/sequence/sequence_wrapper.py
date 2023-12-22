@@ -11,6 +11,7 @@ class SequenceWrapperBase:
     """Sequence utils class."""
 
     _seq = SequenceBase
+    default_level = None
 
     @classmethod
     @contextmanager
@@ -21,7 +22,7 @@ class SequenceWrapperBase:
         seq_fps: int = 30,
         seq_length: int = 1,
         replace: bool = False,
-    ) -> ContextManager[SequenceUnreal]:
+    ) -> ContextManager[SequenceBase]:
         """Create a new sequence and close the sequence after exiting the it.
 
         Args:
@@ -33,6 +34,8 @@ class SequenceWrapperBase:
         Yields:
             SequenceBase: Sequence object.
         """
+        if level is None:
+            level = cls.default_level
         cls._seq._new(
             seq_name=seq_name,
             level=level,
@@ -65,62 +68,32 @@ class SequenceWrapperBlender(SequenceWrapperBase):
     """Sequence utils class for Blender."""
 
     _seq = SequenceBlender
-
-    @classmethod
-    @contextmanager
-    def new(
-        cls,
-        seq_name: str,
-        level: Optional[str] = None,
-        seq_fps: int = 30,
-        seq_length: int = 1,
-        replace: bool = False,
-    ) -> ContextManager[SequenceBlender]:
-        """Create a new sequence and close the sequence after exiting the it.
-
-        Args:
-            seq_name (str): Name of the sequence.
-            level (Optional[str], optional): Name of the level. Defaults to None. If None, use the default level named 'XRFeitoria'.
-            seq_fps (int, optional): Frame per second of the new sequence. Defaults to 30.
-            seq_length (int, optional): Frame length of the new sequence. Defaults to 1.
-            replace (bool, optional): Replace the exist same-name sequence. Defaults to False.
-        Yields:
-            SequenceBase: Sequence object.
-        """
-        if level is None:
-            level = default_level_blender
-        cls._seq._new(
-            seq_name=seq_name,
-            level=level,
-            seq_fps=seq_fps,
-            seq_length=seq_length,
-            replace=replace,
-        )
-        yield cls._seq
-        cls._seq.save()
-        cls._seq.close()
-
-    @classmethod
-    @contextmanager
-    def open(cls, seq_name: str) -> ContextManager[SequenceBase]:
-        """Open a sequence and close the sequence after existing it.
-
-        Args:
-            seq_name (str): Name of the sequence.
-
-        Yields:
-            SequenceBase: Sequence object.
-        """
-        cls._seq._open(seq_name=seq_name)
-        yield cls._seq
-        cls._seq.save()
-        cls._seq.close()
+    default_level = default_level_blender
 
 
 class SequenceWrapperUnreal(SequenceWrapperBase):
     """Sequence utils class for Unreal."""
 
     _seq = SequenceUnreal
+    default_level = None
+
+    @classmethod
+    @contextmanager
+    def open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> ContextManager[SequenceUnreal]:
+        """Open a sequence and close the sequence after existing it.
+
+        Args:
+            seq_name (str): Name of the sequence.
+            seq_dir (Optional[str], optional): Path of the sequence.
+                Defaults to None and fallback to the default path '/Game/XRFeitoriaUnreal/Sequences'.
+
+        Yields:
+            SequenceBase: Sequence object.
+        """
+        cls._seq._open(seq_name=seq_name, seq_dir=seq_dir)
+        yield cls._seq
+        cls._seq.save()
+        cls._seq.close()
 
     @classmethod
     @contextmanager
