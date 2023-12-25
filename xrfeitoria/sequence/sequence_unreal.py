@@ -222,6 +222,20 @@ class SequenceUnreal(SequenceBase):
         return cls._get_seq_path_in_engine()
 
     @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """
+        Sets the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
+            end_frame (Optional[int]): The end frame of the playback range. If not provided, the default end frame will be used.
+
+        Returns:
+            None
+        """
+        cls._set_playback_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @classmethod
     def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> None:
         """Open an exist sequence.
 
@@ -320,6 +334,10 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _show_seq_in_engine() -> None:
         XRFeitoriaUnrealFactory.Sequence.show()
+
+    @staticmethod
+    def _set_playback_in_engine(start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None) -> None:
+        XRFeitoriaUnrealFactory.Sequence.set_playback(start_frame=start_frame, end_frame=end_frame)
 
     # ------ add actor and camera -------- #
 

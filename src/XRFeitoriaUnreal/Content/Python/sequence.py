@@ -957,6 +957,24 @@ class Sequence:
         map_path = seq_data_asset.get_editor_property('MapPath').export_text()
         return seq_path.split('.')[0], map_path.split('.')[0]
 
+    @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """
+        Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. Defaults to None.
+            end_frame (Optional[int]): The end frame of the playback range. Defaults to None.
+
+        Raises:
+            AssertionError: If the sequence is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        if start_frame:
+            cls.sequence.set_playback_start(start_frame=start_frame)
+        if end_frame:
+            cls.sequence.set_playback_end(end_frame=end_frame)
+
     # ------ add actor and camera -------- #
 
     @classmethod
