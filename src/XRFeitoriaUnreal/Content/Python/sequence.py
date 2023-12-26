@@ -17,7 +17,6 @@ from utils_actor import get_actor_mesh_component
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
 EditorAssetSub = SubSystem.EditorAssetSub
 EditorLevelSub = SubSystem.EditorLevelSub
-START_FRAME = -1
 
 ################################################################################
 # misc
@@ -457,13 +456,13 @@ def add_level_visibility_to_sequence(
     # add level visibility section
     level_visible_section: unreal.MovieSceneLevelVisibilitySection = level_visibility_track.add_section()
     level_visible_section.set_visibility(unreal.LevelVisibility.VISIBLE)
-    level_visible_section.set_start_frame(START_FRAME)
+    level_visible_section.set_start_frame(Sequence.START_FRAME)
     level_visible_section.set_end_frame(seq_length)
 
     level_hidden_section: unreal.MovieSceneLevelVisibilitySection = level_visibility_track.add_section()
     level_hidden_section.set_row_index(1)
     level_hidden_section.set_visibility(unreal.LevelVisibility.HIDDEN)
-    level_hidden_section.set_start_frame(START_FRAME)
+    level_hidden_section.set_start_frame(Sequence.START_FRAME)
     level_hidden_section.set_end_frame(seq_length)
     return level_visible_section, level_hidden_section
 
@@ -527,7 +526,7 @@ def add_camera_to_sequence(
     camera_binding = sequence.add_possessable(camera)
     camera_track: unreal.MovieScene3DTransformTrack = camera_binding.add_track(unreal.MovieScene3DTransformTrack)  # type: ignore
     camera_section: unreal.MovieScene3DTransformSection = camera_track.add_section()  # type: ignore
-    camera_section.set_start_frame(START_FRAME)
+    camera_section.set_start_frame(Sequence.START_FRAME)
     camera_section.set_end_frame(seq_length)
     camera_component_binding = sequence.add_possessable(camera.camera_component)
     camera_component_binding.set_parent(camera_binding)
@@ -539,9 +538,9 @@ def add_camera_to_sequence(
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)  # type: ignore
 
     # add a camera cut track for this camera
-    # make sure the camera cut is stretched to the START_FRAME mark
+    # make sure the camera cut is stretched to the Sequence.START_FRAME mark
     camera_cut_section: unreal.MovieSceneCameraCutSection = camera_cut_track.add_section()  # type: ignore
-    camera_cut_section.set_start_frame(START_FRAME)
+    camera_cut_section.set_start_frame(Sequence.START_FRAME)
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
@@ -609,9 +608,9 @@ def add_spawnable_camera_to_sequence(
     # camera_cut_track = sequence.add_track(unreal.MovieSceneCameraCutTrack)
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)
 
-    # add a camera cut track for this camera, make sure the camera cut is stretched to the START_FRAME mark
+    # add a camera cut track for this camera, make sure the camera cut is stretched to the Sequence.START_FRAME mark
     camera_cut_section: unreal.MovieSceneCameraCutSection = camera_cut_track.add_section()
-    camera_cut_section.set_start_frame(START_FRAME)
+    camera_cut_section.set_start_frame(Sequence.START_FRAME)
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
@@ -808,6 +807,8 @@ class Sequence:
     sequence: unreal.LevelSequence = None
     bindings: Dict[str, Dict[str, Any]] = {}
 
+    START_FRAME = -1
+
     def __init__(self) -> NoReturn:
         raise Exception('Sequence (XRFeitoriaUnreal/Python) should not be instantiated')
 
@@ -958,6 +959,26 @@ class Sequence:
         return seq_path.split('.')[0], map_path.split('.')[0]
 
     @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the camera cut playback.
+
+        Args:
+            start_frame (Optional[int], optional): start frame of the camera cut playback. Defaults to None.
+            end_frame (Optional[int], optional): end frame of the camera cut playback. Defaults to None.
+
+        Raises:
+            AssertionError: If the sequence is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        camera_tracks = cls.sequence.find_master_tracks_by_type(unreal.MovieSceneCameraCutTrack)
+        for camera_track in camera_tracks:
+            for section in camera_track.get_sections():
+                if start_frame:
+                    section.set_start_frame(start_frame)
+                if end_frame:
+                    section.set_end_frame(end_frame)
+
+    @classmethod
     def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
         """Set the playback range for the sequence.
 
@@ -969,10 +990,20 @@ class Sequence:
             AssertionError: If the sequence is not initialized.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
+        master_tracks = cls.sequence.get_tracks()
+
         if start_frame:
+            cls.START_FRAME = start_frame
             cls.sequence.set_playback_start(start_frame=start_frame)
+            for master_track in master_tracks:
+                for section in master_track.get_sections():
+                    section.set_start_frame(start_frame)
+
         if end_frame:
             cls.sequence.set_playback_end(end_frame=end_frame)
+            for master_track in master_tracks:
+                for section in master_track.get_sections():
+                    section.set_end_frame(end_frame)
 
     # ------ add actor and camera -------- #
 

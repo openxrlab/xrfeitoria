@@ -300,9 +300,9 @@ class SequenceTransformKey(BaseModel):
     def __init__(
         self,
         frame: int,
-        location: Vector = None,
-        rotation: Vector = None,
-        scale: Vector = None,
+        location: Optional[Vector] = None,
+        rotation: Optional[Vector] = None,
+        scale: Optional[Vector] = None,
         interpolation: Literal['CONSTANT', 'AUTO', 'LINEAR'] = 'AUTO',
     ) -> None:
         """Transform key for Unreal or Blender, which contains frame, location,

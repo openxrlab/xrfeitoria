@@ -49,7 +49,7 @@ class SequenceUnreal(SequenceBase):
         """Add the sequence to the renderer's job queue. Can only be called after the
         sequence is instantiated using
         :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.new` or
-        :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.o pen`.
+        :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.open`.
 
         Args:
             output_path (PathLike): The path where the rendered output will be saved.
@@ -101,8 +101,8 @@ class SequenceUnreal(SequenceBase):
     def spawn_actor(
         cls,
         actor_asset_path: str,
-        location: 'Vector' = None,
-        rotation: 'Vector' = None,
+        location: 'Optional[Vector]' = None,
+        rotation: 'Optional[Vector]' = None,
         scale: 'Optional[Vector]' = None,
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
@@ -115,8 +115,8 @@ class SequenceUnreal(SequenceBase):
         Args:
             cls: The class object.
             actor_asset_path (str): The actor asset path in engine to spawn.
-            location (Vector): The location to spawn the actor at. unit: meter.
-            rotation (Vector): The rotation to spawn the actor with. unit: degree.
+            location (Optional[Vector, optional]): The location to spawn the actor at. unit: meter.
+            rotation (Optional[Vector, optional]): The rotation to spawn the actor with. unit: degree.
             scale (Optional[Vector], optional): The scale to spawn the actor with. Defaults to None.
             actor_name (Optional[str], optional): The name to give the spawned actor. Defaults to None.
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
@@ -235,6 +235,19 @@ class SequenceUnreal(SequenceBase):
         cls._set_playback_in_engine(start_frame=start_frame, end_frame=end_frame)
 
     @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
+            end_frame (Optional[int]): The end frame of the playback range. If not provided, the default end frame will be used.
+
+        Returns:
+            None
+        """
+        cls._set_camera_cut_player_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @classmethod
     def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> None:
         """Open an exist sequence.
 
@@ -337,6 +350,12 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _set_playback_in_engine(start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None) -> None:
         XRFeitoriaUnrealFactory.Sequence.set_playback(start_frame=start_frame, end_frame=end_frame)
+
+    @staticmethod
+    def _set_camera_cut_player_in_engine(
+        start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None
+    ) -> None:
+        XRFeitoriaUnrealFactory.Sequence.set_camera_cut_playback(start_frame=start_frame, end_frame=end_frame)
 
     # ------ add actor and camera -------- #
 

@@ -41,26 +41,27 @@ class SequenceUnreal(SequenceBase):
         cls, location: Vector, rotation: Vector, fov: float = ..., camera_name: str = ...
     ) -> CameraUnreal: ...
     @classmethod
+    @classmethod
     def spawn_actor(
         cls,
         actor_asset_path: str,
-        location: Vector,
-        rotation: Vector,
-        scale: Optional[Vector] = ...,
-        actor_name: Optional[str] = ...,
-        stencil_value: int = ...,
-        anim_asset_path: Optional[str] = ...,
-        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
+        location: Optional[Vector] = None,
+        rotation: Optional[Vector] = None,
+        scale: Optional[Vector] = None,
+        actor_name: Optional[str] = None,
+        stencil_value: int = 1,
+        anim_asset_path: Optional[str] = None,
+        motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
     ) -> ActorUnreal: ...
     @classmethod
     def spawn_actor_with_keys(
         cls,
         actor_asset_path: str,
         transform_keys: TransformKeys,
-        actor_name: Optional[str] = ...,
-        stencil_value: int = ...,
-        anim_asset_path: Optional[str] = ...,
-        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
+        actor_name: Optional[str] = None,
+        stencil_value: int = 1,
+        anim_asset_path: Optional[str] = None,
+        motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
     ) -> ActorUnreal: ...
     @classmethod
     def use_camera(
@@ -92,5 +93,9 @@ class SequenceUnreal(SequenceBase):
     def get_map_path(cls) -> str: ...
     @classmethod
     def get_seq_path(cls) -> str: ...
+    @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None: ...
+    @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None: ...
     @classmethod
     def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = ...) -> None: ...

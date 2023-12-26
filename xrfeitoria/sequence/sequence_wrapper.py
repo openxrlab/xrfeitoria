@@ -88,7 +88,7 @@ class SequenceWrapperUnreal(SequenceWrapperBase):
                 Defaults to None and fallback to the default path '/Game/XRFeitoriaUnreal/Sequences'.
 
         Yields:
-            SequenceBase: Sequence object.
+            SequenceUnreal: Sequence object.
         """
         cls._seq._open(seq_name=seq_name, seq_dir=seq_dir)
         yield cls._seq
