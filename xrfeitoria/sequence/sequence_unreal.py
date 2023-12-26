@@ -223,8 +223,7 @@ class SequenceUnreal(SequenceBase):
 
     @classmethod
     def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
-        """
-        Sets the playback range for the sequence.
+        """Set the playback range for the sequence.
 
         Args:
             start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
