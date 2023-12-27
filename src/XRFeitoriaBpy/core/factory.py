@@ -229,6 +229,15 @@ class XRFeitoriaBlenderFactory:
         # clear all sequences in this level
         for collection in level_scene.collection.children:
             if XRFeitoriaBlenderFactory.is_sequence_collecion(collection):
+                # save sequence properties
+                XRFeitoriaBlenderFactory.set_sequence_properties(
+                    collection=collection,
+                    level=level_scene,
+                    fps=level_scene.render.fps,
+                    frame_start=level_scene.frame_start,
+                    frame_end=level_scene.frame_end,
+                    frame_current=level_scene.frame_current
+                )
                 # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)
                 # restore level actors' properties
