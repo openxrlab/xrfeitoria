@@ -205,7 +205,7 @@ class XRFeitoriaBlenderFactory:
         for actor_data in seq_collection.sequence_properties.level_actors:
             actor = actor_data.actor
             actor.pass_index = actor_data.sequence_stencil_value
-            for child in actor.children:
+            for child in actor.children_recursive:
                 child.pass_index = actor_data.sequence_stencil_value
             if actor_data.sequence_animation:
                 XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.sequence_animation, actor=actor)
@@ -236,7 +236,7 @@ class XRFeitoriaBlenderFactory:
                     fps=level_scene.render.fps,
                     frame_start=level_scene.frame_start,
                     frame_end=level_scene.frame_end,
-                    frame_current=level_scene.frame_current
+                    frame_current=level_scene.frame_current,
                 )
                 # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)
@@ -244,7 +244,7 @@ class XRFeitoriaBlenderFactory:
                 for actor_data in collection.sequence_properties.level_actors:
                     actor = actor_data.actor
                     actor.pass_index = actor_data.level_stencil_value
-                    for child in actor.children:
+                    for child in actor.children_recursive:
                         child.pass_index = actor_data.level_stencil_value
                     if actor_data.level_animation:
                         XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.level_animation, actor=actor)

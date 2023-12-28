@@ -159,7 +159,7 @@ class SequenceBlender(SequenceBase):
         # XXX: set stencil value. may use actor property
         actor = bpy.data.objects[actor_name]
         actor.pass_index = stencil_value
-        for child in actor.children:
+        for child in actor.children_recursive:
             child.pass_index = stencil_value
 
     @staticmethod
@@ -234,7 +234,7 @@ class SequenceBlender(SequenceBase):
         # XXX: set stencil value. may use actor property
         actor = bpy.data.objects[shape_name]
         actor.pass_index = stencil_value
-        for child in actor.children:
+        for child in actor.children_recursive:
             child.pass_index = stencil_value
 
     # -------- use methods -------- #
@@ -313,7 +313,7 @@ class SequenceBlender(SequenceBase):
 
         # set level actor's properties
         actor.pass_index = stencil_value
-        for child in actor.children:
+        for child in actor.children_recursive:
             child.pass_index = stencil_value
         if action:
             XRFeitoriaBlenderFactory.apply_action_to_actor(action=action, actor=actor)

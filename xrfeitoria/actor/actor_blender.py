@@ -86,7 +86,7 @@ class ActorBlender(ActorBase):
         """
         object = bpy.data.objects[actor_name]
         object.pass_index = value
-        for child in object.children:
+        for child in object.children_recursive:
             child.pass_index = value
 
     @staticmethod
