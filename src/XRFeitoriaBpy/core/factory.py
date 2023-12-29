@@ -124,7 +124,7 @@ class XRFeitoriaBlenderFactory:
         frame_end: int,
         frame_current: int,
         resolution_x: int,
-        resolution_y: int
+        resolution_y: int,
     ) -> None:
         """Set the sequence properties.
 
@@ -146,7 +146,9 @@ class XRFeitoriaBlenderFactory:
         collection.sequence_properties.resolution_x = resolution_x
         collection.sequence_properties.resolution_y = resolution_y
 
-    def get_sequence_properties(collection: 'bpy.types.Collection') -> 'Tuple[bpy.types.Scene, int, int, int, int, int, int]':
+    def get_sequence_properties(
+        collection: 'bpy.types.Collection',
+    ) -> 'Tuple[bpy.types.Scene, int, int, int, int, int, int]':
         """Get the sequence properties.
 
         Args:
@@ -176,9 +178,15 @@ class XRFeitoriaBlenderFactory:
         # get sequence collection
         seq_collection = XRFeitoriaBlenderFactory.get_collection(seq_name)
         # get sequence properties
-        level_scene, fps, frame_start, frame_end, frame_current, resolution_x, resolution_y = XRFeitoriaBlenderFactory.get_sequence_properties(
-            collection=seq_collection
-        )
+        (
+            level_scene,
+            fps,
+            frame_start,
+            frame_end,
+            frame_current,
+            resolution_x,
+            resolution_y,
+        ) = XRFeitoriaBlenderFactory.get_sequence_properties(collection=seq_collection)
         # deactivate all cameras in this level
         for obj in level_scene.objects:
             if obj.type == 'CAMERA':
@@ -250,7 +258,7 @@ class XRFeitoriaBlenderFactory:
                     frame_end=level_scene.frame_end,
                     frame_current=level_scene.frame_current,
                     resolution_x=level_scene.render.resolution_x,
-                    resolution_y=level_scene.render.resolution_y
+                    resolution_y=level_scene.render.resolution_y,
                 )
                 # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)

@@ -97,7 +97,7 @@ class SequenceBlender(SequenceBase):
             frame_end=seq_length - 1,
             frame_current=0,
             resolution_x=level_scene.render.resolution_x,
-            resolution_y=level_scene.render.resolution_y
+            resolution_y=level_scene.render.resolution_y,
         )
         level_scene.frame_start = 0
         level_scene.frame_end = seq_length - 1

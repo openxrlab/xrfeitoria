@@ -11,8 +11,8 @@ from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
 from xrfeitoria.utils import setup_logger
 
-from ..utils import visualize_vertices
 from ..config import assets_path, blender_exec
+from ..utils import visualize_vertices
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/blender/{file_name}'
