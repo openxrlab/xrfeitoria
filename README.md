@@ -9,7 +9,7 @@
 <div align="center">
 
 [![Documentation](https://readthedocs.org/projects/xrfeitoria/badge/?version=latest)](https://xrfeitoria.readthedocs.io/en/latest/?badge=latest)
-[![actions](https://github.com/openxrlab/xrfeitoria/workflows/lint/badge.svg)](https://github.com/openxrlab/xrfeitoria/actions)
+[![actions](https://github.com/openxrlab/xrfeitoria/actions/workflows/lint.yml/badge.svg)](https://github.com/openxrlab/xrfeitoria/actions)
 [![PyPI](https://img.shields.io/pypi/v/xrfeitoria)](https://pypi.org/project/xrfeitoria/)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 

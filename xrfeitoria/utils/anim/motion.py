@@ -387,6 +387,40 @@ class SMPLMotion(Motion):
         instance.smpl_data = smpl_data
         return instance
 
+    @classmethod
+    def from_amass_data(cls, amass_data, insert_rest_pose: bool) -> Self:
+        """Create a Motion instance from AMASS data (SMPL)
+
+        Args:
+            amass_data (dict): The AMASS data containing betas, transl, global_orient, and body_pose.
+            insert_rest_pose (bool): Whether to insert the rest pose into the SMPL data.
+
+        Returns:
+            SMPLMotion: A SMPLMotion instance containing the AMASS data.
+        """
+        if 'mocap_framerate' in amass_data:
+            fps = amass_data.get('mocap_framerate')
+        elif 'mocap_frame_rate' in amass_data:
+            fps = amass_data['mocap_frame_rate']
+        else:
+            fps = 120.0
+
+        betas = amass_data['betas'][:10]
+        transl = amass_data['trans']
+        global_orient = amass_data['poses'][:, :3]  # controls the global root orientation
+        body_pose = amass_data['poses'][:, 3:66]  # controls the body
+        # pose_hand = amass_data['poses'][:, 66:]  # controls the finger articulation
+        # left_hand_pose = pose_hand[:, :45]
+        # right_hand_pose = pose_hand[:, 45:]
+        # dmpls = amass_data['dmpls'][:, :8]  # controls soft tissue dynamics
+
+        transl, global_orient = cls._transform_transl_global_orient(transl, global_orient)
+        smpl_data = {'betas': betas, 'transl': transl, 'global_orient': global_orient, 'body_pose': body_pose}
+        if insert_rest_pose:
+            smpl_data = cls._insert_rest_pose(smpl_x_data=smpl_data)
+
+        return cls.from_smpl_data(smpl_data, insert_rest_pose=False, fps=fps)
+
     def get_bone_rotvec(self, bone_name, frame=0) -> np.ndarray:
         idx = self._bone2idx(bone_name)
         if idx == 0:
@@ -589,7 +623,7 @@ class SMPLXMotion(Motion):
 
     @classmethod
     def from_amass_data(cls, amass_data, insert_rest_pose: bool, flat_hand_mean: bool = True) -> Self:
-        """Create a Motion instance from AMASS data.
+        """Create a Motion instance from AMASS data (SMPLX)
 
         Args:
             amass_data (dict): A dictionary containing the AMASS data.
@@ -652,12 +686,7 @@ class SMPLXMotion(Motion):
                         # arr[0, 1] = pelvis_height
                 smplx_data[key] = arr
 
-        return cls.from_smplx_data(
-            smplx_data,
-            insert_rest_pose=False,
-            fps=fps,
-            flat_hand_mean=flat_hand_mean,
-        )
+        return cls.from_smplx_data(smplx_data, insert_rest_pose=False, fps=fps, flat_hand_mean=flat_hand_mean)
 
     def get_parent_bone_name(self, bone_name) -> Optional[str]:
         idx = self._bone2idx(bone_name)
