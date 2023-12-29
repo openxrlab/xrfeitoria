@@ -78,6 +78,17 @@ def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float
 
 
 @remote_blender()
+def apply_shape_keys(shape_keys: 'List[Dict[str, float]]', actor_name: str) -> None:
+    """Apply shape keys to the specified actor.
+
+    Args:
+        shape_keys (List[Dict[str, float]]): A list of dictionaries representing the shape keys and their values.
+        actor_name (str): The name of the actor object in Blender.
+    """
+    XRFeitoriaBlenderFactory.apply_shape_keys(shape_keys=shape_keys, actor_name=actor_name)
+
+
+@remote_blender()
 def is_background_mode(warning: bool = False) -> bool:
     """Check whether Blender is running in background mode.
 
@@ -154,6 +165,22 @@ def set_hdr_map(hdr_map_path: 'PathLike') -> None:
     """
     scene = XRFeitoriaBlenderFactory.get_active_scene()
     XRFeitoriaBlenderFactory.set_hdr_map(scene=scene, hdr_map_path=hdr_map_path)
+
+
+@remote_blender()
+def set_active_level(level_name: str):
+    """Sets the active level in XRFeitoria Blender Factory.
+
+    Args:
+        level_name (str): The name of the level to set as active. (e.g. 'Scene')
+
+    Example:
+        >>> import xrfeitoria as xf
+        >>> xf_runner = xf.init_blender()
+        >>> xf_runner.utils.set_active_level('Scene')  # Return to default level defined by blender
+    """
+    level = XRFeitoriaBlenderFactory.get_scene(level_name)
+    XRFeitoriaBlenderFactory.set_scene_active(level)
 
 
 @remote_blender()

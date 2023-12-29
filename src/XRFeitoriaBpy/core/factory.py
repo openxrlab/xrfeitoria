@@ -1161,6 +1161,20 @@ class XRFeitoriaBlenderFactory:
         XRFeitoriaBlenderFactory.apply_motion_data_to_action(motion_data=motion_data, action=action)
         XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor=bpy.data.objects[actor_name])
 
+    def apply_shape_keys(shape_keys: 'List[Dict[str, float]]', actor_name: str) -> None:
+        """Apply shape keys to the specified actor.
+
+        Args:
+            shape_keys (List[Dict[str, float]]): A list of dictionaries representing the shape keys and their values.
+            actor_name (str): The name of the actor object in Blender.
+        """
+        actor = bpy.data.objects[actor_name]
+        for f in range(len(shape_keys)):
+            for key, value in shape_keys[f].items():
+                actor.data.shape_keys.key_blocks[key].value = value
+                # set keyframe
+                actor.data.shape_keys.key_blocks[key].keyframe_insert(data_path='value', frame=f)
+
     #####################################
     ############# validate ##############
     #####################################
