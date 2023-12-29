@@ -168,6 +168,22 @@ def set_hdr_map(hdr_map_path: 'PathLike') -> None:
 
 
 @remote_blender()
+def set_active_level(level_name: str):
+    """Sets the active level in XRFeitoria Blender Factory.
+
+    Args:
+        level_name (str): The name of the level to set as active. (e.g. 'Scene')
+
+    Example:
+        >>> import xrfeitoria as xf
+        >>> xf_runner = xf.init_blender()
+        >>> xf_runner.utils.set_active_level('Scene')  # Return to default level defined by blender
+    """
+    level = XRFeitoriaBlenderFactory.get_scene(level_name)
+    XRFeitoriaBlenderFactory.set_scene_active(level)
+
+
+@remote_blender()
 def get_frame_range() -> 'Tuple[int, int]':
     """Get the frame range of the active scene.
 
