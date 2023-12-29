@@ -78,6 +78,17 @@ def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float
 
 
 @remote_blender()
+def apply_shape_keys(shape_keys: 'List[Dict[str, float]]', actor_name: str) -> None:
+    """Apply shape keys to the specified actor.
+
+    Args:
+        shape_keys (List[Dict[str, float]]): A list of dictionaries representing the shape keys and their values.
+        actor_name (str): The name of the actor object in Blender.
+    """
+    XRFeitoriaBlenderFactory.apply_shape_keys(shape_keys=shape_keys, actor_name=actor_name)
+
+
+@remote_blender()
 def is_background_mode(warning: bool = False) -> bool:
     """Check whether Blender is running in background mode.
 
