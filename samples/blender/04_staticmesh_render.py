@@ -9,8 +9,9 @@ from pathlib import Path
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
-from xrfeitoria.utils import setup_logger, visualize_vertices
+from xrfeitoria.utils import setup_logger
 
+from ..utils import visualize_vertices
 from ..config import assets_path, blender_exec
 
 root = Path(__file__).parents[2].resolve()

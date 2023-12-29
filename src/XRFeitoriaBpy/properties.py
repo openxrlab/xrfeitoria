@@ -35,6 +35,8 @@ class SequenceProperties(bpy.types.PropertyGroup):
     frame_start: bpy.props.IntProperty()
     frame_end: bpy.props.IntProperty()
     frame_current: bpy.props.IntProperty()
+    resolution_x: bpy.props.IntProperty()
+    resolution_y: bpy.props.IntProperty()
 
 
 ## level properties for scene
@@ -44,7 +46,7 @@ class LevelProperties(bpy.types.PropertyGroup):
         if self.active_sequence is None:
             XRFeitoriaBlenderFactory.close_sequence()
         elif XRFeitoriaBlenderFactory.is_sequence_collecion(self.active_sequence):
-            level_scene, _, _, _, _ = XRFeitoriaBlenderFactory.get_sequence_properties(collection=self.active_sequence)
+            level_scene, _, _, _, _, _, _ = XRFeitoriaBlenderFactory.get_sequence_properties(collection=self.active_sequence)
             if self.active_sequence.name not in level_scene.collection.children:
                 XRFeitoriaBlenderFactory.open_sequence(self.active_sequence.name)
         else:

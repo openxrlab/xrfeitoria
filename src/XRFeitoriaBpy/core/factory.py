@@ -123,6 +123,8 @@ class XRFeitoriaBlenderFactory:
         frame_start: int,
         frame_end: int,
         frame_current: int,
+        resolution_x: int,
+        resolution_y: int
     ) -> None:
         """Set the sequence properties.
 
@@ -133,29 +135,37 @@ class XRFeitoriaBlenderFactory:
             frame_start (int): Start frame of the sequence.
             frame_end (int): End frame of the sequence.
             frame_current (int): Current frame of the sequence.
+            resoltion_x (int): Resolution_x of the sequence.
+            resoltion_y (int): Resolution_y of the sequence.
         """
         collection.sequence_properties.level = level
         collection.sequence_properties.fps = fps
         collection.sequence_properties.frame_start = frame_start
         collection.sequence_properties.frame_end = frame_end
         collection.sequence_properties.frame_current = frame_current
+        collection.sequence_properties.resolution_x = resolution_x
+        collection.sequence_properties.resolution_y = resolution_y
 
-    def get_sequence_properties(collection: 'bpy.types.Collection') -> 'Tuple[bpy.types.Scene, int, int, int, int]':
+    def get_sequence_properties(collection: 'bpy.types.Collection') -> 'Tuple[bpy.types.Scene, int, int, int, int, int, int]':
         """Get the sequence properties.
 
         Args:
             collection (bpy.types.Collection): Collection of the sequence.
 
         Returns:
-            Tuple[bpy.types.Scene, int, int, int, int]:
-                The level(scene), FPS of the sequence, Start frame of the sequence, End frame of the sequence, Current frame of the sequence.
+            Tuple[bpy.types.Scene, int, int, int, int, int, int]:
+                The level(scene), FPS of the sequence, Start frame of the sequence, End frame of the sequence, Current frame of the sequence,
+                Resolution_x of the sequence, Resolution_y of the sequence.
         """
         level = collection.sequence_properties.level
         fps = collection.sequence_properties.fps
         frame_start = collection.sequence_properties.frame_start
         frame_end = collection.sequence_properties.frame_end
         frame_current = collection.sequence_properties.frame_current
-        return level, fps, frame_start, frame_end, frame_current
+        resolution_x = collection.sequence_properties.resolution_x
+        resolution_y = collection.sequence_properties.resolution_y
+
+        return level, fps, frame_start, frame_end, frame_current, resolution_x, resolution_y
 
     def open_sequence(seq_name: str) -> 'bpy.types.Scene':
         """Open the given sequence.
@@ -166,7 +176,7 @@ class XRFeitoriaBlenderFactory:
         # get sequence collection
         seq_collection = XRFeitoriaBlenderFactory.get_collection(seq_name)
         # get sequence properties
-        level_scene, fps, frame_start, frame_end, frame_current = XRFeitoriaBlenderFactory.get_sequence_properties(
+        level_scene, fps, frame_start, frame_end, frame_current, resolution_x, resolution_y = XRFeitoriaBlenderFactory.get_sequence_properties(
             collection=seq_collection
         )
         # deactivate all cameras in this level
@@ -187,6 +197,8 @@ class XRFeitoriaBlenderFactory:
         level_scene.frame_end = frame_end
         level_scene.frame_current = frame_current
         level_scene.render.fps = fps
+        level_scene.render.resolution_x = resolution_x
+        level_scene.render.resolution_y = resolution_y
 
         # set cameras in this sequence to active
         for obj in seq_collection.objects:
@@ -237,6 +249,8 @@ class XRFeitoriaBlenderFactory:
                     frame_start=level_scene.frame_start,
                     frame_end=level_scene.frame_end,
                     frame_current=level_scene.frame_current,
+                    resolution_x=level_scene.render.resolution_x,
+                    resolution_y=level_scene.render.resolution_y
                 )
                 # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)
