@@ -78,14 +78,14 @@ def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float
 
 
 @remote_blender()
-def apply_shape_keys(shape_keys: 'List[Dict[str, float]]', actor_name: str) -> None:
-    """Apply shape keys to the specified actor.
+def apply_shape_keys_to_mesh(shape_keys: 'List[Dict[str, float]]', mesh_name: str) -> None:
+    """Apply shape keys to the given mesh.
 
     Args:
         shape_keys (List[Dict[str, float]]): A list of dictionaries representing the shape keys and their values.
-        actor_name (str): The name of the actor object in Blender.
+        mesh_name (str): Name of the mesh.
     """
-    XRFeitoriaBlenderFactory.apply_shape_keys(shape_keys=shape_keys, actor_name=actor_name)
+    XRFeitoriaBlenderFactory.apply_shape_keys_to_mesh(shape_keys=shape_keys, mesh_name=mesh_name)
 
 
 @remote_blender()
