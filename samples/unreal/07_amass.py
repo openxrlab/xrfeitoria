@@ -13,7 +13,7 @@ from pathlib import Path
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.utils import setup_logger
-from xrfeitoria.utils.anim.utils import dump_humandata, load_amass_motion
+from xrfeitoria.utils.anim import dump_humandata, load_amass_motion
 
 from ..config import unreal_exec, unreal_project
 

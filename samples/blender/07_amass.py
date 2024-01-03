@@ -16,7 +16,7 @@ import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.rpc import remote_blender
 from xrfeitoria.utils import setup_logger
-from xrfeitoria.utils.anim.utils import dump_humandata, load_amass_motion
+from xrfeitoria.utils.anim import dump_humandata, load_amass_motion
 
 # prepare the assets
 ####################
