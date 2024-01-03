@@ -289,6 +289,15 @@ class Motion:
             motion_data.append(frame_motion_data)
         return motion_data
 
+    def copy(self) -> Self:
+        """Return a copy of the motion instance."""
+        return self.__class__(
+            transl=self.transl.copy(),
+            body_poses=self.body_poses.copy(),
+            n_frames=self.n_frames,
+            fps=self.fps,
+        )
+
     def __repr__(self) -> str:
         return f'Motion(n_frames={self.n_frames}, fps={self.fps})'
 
@@ -457,6 +466,17 @@ class SMPLMotion(Motion):
         filepath = Path(filepath).resolve()
         filepath.parent.mkdir(parents=True, exist_ok=True)
         np.savez(filepath, **humandata)
+
+    def copy(self) -> Self:
+        """Return a copy of the motion instance."""
+        instance = self.__class__(
+            transl=self.transl.copy(),
+            body_poses=self.body_poses.copy(),
+            n_frames=self.n_frames,
+            fps=self.fps,
+        )
+        instance.smpl_data = {k: v.copy() for k, v in self.smpl_data.items()}
+        return instance
 
     def __repr__(self) -> str:
         return f'SMPLMotion(n_frames={self.n_frames}, fps={self.fps})'
@@ -721,6 +741,17 @@ class SMPLXMotion(Motion):
         filepath = Path(filepath).resolve()
         filepath.parent.mkdir(parents=True, exist_ok=True)
         np.savez(filepath, **humandata)
+
+    def copy(self) -> Self:
+        """Return a copy of the motion instance."""
+        instance = self.__class__(
+            transl=self.transl.copy(),
+            body_poses=self.body_poses.copy(),
+            n_frames=self.n_frames,
+            fps=self.fps,
+        )
+        instance.smplx_data = {k: v.copy() for k, v in self.smplx_data.items()}
+        return instance
 
     def __repr__(self) -> str:
         return f'SMPLXMotion(n_frames={self.n_frames}, fps={self.fps})'
