@@ -100,6 +100,9 @@ class CameraBase(ABC, ObjectBase):
         # self.rotation = self._object_utils.direction_to_euler(direction)
         self._look_at_in_engine(self._name, target)
 
+    def __repr__(self) -> str:
+        return f'<Camera "{self._name}">'
+
     #################################
     ####  RPC METHODS (Private)  ####
     #################################

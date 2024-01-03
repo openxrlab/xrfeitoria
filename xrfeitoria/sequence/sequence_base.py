@@ -436,6 +436,9 @@ class SequenceBase(ABC):
         )
         # return render_job
 
+    def __repr__(self) -> str:
+        return f'<Sequence "{self.name}">'
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
