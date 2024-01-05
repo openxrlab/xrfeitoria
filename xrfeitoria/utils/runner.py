@@ -623,11 +623,8 @@ class UnrealRPCRunner(RPCRunner):
 
     @staticmethod
     def _get_engine_info(engine_exec: Path) -> Tuple[str, str]:
-        try:
-            build_info = (engine_exec.parents[2] / 'Build' / 'InstalledBuild.txt').read_text()
-            _version = re.findall(r'UE_(\d+\.\d+)', build_info)[0]
-        except IndexError:
-            raise FileNotFoundError(f'Cannot find unreal executable in {engine_exec}')
+        build_info = json.loads((engine_exec.parents[2] / 'Build' / 'Build.version').read_text())
+        _version = f'{build_info["MajorVersion"]}.{build_info["MinorVersion"]}'
         return 'Unreal', _version
 
     def _get_cmd(
