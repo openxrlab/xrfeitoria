@@ -98,3 +98,6 @@ class ObjectBase:
         self._object_utils.delete_obj(self._name)
         logger.info(f'[red]Deleted[/red] object "{self.name}"')
         del self
+
+    def __repr__(self):
+        return f'<Object "{self.name}">'

@@ -26,6 +26,7 @@ python -m samples.blender.03_basic_render [-b] [--debug]
 python -m samples.blender.04_staticmesh_render [-b] [--debug]
 python -m samples.blender.05_skeletalmesh_render [-b] [--debug]
 python -m samples.blender.06_custom_usage [-b] [--debug]
+python -m samples.blender.07_amass
 ```
 
 ## Unreal

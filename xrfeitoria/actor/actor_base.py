@@ -130,6 +130,9 @@ class ActorBase(ABC, ObjectBase):
             f'from "{animation_path}" and setup for actor "{self.name}"'
         )
 
+    def __repr__(self) -> str:
+        return f'<Actor "{self.name}">'
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################

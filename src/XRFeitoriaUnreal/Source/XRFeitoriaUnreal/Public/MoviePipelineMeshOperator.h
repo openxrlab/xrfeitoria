@@ -101,8 +101,7 @@ public:
 		FSkeletalMeshOperatorOption SkeletalMeshOperatorOption = FSkeletalMeshOperatorOption();
 
 private:
-	TArray<FSequencerBoundObjects> boundObjects;
-	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	TMap<FString, UStaticMeshComponent*> StaticMeshComponents;
+	TMap<FString, USkeletalMeshComponent*> SkeletalMeshComponents;
 	bool bIsFirstFrame = true;
 };

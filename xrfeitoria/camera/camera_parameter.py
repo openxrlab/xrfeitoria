@@ -122,7 +122,6 @@ class CameraParameter(PinholeCameraParameter):
         """
         file = str(file)
         ret_cam = PinholeCameraParameter.fromfile(file)
-        ret_cam.load(file)
         return cls._from_pinhole(ret_cam)
 
     @classmethod
@@ -158,11 +157,11 @@ class CameraParameter(PinholeCameraParameter):
         # extrinsic matrix RT
         x, y, z = -rotation[1], -rotation[2], -rotation[0]
         R = rotation_matrix([x, y, z], order='xyz', degrees=True)
-        T = np.array([location[1], -location[2], location[0]]) / 100.0  # unit: meter
+        _T = np.array([location[1], -location[2], location[0]]) / 100.0  # unit: meter
+        T = -R @ _T
 
         # construct camera parameter
         cam_param = cls(K=K, R=R, T=T, world2cam=True)
-        cam_param.inverse_extrinsic()
         return cam_param
 
     @classmethod

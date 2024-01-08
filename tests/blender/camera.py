@@ -6,8 +6,9 @@ from pathlib import Path
 import numpy as np
 
 from xrfeitoria.data_structure.constants import xf_obj_name
+from xrfeitoria.utils import setup_logger
 
-from ..utils import __timer__, _init_blender, setup_logger
+from ..utils import __timer__, _init_blender
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
@@ -15,7 +16,7 @@ output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 
 
 def camera_test(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_blender(background=background) as xf_runner:
         with __timer__('spawn camera'):
             ## test spawn camera

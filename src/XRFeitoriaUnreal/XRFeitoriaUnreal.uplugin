@@ -37,6 +37,6 @@
 		{
 			"Name": "SequencerScripting",
 			"Enabled": true
-		},
+		}
 	]
 }

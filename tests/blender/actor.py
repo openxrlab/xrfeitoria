@@ -7,9 +7,10 @@ import numpy as np
 
 from xrfeitoria.data_structure.constants import xf_obj_name
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path
-from ..utils import __timer__, _init_blender, setup_logger
+from ..utils import __timer__, _init_blender
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
@@ -18,7 +19,7 @@ bunny_obj = assets_path['bunny']
 
 
 def actor_test(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_blender(background=background) as xf_runner:
         with __timer__('import_actor'):
             actor = xf_runner.Actor.import_from_file(

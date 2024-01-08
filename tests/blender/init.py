@@ -2,11 +2,10 @@
 >>> python -m tests.blender.init
 """
 
-from loguru import logger
-
 from xrfeitoria.rpc import remote_blender
+from xrfeitoria.utils import setup_logger
 
-from ..utils import __timer__, _init_blender, setup_logger
+from ..utils import __timer__, _init_blender
 
 
 @remote_blender()
@@ -16,7 +15,7 @@ def test_blender():
 
 
 def init_test(debug: bool = False, dev: bool = False, background: bool = False):
-    setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with __timer__('init_blender'):
         with _init_blender(dev_plugin=dev, background=background) as xf_runner:
             test_blender()

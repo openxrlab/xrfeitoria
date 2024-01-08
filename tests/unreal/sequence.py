@@ -7,9 +7,10 @@ from pathlib import Path
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
 from xrfeitoria.factory import XRFeitoriaUnreal
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path
-from ..utils import __timer__, _init_unreal, setup_logger, visualize_vertices
+from ..utils import __timer__, _init_unreal, visualize_vertices
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/tests/unreal/{file_name}'
@@ -86,7 +87,7 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
 
 
 def sequence_test(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_unreal(background=background) as xf_runner:
         xf_runner.Renderer.clear()
 

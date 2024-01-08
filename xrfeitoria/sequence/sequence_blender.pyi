@@ -1,4 +1,3 @@
-from pathlib import Path as Path
 from typing import List, Literal, Optional, Tuple, Union
 
 from ..actor.actor_blender import ActorBlender
@@ -70,10 +69,6 @@ class SequenceBlender(SequenceBase):
         transparent_background: bool = False,
         arrange_file_structure: bool = True,
     ): ...
-    @classmethod
-    def use_camera(
-        cls, camera: CameraBlender, location: Optional[Vector] = ..., rotation: Optional[Vector] = ..., fov: float = ...
-    ) -> None: ...
     @classmethod
     def use_camera_with_keys(
         cls, camera: CameraBlender, transform_keys: TransformKeys, fov: float = ...

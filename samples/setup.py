@@ -8,9 +8,9 @@ from loguru import logger
 from rich.prompt import Prompt
 
 from xrfeitoria.data_structure.constants import tmp_dir
+from xrfeitoria.utils import setup_logger
 from xrfeitoria.utils.downloader import download
 from xrfeitoria.utils.setup import Config, get_exec_path, guess_exec_path
-from xrfeitoria.utils.tools import Logger
 
 # XXX: Hard-coded assets url
 assets_url = dict(
@@ -94,7 +94,7 @@ def main():
     except ImportError:
         blender_exec = unreal_exec = unreal_project = None
 
-    Logger.setup_logging()
+    setup_logger()
     engine = Prompt.ask('Which engine do you want to use?', choices=['blender', 'unreal'], default='blender')
     if engine == 'blender':
         blender_exec = get_exec('blender', exec_from_config=blender_exec)

@@ -15,7 +15,7 @@ color_type = TypedDict(
         'rgb': Tuple[int, int, int],
     },
 )
-mask_colors: List[color_type] = json.load((root / 'data' / 'mask_colors.json').open())
+mask_colors: List[color_type] = json.loads((root / 'data' / 'mask_colors.json').read_text())
 
 
 def get_stencil_value(actor: unreal.Actor) -> int:

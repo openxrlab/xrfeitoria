@@ -18,8 +18,7 @@ except ModuleNotFoundError:
     pass
 
 try:
-    from ..data_structure.models import RenderJobUnreal as RenderJob
-    from ..data_structure.models import RenderPass
+    from ..data_structure.models import RenderJobUnreal, RenderPass
 except ModuleNotFoundError:
     pass
 
@@ -28,7 +27,7 @@ except ModuleNotFoundError:
 class RendererUnreal(RendererBase):
     """Renderer class for Unreal."""
 
-    render_queue: 'List[RenderJob]' = []
+    render_queue: 'List[RenderJobUnreal]' = []
 
     @classmethod
     def add_job(
@@ -39,8 +38,8 @@ class RendererUnreal(RendererBase):
         resolution: Tuple[int, int],
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
-        console_variables: Dict[str, float] = {},
-        anti_aliasing: 'Optional[RenderJob.AntiAliasSetting]' = None,
+        console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
+        anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
     ) -> None:
@@ -53,9 +52,9 @@ class RendererUnreal(RendererBase):
             resolution (Tuple[int, int]): Resolution of the output image.
             render_passes (List[RenderPass]): Render passes to render.
             file_name_format (str, optional): File name format of the output image. Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
-            console_variables (Dict[str, float], optional): Console variables to set. Defaults to {}.
+            console_variables (Dict[str, float], optional): Console variables to set. Defaults to ``{'r.MotionBlurQuality': 0}``.
                 Ref to :ref:`FAQ-console-variables` for details.
-            anti_aliasing (Optional[RenderJob.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
+            anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export skeleton. Defaults to False.
 
@@ -63,13 +62,17 @@ class RendererUnreal(RendererBase):
             The motion blur is turned off by default. If you want to turn it on, please set ``r.MotionBlurQuality`` to a non-zero value in ``console_variables``.
         """
         if anti_aliasing is None:
-            anti_aliasing = RenderJob.AntiAliasSetting()
+            anti_aliasing = RenderJobUnreal.AntiAliasSetting()
 
         # turn off motion blur by default
         if 'r.MotionBlurQuality' not in console_variables.keys():
-            console_variables['r.MotionBlurQuality'] = 0
+            logger.warning(
+                'Seems you gave a console variable dict in ``add_to_renderer(console_variables=...)``, '
+                'and it replaces the default ``r.MotionBlurQuality`` setting, which would open the motion blur in rendering. '
+                "If you want to turn off the motion blur the same as default, set ``console_variables={..., 'r.MotionBlurQuality': 0}``."
+            )
 
-        job = RenderJob(
+        job = RenderJobUnreal(
             map_path=map_path,
             sequence_path=sequence_path,
             output_path=Path(output_path).resolve(),
@@ -141,7 +144,7 @@ class RendererUnreal(RendererBase):
                     break
                 if 'Render completed. Success: True' in data:
                     break
-                logger.info(f'\[unreal] {data}')
+                logger.info(f'(engine) {data}')
             except BlockingIOError:
                 pass
             except ConnectionResetError:
@@ -156,11 +159,11 @@ class RendererUnreal(RendererBase):
                         error_txt += f' Check unreal log: "{log_path.as_posix()}"'
 
                 logger.error(error_txt)
+                break
 
         # cls.clear()
         server.close()
 
-        # post process, including: convert cam params.
         cls._post_process()
 
         # clear render queue
@@ -168,7 +171,17 @@ class RendererUnreal(RendererBase):
 
     @classmethod
     def _post_process(cls) -> None:
+        """Post-processes the rendered output by:
+            - converting camera parameters: from `.dat` to `.json`
+            - convert actor infos: from `.dat` to `.json`
+            - convert vertices: from `.dat` to `.npz`
+            - convert skeleton: from `.dat` to `.npz`
+
+        This method is called after rendering is complete.
+        """
         import numpy as np  # isort:skip
+        from rich import get_console  # isort:skip
+        from rich.spinner import Spinner  # isort:skip
         from ..camera.camera_parameter import CameraParameter  # isort:skip
 
         def convert_camera(camera_file: Path) -> None:
@@ -182,8 +195,8 @@ class RendererUnreal(RendererBase):
             camera_file.unlink()
 
         def convert_vertices(folder: Path) -> None:
-            """Convert vertices from `.bin` to `.npz`. Merge all vertices files into one
-            `.npz` file.
+            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
+            `.npz` file with structure of: {'verts': np.ndarray, 'faces': None}
 
             Args:
                 folder (Path): Path to the folder containing vertices files.
@@ -234,9 +247,20 @@ class RendererUnreal(RendererBase):
             # Remove the folder
             shutil.rmtree(folder)
 
-        for job in cls.render_queue:
+        console = get_console()
+        try:
+            spinner: Spinner = console._live.renderable
+        except AttributeError:
+            status = console.status('[bold green]:rocket: Rendering...[/bold green]')
+            status.start()
+            spinner: Spinner = status.renderable
+
+        for idx, job in enumerate(cls.render_queue):
             seq_name = job.sequence_path.split('/')[-1]
             seq_path = Path(job.output_path).resolve() / seq_name
+
+            text = f'job {idx + 1}/{len(cls.render_queue)}: seq_name="{seq_name}", post-processing...'
+            spinner.update(text=text)
 
             # 1. convert camera parameters from `.bat` to `.json` with xrprimer
             # glob camera files in {seq_path}/{cam_param_dir}/*
@@ -247,10 +271,17 @@ class RendererUnreal(RendererBase):
             # 2. convert actor infos from `.dat` to `.json`
             convert_actor_infos(folder=seq_path / RenderOutputEnumUnreal.actor_infos.value)
 
-            # 3. convert vertices from `.bin` to `.npz`
+            # 3. convert vertices from `.dat` to `.npz`
             if job.export_vertices:
                 # glob actors in {seq_path}/vertices/*
                 actor_folders = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.vertices.value}/*'))
+                for actor_folder in actor_folders:
+                    convert_vertices(actor_folder)
+
+            # 4. convert skeleton from `.dat` to `.json`
+            if job.export_skeleton:
+                # glob actors in {seq_path}/skeleton/*
+                actor_folders = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.skeleton.value}/*'))
                 for actor_folder in actor_folders:
                     convert_vertices(actor_folder)
 

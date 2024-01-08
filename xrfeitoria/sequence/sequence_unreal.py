@@ -41,7 +41,7 @@ class SequenceUnreal(SequenceBase):
         resolution: Tuple[int, int],
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
-        console_variables: Dict[str, float] = {},
+        console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
         anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
@@ -49,7 +49,7 @@ class SequenceUnreal(SequenceBase):
         """Add the sequence to the renderer's job queue. Can only be called after the
         sequence is instantiated using
         :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.new` or
-        :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.o pen`.
+        :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.open`.
 
         Args:
             output_path (PathLike): The path where the rendered output will be saved.
@@ -57,7 +57,7 @@ class SequenceUnreal(SequenceBase):
             render_passes (List[RenderPass]): The list of render passes to be rendered.
             file_name_format (str, optional): The format of the output file name.
                 Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
-            console_variables (Dict[str, float], optional): The console variables to be set before rendering. Defaults to {}.
+            console_variables (Dict[str, float], optional): The console variables to be set before rendering. Defaults to {'r.MotionBlurQuality': 0}.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional):
                 The anti-aliasing settings for the render job. Defaults to None.
@@ -101,12 +101,13 @@ class SequenceUnreal(SequenceBase):
     def spawn_actor(
         cls,
         actor_asset_path: str,
-        location: 'Vector',
-        rotation: 'Vector',
+        location: 'Optional[Vector]' = None,
+        rotation: 'Optional[Vector]' = None,
         scale: 'Optional[Vector]' = None,
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine at the specified location, rotation, and
         scale.
@@ -114,17 +115,25 @@ class SequenceUnreal(SequenceBase):
         Args:
             cls: The class object.
             actor_asset_path (str): The actor asset path in engine to spawn.
-            location (Vector): The location to spawn the actor at. unit: meter.
-            rotation (Vector): The rotation to spawn the actor with. unit: degree.
+            location (Optional[Vector, optional]): The location to spawn the actor at. unit: meter.
+            rotation (Optional[Vector, optional]): The rotation to spawn the actor with. unit: degree.
             scale (Optional[Vector], optional): The scale to spawn the actor with. Defaults to None.
             actor_name (Optional[str], optional): The name to give the spawned actor. Defaults to None.
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
+            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor object.
+
+        Raises:
+            AssertionError: If both `anim_asset_path` and `motion_data` are provided. Only one of them can be provided.
         """
+        assert not (
+            anim_asset_path is not None and motion_data is not None
+        ), 'Cannot provide both `anim_asset_path` and `motion_data`'
+
         transform_keys = SeqTransKey(
             frame=0, location=location, rotation=rotation, scale=scale, interpolation='CONSTANT'
         )
@@ -134,6 +143,7 @@ class SequenceUnreal(SequenceBase):
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys.model_dump(),
             anim_asset_path=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             stencil_value=stencil_value,
         )
@@ -148,6 +158,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine with the given asset path, transform
         keys, actor name, stencil value, and animation asset path.
@@ -159,10 +170,18 @@ class SequenceUnreal(SequenceBase):
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
+            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor.
+
+        Raises:
+            AssertionError: If both `anim_asset_path` and `motion_data` are provided. Only one of them can be provided.
         """
+        assert not (
+            anim_asset_path is not None and motion_data is not None
+        ), 'Cannot provide both `anim_asset_path` and `motion_data`'
+
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
@@ -174,6 +193,7 @@ class SequenceUnreal(SequenceBase):
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys,
             anim_asset_path=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             stencil_value=stencil_value,
         )
@@ -200,6 +220,45 @@ class SequenceUnreal(SequenceBase):
             str: engine path to the sequence.
         """
         return cls._get_seq_path_in_engine()
+
+    @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
+            end_frame (Optional[int]): The end frame of the playback range. If not provided, the default end frame will be used.
+
+        Returns:
+            None
+        """
+        cls._set_playback_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
+            end_frame (Optional[int]): The end frame of the playback range. If not provided, the default end frame will be used.
+
+        Returns:
+            None
+        """
+        cls._set_camera_cut_player_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @classmethod
+    def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> None:
+        """Open an exist sequence.
+
+        Args:
+            seq_name (str): Name of the sequence.
+            seq_dir (Optional[str], optional): Path of the sequence.
+                Defaults to None and fallback to the default path '/Game/XRFeitoriaUnreal/Sequences'.
+        """
+        cls._open_seq_in_engine(seq_name=seq_name, seq_dir=seq_dir)
+        cls.name = seq_name
+        logger.info(f'>>>> [cyan]Opened[/cyan] sequence "{cls.name}" >>>>')
 
     #####################################
     ###### RPC METHODS (Private) ########
@@ -288,6 +347,16 @@ class SequenceUnreal(SequenceBase):
     def _show_seq_in_engine() -> None:
         XRFeitoriaUnrealFactory.Sequence.show()
 
+    @staticmethod
+    def _set_playback_in_engine(start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None) -> None:
+        XRFeitoriaUnrealFactory.Sequence.set_playback(start_frame=start_frame, end_frame=end_frame)
+
+    @staticmethod
+    def _set_camera_cut_player_in_engine(
+        start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None
+    ) -> None:
+        XRFeitoriaUnrealFactory.Sequence.set_camera_cut_playback(start_frame=start_frame, end_frame=end_frame)
+
     # ------ add actor and camera -------- #
 
     @staticmethod
@@ -375,6 +444,7 @@ class SequenceUnreal(SequenceBase):
         actor_asset_path: str,
         transform_keys: 'Union[List[Dict], Dict]',
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
         actor_name: str = 'Actor',
         stencil_value: int = 1,
     ) -> None:
@@ -391,6 +461,7 @@ class SequenceUnreal(SequenceBase):
         XRFeitoriaUnrealFactory.Sequence.add_actor(
             actor=actor_asset_path,
             animation_asset=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             transform_keys=transform_keys,
             stencil_value=stencil_value,

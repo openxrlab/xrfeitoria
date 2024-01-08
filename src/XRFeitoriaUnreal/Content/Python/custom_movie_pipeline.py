@@ -224,7 +224,7 @@ class CustomMoviePipeline:
             anti_alias_config.override_anti_aliasing = True
         if anti_alias.warmup_frames:
             anti_alias_config.use_camera_cut_for_warm_up = True
-            anti_alias_config.render_warm_up_count = anti_alias['warmup_frames']
+            anti_alias_config.render_warm_up_count = anti_alias.warmup_frames
         if anti_alias.render_warmup_frame:
             anti_alias_config.render_warm_up_frames = True
 

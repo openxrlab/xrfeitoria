@@ -4,7 +4,7 @@
 import inspect
 import os
 import re
-from xmlrpc.client import ExpatParser, ResponseError, ServerProxy, Transport, Unmarshaller
+from xmlrpc.client import ExpatParser, Fault, ResponseError, ServerProxy, Transport, Unmarshaller
 
 
 class RPCUnmarshaller(Unmarshaller):
@@ -52,9 +52,9 @@ class RPCUnmarshaller(Unmarshaller):
             logger.error(
                 f"RPC Fault <error code: {marshallables.get('faultCode')}>:\n{marshallables.get('faultString')}"
             )
-            # raise Fault(**marshallables)
+            raise Fault(**marshallables)
             # raise RuntimeError('RPC Fault')
-            exit(1)
+            # exit(1)
         return tuple(self._stack)
 
 

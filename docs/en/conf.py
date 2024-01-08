@@ -133,7 +133,6 @@ graphviz_output_format = 'svg'
 #
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_css_files = ['override.css']  # override py property
 html_theme_options = {
     'navigation_depth': 3,

@@ -24,7 +24,7 @@ def project_points3d(points3d: np.ndarray, camera_param: CameraParameter) -> np.
 
     # convert to opencv convention, and cam2world
     _camera_param = camera_param.clone()
-    if _camera_param.world2cam:
+    if not _camera_param.world2cam:
         _camera_param.inverse_extrinsic()
     if _camera_param.convention != 'opencv':
         _camera_param.convert_convention(dst='opencv')

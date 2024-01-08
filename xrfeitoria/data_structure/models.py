@@ -242,7 +242,7 @@ class RenderJobUnreal(BaseModel):
         description='File name format of the render job.',
     )
     console_variables: Dict[str, float] = Field(
-        default={},
+        default={'r.MotionBlurQuality': 0},
         description='Additional console variables of the render job. Ref to :ref:`FAQ-console-variables` for details.',
     )
     anti_aliasing: AntiAliasSetting = Field(
@@ -300,9 +300,9 @@ class SequenceTransformKey(BaseModel):
     def __init__(
         self,
         frame: int,
-        location: Vector = None,
-        rotation: Vector = None,
-        scale: Vector = None,
+        location: Optional[Vector] = None,
+        rotation: Optional[Vector] = None,
+        scale: Optional[Vector] = None,
         interpolation: Literal['CONSTANT', 'AUTO', 'LINEAR'] = 'AUTO',
     ) -> None:
         """Transform key for Unreal or Blender, which contains frame, location,

@@ -16,6 +16,7 @@ def main(engine: Literal['unreal', 'blender'], debug: bool = False, background: 
         '04_staticmesh_render',
         '05_skeletalmesh_render',
         '06_custom_usage',
+        '07_amass',
     ]
     for script in scripts:
         subprocess.check_call(['python', '-m', f'samples.{engine}.{script}'] + args)

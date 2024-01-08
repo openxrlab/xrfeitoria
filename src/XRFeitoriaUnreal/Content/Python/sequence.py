@@ -17,7 +17,6 @@ from utils_actor import get_actor_mesh_component
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
 EditorAssetSub = SubSystem.EditorAssetSub
 EditorLevelSub = SubSystem.EditorLevelSub
-START_FRAME = -1
 
 ################################################################################
 # misc
@@ -46,9 +45,10 @@ def get_animation_length(animation_asset: unreal.AnimSequence, seq_fps: float = 
         # TODO: check if this is true
         anim_frame_rate = animation_asset.get_editor_property('target_frame_rate')
         anim_frame_rate = convert_frame_rate_to_fps(anim_frame_rate)
-        assert (
-            anim_frame_rate == seq_fps
-        ), f'anim fps {anim_frame_rate} != seq fps {seq_fps}, this would cause animation interpolation.'
+        if anim_frame_rate == seq_fps:
+            unreal.log_warning(
+                f'anim fps {anim_frame_rate} != seq fps {seq_fps}, this would cause animation interpolation.'
+            )
 
         anim_len = animation_asset.get_editor_property('number_of_sampled_frames')
 
@@ -377,6 +377,52 @@ def add_animation_to_binding(
     set_animation_by_section(animation_section, animation_asset, animation_length, seq_fps)
 
 
+def add_fk_motion_to_binding(
+    binding: unreal.SequencerBindingProxy,
+    motion_data: List[Dict[str, Dict[str, List[float]]]],
+) -> None:
+    """Add FK motion to the given actor binding.
+
+    Args:
+        binding (unreal.SequencerBindingProxy): The binding of actor in sequence to add FK motion to.
+        motion_data (List[Dict[str, Dict[str, List[float]]]]): The FK motion data to add.
+    """
+    rig_track: unreal.MovieSceneControlRigParameterTrack = (
+        unreal.ControlRigSequencerLibrary.find_or_create_control_rig_track(
+            world=get_world(),
+            level_sequence=binding.sequence,
+            control_rig_class=unreal.FKControlRig,
+            binding=binding,
+        )
+    )
+    rig_section: unreal.MovieSceneControlRigParameterSection = rig_track.get_section_to_key()
+    param_names = list(rig_section.get_parameter_names())
+    bone_names = list(motion_data[0].keys())
+    assert all([f'{bone}_CONTROL' in param_names for bone in bone_names]), RuntimeError(
+        f'Not All bone names (from json): {bone_names} not in param names (from seq FK): {param_names}'
+    )
+
+    def get_transform_from_bone_data(bone_data):
+        quat: Tuple[float, float, float, float] = bone_data.get('rotation')
+        location: Tuple[float, float, float] = bone_data.get('location', (0, 0, 0))  # default location is (0, 0, 0)
+
+        # HACK: convert space
+        location = [location[0] * 100, -location[1] * 100, location[2] * 100]  # cm -> m, y -> -y
+        quat = (-quat[1], quat[2], -quat[3], quat[0])  # (w, x, y, z) -> (-x, y, -z, w)
+
+        transform = unreal.Transform(location=location, rotation=unreal.Quat(*quat).rotator())
+        return transform
+
+    for frame, motion_frame in enumerate(motion_data):
+        for bone_name, bone_data in motion_frame.items():
+            # TODO: set key type to STATIC
+            rig_section.add_transform_parameter_key(
+                parameter_name=f'{bone_name}_CONTROL',
+                time=get_time(binding.sequence, frame),
+                value=get_transform_from_bone_data(bone_data),
+            )
+
+
 def get_spawnable_actor_from_binding(
     sequence: unreal.MovieSceneSequence,
     binding: unreal.SequencerBindingProxy,
@@ -410,13 +456,13 @@ def add_level_visibility_to_sequence(
     # add level visibility section
     level_visible_section: unreal.MovieSceneLevelVisibilitySection = level_visibility_track.add_section()
     level_visible_section.set_visibility(unreal.LevelVisibility.VISIBLE)
-    level_visible_section.set_start_frame(START_FRAME)
+    level_visible_section.set_start_frame(Sequence.START_FRAME)
     level_visible_section.set_end_frame(seq_length)
 
     level_hidden_section: unreal.MovieSceneLevelVisibilitySection = level_visibility_track.add_section()
     level_hidden_section.set_row_index(1)
     level_hidden_section.set_visibility(unreal.LevelVisibility.HIDDEN)
-    level_hidden_section.set_start_frame(START_FRAME)
+    level_hidden_section.set_start_frame(Sequence.START_FRAME)
     level_hidden_section.set_end_frame(seq_length)
     return level_visible_section, level_hidden_section
 
@@ -480,7 +526,7 @@ def add_camera_to_sequence(
     camera_binding = sequence.add_possessable(camera)
     camera_track: unreal.MovieScene3DTransformTrack = camera_binding.add_track(unreal.MovieScene3DTransformTrack)  # type: ignore
     camera_section: unreal.MovieScene3DTransformSection = camera_track.add_section()  # type: ignore
-    camera_section.set_start_frame(START_FRAME)
+    camera_section.set_start_frame(Sequence.START_FRAME)
     camera_section.set_end_frame(seq_length)
     camera_component_binding = sequence.add_possessable(camera.camera_component)
     camera_component_binding.set_parent(camera_binding)
@@ -492,9 +538,9 @@ def add_camera_to_sequence(
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)  # type: ignore
 
     # add a camera cut track for this camera
-    # make sure the camera cut is stretched to the START_FRAME mark
+    # make sure the camera cut is stretched to the Sequence.START_FRAME mark
     camera_cut_section: unreal.MovieSceneCameraCutSection = camera_cut_track.add_section()  # type: ignore
-    camera_cut_section.set_start_frame(START_FRAME)
+    camera_cut_section.set_start_frame(Sequence.START_FRAME)
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
@@ -562,9 +608,9 @@ def add_spawnable_camera_to_sequence(
     # camera_cut_track = sequence.add_track(unreal.MovieSceneCameraCutTrack)
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)
 
-    # add a camera cut track for this camera, make sure the camera cut is stretched to the START_FRAME mark
+    # add a camera cut track for this camera, make sure the camera cut is stretched to the Sequence.START_FRAME mark
     camera_cut_section: unreal.MovieSceneCameraCutSection = camera_cut_track.add_section()
-    camera_cut_section.set_start_frame(START_FRAME)
+    camera_cut_section.set_start_frame(Sequence.START_FRAME)
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
@@ -604,15 +650,21 @@ def add_actor_to_sequence(
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     animation_asset: Optional[unreal.AnimSequence] = None,
+    motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
+    assert not (
+        animation_asset is not None and motion_data is not None
+    ), 'Cannot provide both animation_asset and motion_data'
     # get sequence settings
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
     if seq_length is None:
         if animation_asset:
             seq_length = get_animation_length(animation_asset, seq_fps)
+        if motion_data:
+            seq_length = len(motion_data)
         else:
             seq_length = sequence.get_playback_end()
 
@@ -634,6 +686,10 @@ def add_actor_to_sequence(
     # add animation
     if animation_asset:
         add_animation_to_binding(actor_binding, animation_asset, seq_length, seq_fps)
+
+    # add motion data (FK / ControlRig)
+    if motion_data:
+        add_fk_motion_to_binding(actor_binding, motion_data)
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(actor_binding)
@@ -658,17 +714,23 @@ def add_spawnable_actor_to_sequence(
     actor_name: str,
     actor_asset: Union[unreal.SkeletalMesh, unreal.StaticMesh],
     animation_asset: Optional[unreal.AnimSequence] = None,
+    motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
+    assert not (
+        animation_asset is not None and motion_data is not None
+    ), 'Cannot provide both animation_asset and motion_data'
     # get sequence settings
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
     if seq_length is None:
         if animation_asset:
             seq_length = get_animation_length(animation_asset, seq_fps)
+        if motion_data:
+            seq_length = len(motion_data)
         else:
             seq_length = sequence.get_playback_end()
 
@@ -693,6 +755,10 @@ def add_spawnable_actor_to_sequence(
     # add animation
     if animation_asset:
         add_animation_to_binding(actor_binding, animation_asset, seq_length, seq_fps)
+
+    # add motion data (FK / ControlRig)
+    if motion_data:
+        add_fk_motion_to_binding(actor_binding, motion_data)
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(actor_binding)
@@ -740,6 +806,8 @@ class Sequence:
     sequence_data_asset: unreal.DataAsset = None  # contains sequence_path and map_path
     sequence: unreal.LevelSequence = None
     bindings: Dict[str, Dict[str, Any]] = {}
+
+    START_FRAME = -1
 
     def __init__(self) -> NoReturn:
         raise Exception('Sequence (XRFeitoriaUnreal/Python) should not be instantiated')
@@ -890,6 +958,53 @@ class Sequence:
         map_path = seq_data_asset.get_editor_property('MapPath').export_text()
         return seq_path.split('.')[0], map_path.split('.')[0]
 
+    @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the camera cut playback.
+
+        Args:
+            start_frame (Optional[int], optional): start frame of the camera cut playback. Defaults to None.
+            end_frame (Optional[int], optional): end frame of the camera cut playback. Defaults to None.
+
+        Raises:
+            AssertionError: If the sequence is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        camera_tracks = cls.sequence.find_master_tracks_by_type(unreal.MovieSceneCameraCutTrack)
+        for camera_track in camera_tracks:
+            for section in camera_track.get_sections():
+                if start_frame:
+                    section.set_start_frame(start_frame)
+                if end_frame:
+                    section.set_end_frame(end_frame)
+
+    @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. Defaults to None.
+            end_frame (Optional[int]): The end frame of the playback range. Defaults to None.
+
+        Raises:
+            AssertionError: If the sequence is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        master_tracks = cls.sequence.get_tracks()
+
+        if start_frame:
+            cls.START_FRAME = start_frame
+            cls.sequence.set_playback_start(start_frame=start_frame)
+            for master_track in master_tracks:
+                for section in master_track.get_sections():
+                    section.set_start_frame(start_frame)
+
+        if end_frame:
+            cls.sequence.set_playback_end(end_frame=end_frame)
+            for master_track in master_tracks:
+                for section in master_track.get_sections():
+                    section.set_end_frame(end_frame)
+
     # ------ add actor and camera -------- #
 
     @classmethod
@@ -934,17 +1049,26 @@ class Sequence:
         transform_keys: 'Optional[TransformKeys]' = None,
         stencil_value: int = 1,
         animation_asset: 'Optional[Union[str, unreal.AnimSequence]]' = None,
+        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
     ) -> None:
         """Spawn an actor in sequence.
 
         Args:
-            actor (Union[str, unreal.Actor]): actor path (e.g. '/Game/Cube') / loaded asset (via `unreal.load_asset('/Game/Cube')`)
-            animation_asset (Union[str, unreal.AnimSequence]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
-            actor_name (str, optional): Name of actor to set in sequence. Defaults to "Actor".
-            transform_keys (TransformKeys, optional): List of transform keys. Defaults to None.
-            actor_stencil_value (int, optional): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
+            actor_name (str): The name of the actor.
+            actor (Optional[Union[str, unreal.Actor]]): actor path (e.g. '/Game/Cube') / loaded asset (via `unreal.load_asset('/Game/Cube')`)
+            transform_keys (Optional[TransformKeys]): List of transform keys. Defaults to None.
+            stencil_value (int): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
+            animation_asset (Optional[Union[str, unreal.AnimSequence]]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
+            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
+
+        Raises:
+            AssertionError: If `cls.sequence` is not initialized.
+            AssertionError: If `animation_asset` and `motion_data` are both provided. Only one can be provided.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
+        assert not (
+            animation_asset is not None and motion_data is not None
+        ), 'Cannot provide both animation_asset and motion_data'
         if animation_asset and isinstance(animation_asset, str):
             animation_asset = unreal.load_asset(animation_asset)
         if isinstance(actor, str):
@@ -956,6 +1080,7 @@ class Sequence:
                 actor_name=actor_name,
                 actor_asset=actor,
                 animation_asset=animation_asset,
+                motion_data=motion_data,
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
@@ -969,6 +1094,7 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
                 animation_asset=animation_asset,
+                motion_data=motion_data,
             )
             cls.bindings[actor_name] = bindings
 

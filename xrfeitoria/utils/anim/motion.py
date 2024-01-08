@@ -1,11 +1,13 @@
 from collections import OrderedDict
 from functools import partial
-from typing import Callable, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation as spRotation
 from typing_extensions import Self
 
+from ...data_structure.constants import PathLike
 from .constants import (
     NUM_SMPLX_BODYJOINTS,
     SMPL_IDX_TO_JOINTS,
@@ -159,11 +161,11 @@ class Motion:
             smplx_data[key] = value[::scaling, :]
         return smplx_data
 
-    def convert_fps(self, fps):
+    def convert_fps(self, fps: float):
         """Converts the frames per second (fps) of the animation to the specified value.
 
         Args:
-            fps (int): The desired frames per second.
+            fps (float): The desired frames per second.
 
         Raises:
             NotImplementedError:
@@ -210,7 +212,8 @@ class Motion:
             self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, frame_interval)
 
     def sample_motion(self, n_frames: int):
-        """Randomly sample motion to n_frames.
+        """Randomly sample motions, picking n_frames from the original motion sequence.
+        The indices are totally random using `np.random.choice`.
 
         Args:
             n_frames (int): The number of frames to sample. Randomly sampled from the original motion sequence.
@@ -235,7 +238,10 @@ class Motion:
         self.insert_rest_pose()
 
     def cut_transl(self):
-        """Cut the transl to zero."""
+        """Cut the transl to zero.
+
+        This will make the animation stay in place, like root motion.
+        """
         self.transl = np.zeros_like(self.transl)
         if hasattr(self, 'smpl_data'):
             self.smpl_data['transl'] = np.zeros_like(self.smpl_data['transl'])
@@ -252,7 +258,7 @@ class Motion:
             for key, arr in self.smpl_data.items():
                 if key == 'betas':
                     continue
-                self.smplx_dat[key] = np.insert(arr, 0, 0, axis=0)
+                self.smpl_data[key] = np.insert(arr, 0, 0, axis=0)
         if hasattr(self, 'smplx_data'):
             for key, arr in self.smplx_data.items():
                 if key == 'betas':
@@ -260,8 +266,8 @@ class Motion:
                 self.smplx_data[key] = np.insert(arr, 0, 0, axis=0)
 
     def get_motion_data(self) -> List[Dict[str, Dict[str, List[float]]]]:
-        """Returns a list of dictionaries containing motion data for each frame of the
-        animation.
+        """Returns a list of dictionaries containing `rotation` and `location` for each
+        bone of each frame in the animation.
 
         Each dictionary contains bone names as keys and a nested dictionary as values. The nested dictionary contains
         'rotation' and 'location' keys, which correspond to the rotation and location of the bone in that frame.
@@ -283,13 +289,25 @@ class Motion:
             motion_data.append(frame_motion_data)
         return motion_data
 
+    def copy(self) -> Self:
+        """Return a copy of the motion instance."""
+        return self.__class__(
+            transl=self.transl.copy(),
+            body_poses=self.body_poses.copy(),
+            n_frames=self.n_frames,
+            fps=self.fps,
+        )
+
+    def __repr__(self) -> str:
+        return f'Motion(n_frames={self.n_frames}, fps={self.fps})'
+
 
 class SMPLMotion(Motion):
     SMPL_IDX_TO_NAME: Dict[int, str] = OrderedDict(SMPL_IDX_TO_JOINTS)
     NAME_TO_SMPL_IDX = OrderedDict([(v, k) for k, v in SMPL_IDX_TO_NAME.items() if v])
     NAMES = [x for x in SMPL_IDX_TO_NAME.values() if x]
     PARENTS = list(SMPL_PARENT_IDX)
-    BONE_NAMES = SMPLX_JOINT_NAMES[:NUM_SMPLX_BODYJOINTS]
+    BONE_NAMES = SMPLX_JOINT_NAMES[1 : NUM_SMPLX_BODYJOINTS + 1]
     BONE_NAME_TO_IDX: Dict[str, int] = {bone_name: idx for idx, bone_name in enumerate(BONE_NAMES)}
 
     # In order to make the smpl head up to +z
@@ -332,10 +350,10 @@ class SMPLMotion(Motion):
             SMPLMotion: An instance of SMPLMotion containing the smpl_data.
         """
         smpl_data = dict(smpl_data)
-        _get_smpl = partial(_get_from_smpl_x, smpl_x_data=smpl_data, dtype=np.float32)
+        _get_smpl = partial(_get_from_smpl_x_, smpl_x_data=smpl_data, dtype=np.float32)
 
         n_frames = smpl_data['body_pose'].shape[0]
-        betas = _get_smpl('betas', shape=[10])
+        betas = _get_smpl('betas', shape=[1, 10])
         transl = _get_smpl('transl', shape=[n_frames, 3], required=False)
         global_orient = _get_smpl('global_orient', shape=[n_frames, 3])
         body_pose = _get_smpl('body_pose', shape=[n_frames, -1])
@@ -398,6 +416,71 @@ class SMPLMotion(Motion):
             else:
                 return self.BONE_NAMES[parent_idx]
 
+    def dump_humandata(
+        self,
+        filepath: PathLike,
+        betas: np.ndarray,
+        meta: Optional[Dict[str, Any]] = None,
+        global_orient_offset: np.ndarray = np.zeros(3),
+        transl_offset: np.ndarray = np.zeros(3),
+        root_location_t0: Optional[np.ndarray] = None,
+        pelvis_location_t0: Optional[np.ndarray] = None,
+    ) -> None:
+        """Dump the motion data to a humandata file at the given `filepath`.
+
+        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
+
+        The humandata file is a npz file containing the following keys:
+        ```
+        motion_data = {
+            '__data_len__': n_frames,
+            'smpl': {
+                'betas': betas,  # (1, 10)
+                'transl': transl,  # (n_frames, 3)
+                'global_orient': global_orient,  # (n_frames, 3)
+                'body_pose': body_pose,  # (n_frames, 69)
+            },
+            'meta': {'gender': 'neutral'},  # optional
+        }
+        ```
+
+        Args:
+            filepath (PathLike): The filepath to dump the motion data to.
+            betas (np.ndarray): The betas array.
+            meta (Optional[Dict[str, Any]]): Additional metadata. Defaults to None.
+            global_orient_offset (np.ndarray): The global orientation offset. Defaults to np.zeros(3).
+            transl_offset (np.ndarray): The translation offset. Defaults to np.zeros(3).
+            root_location_t0 (Optional[np.ndarray]): The root location at time 0. Defaults to None.
+            pelvis_location_t0 (Optional[np.ndarray]): The pelvis location at time 0. Defaults to None.
+        """
+        humandata = get_humandata(
+            smpl_x_data=self.smplx_data,
+            smpl_x_type='smpl',
+            betas=betas,
+            meta=meta,
+            global_orient_offset=global_orient_offset,
+            transl_offset=transl_offset,
+            root_location_t0=root_location_t0,
+            pelvis_location_t0=pelvis_location_t0,
+        )
+        filepath = Path(filepath).resolve()
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(filepath, **humandata)
+
+    def copy(self) -> Self:
+        """Return a copy of the motion instance."""
+        instance = self.__class__(
+            transl=self.transl.copy(),
+            body_poses=self.body_poses.copy(),
+            n_frames=self.n_frames,
+            fps=self.fps,
+        )
+        instance.smpl_data = {k: v.copy() for k, v in self.smpl_data.items()}
+        return instance
+
+    def __repr__(self) -> str:
+        return f'SMPLMotion(n_frames={self.n_frames}, fps={self.fps})'
+
 
 class SMPLXMotion(Motion):
     SMPLX_IDX_TO_NAME: Dict[int, str] = OrderedDict(SMPLX_IDX_TO_JOINTS)
@@ -455,7 +538,7 @@ class SMPLXMotion(Motion):
             SMPLXMotion: An instance of SMPLXMotion containing the smplx_data.
         """
         smplx_data = dict(smplx_data)
-        _get_smplx = partial(_get_from_smpl_x, smpl_x_data=smplx_data, dtype=np.float32)
+        _get_smplx = partial(_get_from_smpl_x_, smpl_x_data=smplx_data, dtype=np.float32)
         n_frames = smplx_data['body_pose'].shape[0]
         betas = _get_smplx('betas', shape=[1, 10])
         transl = _get_smplx('transl', shape=[n_frames, 3], required=False)
@@ -525,12 +608,13 @@ class SMPLXMotion(Motion):
         return instance
 
     @classmethod
-    def from_amass_data(cls, amass_data, insert_rest_pose: bool) -> Self:
-        """Create a Motion instance from AMASS data.
+    def from_amass_data(cls, amass_data, insert_rest_pose: bool, flat_hand_mean: bool = True) -> Self:
+        """Create a Motion instance from AMASS data (SMPLX)
 
         Args:
             amass_data (dict): A dictionary containing the AMASS data.
             insert_rest_pose (bool): Whether to insert a rest pose at the beginning of the motion.
+            flat_hand_mean (bool): Whether to use the flat hand mean pose.
 
         Returns:
             SMPLXMotion: A SMPLXMotion instance containing the AMASS data.
@@ -588,12 +672,7 @@ class SMPLXMotion(Motion):
                         # arr[0, 1] = pelvis_height
                 smplx_data[key] = arr
 
-        return cls.from_smplx_data(
-            smplx_data,
-            insert_rest_pose=False,
-            fps=fps,
-            flat_hand_mean=True,
-        )
+        return cls.from_smplx_data(smplx_data, insert_rest_pose=False, fps=fps, flat_hand_mean=flat_hand_mean)
 
     def get_parent_bone_name(self, bone_name) -> Optional[str]:
         idx = self._bone2idx(bone_name)
@@ -606,8 +685,79 @@ class SMPLXMotion(Motion):
             else:
                 return self.BONE_NAMES[parent_idx]
 
+    def dump_humandata(
+        self,
+        filepath: PathLike,
+        betas: np.ndarray,
+        meta: Optional[Dict[str, Any]] = None,
+        global_orient_offset: np.ndarray = np.zeros(3),
+        transl_offset: np.ndarray = np.zeros(3),
+        root_location_t0: Optional[np.ndarray] = None,
+        pelvis_location_t0: Optional[np.ndarray] = None,
+    ) -> None:
+        """Dump the motion data to a humandata file at the given `filepath`.
 
-def _get_from_smpl_x(key, shape, *, smpl_x_data, dtype=np.float32, required=True) -> np.ndarray:
+        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
+
+        The humandata file is a npz file containing the following keys:
+        ```python
+        humandata = {
+            '__data_len__': n_frames,
+            'smplx': {
+                'betas': betas,  # (1, 10)
+                'transl': transl,  # (n_frames, 3)
+                'global_orient': global_orient,  # (n_frames, 3)
+                'body_pose': body_pose,  # (n_frames, 63)
+                'jaw_pose': jaw_pose,  # (n_frames, 3)
+                'leye_pose': leye_pose,  # (n_frames, 3)
+                'reye_pose': reye_pose,  # (n_frames, 3)
+                'left_hand_pose': left_hand_pose,  # (n_frames, 45)
+                'right_hand_pose': right_hand_pose,  # (n_frames, 45)
+                'expression': expression,  # (n_frames, 10)
+            },
+            'meta': {'gender': 'neutral'},  # optional
+        }
+        ```
+
+        Args:
+            filepath (PathLike): The filepath to dump the motion data to.
+            betas (np.ndarray): The betas array.
+            meta (Optional[Dict[str, Any]]): Additional metadata. Defaults to None.
+            global_orient_offset (np.ndarray): The global orientation offset. Defaults to np.zeros(3).
+            transl_offset (np.ndarray): The translation offset. Defaults to np.zeros(3).
+            root_location_t0 (Optional[np.ndarray]): The root location at time 0. Defaults to None.
+            pelvis_location_t0 (Optional[np.ndarray]): The pelvis location at time 0. Defaults to None.
+        """
+        humandata = get_humandata(
+            smpl_x_data=self.smplx_data,
+            smpl_x_type='smplx',
+            betas=betas,
+            meta=meta,
+            global_orient_offset=global_orient_offset,
+            transl_offset=transl_offset,
+            root_location_t0=root_location_t0,
+            pelvis_location_t0=pelvis_location_t0,
+        )
+        filepath = Path(filepath).resolve()
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        np.savez(filepath, **humandata)
+
+    def copy(self) -> Self:
+        """Return a copy of the motion instance."""
+        instance = self.__class__(
+            transl=self.transl.copy(),
+            body_poses=self.body_poses.copy(),
+            n_frames=self.n_frames,
+            fps=self.fps,
+        )
+        instance.smplx_data = {k: v.copy() for k, v in self.smplx_data.items()}
+        return instance
+
+    def __repr__(self) -> str:
+        return f'SMPLXMotion(n_frames={self.n_frames}, fps={self.fps})'
+
+
+def _get_from_smpl_x_(key, shape, *, smpl_x_data, dtype=np.float32, required=True) -> np.ndarray:
     """Get data from smpl-x data dict.
 
     Args:
@@ -624,7 +774,123 @@ def _get_from_smpl_x(key, shape, *, smpl_x_data, dtype=np.float32, required=True
         _data = smpl_x_data[key].astype(dtype)
         n_frames, n_dims = shape
         _data = _data.reshape([n_frames, -1])
-        _data = _data[:, :n_dims]  # XXX: handle the case that n_dims > data.shape[1]
+        if not n_dims < 0:
+            _data = _data[:, :n_dims]  # XXX: handle the case that n_dims > data.shape[1]
         return _data
     return np.zeros(shape, dtype=dtype)
-    return np.zeros(shape, dtype=dtype)
+
+
+def _transform_transl_global_orient_(
+    global_orient: np.ndarray,
+    transl: np.ndarray,
+    global_orient_offset: np.ndarray,
+    transl_offset: np.ndarray,
+    root_location_t0: Optional[np.ndarray] = None,
+    pelvis_location_t0: Optional[np.ndarray] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Transform the global orientation and translation based on the given offsets.
+
+    Args:
+        global_orient (np.ndarray): Global orientation array.
+        transl (np.ndarray): Translation array.
+        global_orient_offset (np.ndarray): Global orientation offset array.
+        transl_offset (np.ndarray): Translation offset array.
+        root_location_t0 (Optional[np.ndarray]): Root location at time 0. Defaults to None.
+        pelvis_location_t0 (Optional[np.ndarray]): Pelvis location at time 0. Defaults to None.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Transformed global orientation and translation arrays.
+    """
+    R_offset = spRotation.from_rotvec(global_orient_offset) * spRotation.from_rotvec(global_orient[0, :]).inv()
+    global_orient_ = (R_offset * spRotation.from_rotvec(global_orient)).as_rotvec()
+
+    loc0 = transl[0, :]
+
+    if pelvis_location_t0 is not None and root_location_t0 is not None:
+        transl_offset_t0 = pelvis_location_t0 - root_location_t0
+        rot_pivot_offset = transl_offset_t0 + transl_offset - loc0
+        transl_ = R_offset.apply(transl + rot_pivot_offset) - pelvis_location_t0
+    else:
+        transl_ = transl + transl_offset - loc0
+
+    return global_orient_, transl_
+
+
+def get_humandata(
+    smpl_x_data: Dict[str, np.ndarray],
+    smpl_x_type: Literal['smpl', 'smplx'],
+    betas: np.ndarray,
+    meta: Optional[Dict[str, Any]] = None,
+    global_orient_offset: np.ndarray = np.zeros(3),
+    transl_offset: np.ndarray = np.zeros(3),
+    root_location_t0: Optional[np.ndarray] = None,
+    pelvis_location_t0: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
+    """Get human data for a given set of parameters.
+
+    Args:
+        smpl_x_data (Dict[str, np.ndarray]): Dictionary containing the SMPL-X data.
+        smpl_x_type (Literal['smpl', 'smplx']): Type of SMPL-X model.
+        betas (np.ndarray): Array of shape (n, 10) representing the shape parameters.
+        meta (Optional[Dict[str, Any]], optional): Additional metadata. Defaults to None.
+        global_orient_offset (np.ndarray): Array of shape (n, 3) representing the global orientation offset.
+        transl_offset (np.ndarray): Array of shape (3,) representing the translation offset.
+        root_location_t0 (Optional[np.ndarray], optional): Array of shape (3,) representing the root location at time t=0. Defaults to None.
+        pelvis_location_t0 (Optional[np.ndarray], optional): Array of shape (3,) representing the pelvis location at time t=0. Defaults to None.
+
+    Returns:
+        dict: Dictionary containing the human data.
+    """
+    global_orient = smpl_x_data['global_orient'].reshape(-1, 3)
+    n = global_orient.shape[0]
+    transl = smpl_x_data['transl'].reshape(n, 3)
+    body_pose = smpl_x_data['body_pose'].reshape(n, -1)
+    bone_len = body_pose.shape[1]
+    assert n > 0, f'Got n_frames={n}, should be > 0.'
+    assert bone_len in (63, 69), f'Got body_pose in [{n}, {bone_len}], should be in shape of [n, 63] or [n, 69].'
+
+    # transform
+    global_orient_, transl_ = _transform_transl_global_orient_(
+        global_orient=global_orient,
+        transl=transl,
+        global_orient_offset=global_orient_offset,
+        transl_offset=transl_offset,
+        root_location_t0=root_location_t0,
+        pelvis_location_t0=pelvis_location_t0,
+    )
+
+    if smpl_x_type == 'smpl':
+        if bone_len == 69:
+            body_pose_ = body_pose
+        elif bone_len == 63:
+            body_pose_ = np.concatenate([body_pose, np.zeros([n, 6])], axis=1, dtype=np.float32)
+    else:
+        body_pose_ = body_pose[:, :63]
+
+    smpl_x_data_ = {
+        'betas': betas.astype(np.float32),
+        'global_orient': global_orient_.astype(np.float32),
+        'transl': transl_.astype(np.float32),
+        'body_pose': body_pose_.astype(np.float32),
+    }
+
+    if smpl_x_type == 'smplx':
+        extra = {
+            'left_hand_pose': np.zeros([n, 45], dtype=np.float32),
+            'right_hand_pose': np.zeros([n, 45], dtype=np.float32),
+            'jaw_pose': np.zeros([n, 3], dtype=np.float32),
+            'leye_pose': np.zeros([n, 3], dtype=np.float32),
+            'reye_pose': np.zeros([n, 3], dtype=np.float32),
+            'expression': np.zeros([n, 10], dtype=np.float32),
+        }
+        for k, v in extra.items():
+            if k in smpl_x_data:
+                extra[k] = smpl_x_data[k].reshape(v.shape).astype(np.float32)
+        smpl_x_data_.update(extra)
+
+    humandata = {
+        '__data_len__': global_orient_.shape[0],
+        smpl_x_type: smpl_x_data_,
+        'meta': meta,
+    }
+    return humandata

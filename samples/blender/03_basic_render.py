@@ -7,9 +7,9 @@ from pathlib import Path
 
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path, blender_exec
-from ..utils import setup_logger
 
 root = Path(__file__).parents[2].resolve()
 # output_path = '~/xrfeitoria/output/samples/blender/{file_name}'
@@ -21,7 +21,7 @@ seq_name = 'Sequence'
 
 
 def main(debug=False, background=False):
-    logger = setup_logger(debug=debug, log_path=log_path)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=log_path)
 
     ################################################################################################################################
     # In XRFeitoria, a `level` is an editable space that can be used to place objects(3D models, lights, cameras, etc.),

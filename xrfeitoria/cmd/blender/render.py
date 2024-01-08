@@ -20,7 +20,7 @@ from typing_extensions import Annotated
 import xrfeitoria as xf
 from xrfeitoria.data_structure.constants import ImageFileFormatEnum, RenderEngineEnumBlender, RenderOutputEnumBlender
 from xrfeitoria.data_structure.models import RenderPass
-from xrfeitoria.utils.tools import Logger
+from xrfeitoria.utils import setup_logger
 
 RENDER_SAMPLES = {'low': 64, 'medium': 256, 'high': 1024}
 app = Typer(pretty_exceptions_show_locals=False)
@@ -117,7 +117,7 @@ def main(
     ] = False,
 ):
     """Render a mesh with blender to output_path."""
-    logger = Logger.setup_logging(level='DEBUG' if debug else 'INFO')
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     if render_engine == 'eevee':
         render_quality = 'low'
 
