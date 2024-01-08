@@ -159,6 +159,7 @@ class RendererUnreal(RendererBase):
                         error_txt += f' Check unreal log: "{log_path.as_posix()}"'
 
                 logger.error(error_txt)
+                break
 
         # cls.clear()
         server.close()

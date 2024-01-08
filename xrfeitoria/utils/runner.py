@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from xmlrpc.client import ProtocolError
 
+import psutil
 from loguru import logger
 from packaging.version import parse
 from rich import get_console
@@ -91,6 +92,7 @@ class RPCRunner(ABC):
         """
         self.console = get_console()
         self.engine_type: EngineEnum = _tls.cache.get('platform', None)
+        self.engine_pid: Optional[int] = None
         self.engine_process: Optional[subprocess.Popen] = None
         self.engine_running: bool = False
         self.engine_outputs: List[str] = []
@@ -175,24 +177,27 @@ class RPCRunner(ABC):
 
     def stop(self) -> None:
         """Stop rpc server."""
-        import psutil  # isort:skip
-        from ..rpc.factory import RPCFactory  # isort:skip
+        # clear rpc server
+        factory.RPCFactory.clear()
 
+        # stop engine process
         process = self.engine_process
         if process is not None:
             logger.info(':bell: [bold red]Exiting RPC Server[/bold red], killing engine process')
+            if psutil.pid_exists(self.engine_pid):
+                for child in psutil.Process(self.engine_pid).children(recursive=True):
+                    if child.is_running():
+                        logger.debug(f'Killing child process {child.pid}')
+                        child.kill()
+                process.kill()
             self.engine_running = False
-            for child in psutil.Process(process.pid).children(recursive=True):
-                if child.is_running():
-                    logger.debug(f'Killing child process {child.pid}')
-                    child.kill()
-            process.kill()
             self.engine_process = None
+            self.engine_pid = None
+            if hasattr(_tls, 'cache'):  # prevent to be called from another thread
+                _tls.cache['engine_process'] = None
+                _tls.cache['engine_pid'] = None
         else:
             logger.info(':bell: [bold red]Exiting runner[/bold red], reused engine process remains')
-
-        # clear rpc server
-        RPCFactory.clear()
 
     def reuse(self) -> bool:
         """Try to reuse existing engine process.
@@ -206,6 +211,7 @@ class RPCRunner(ABC):
         try:
             with self.console.status('[bold green]Try to reuse existing engine process...[/bold green]'):
                 self.test_connection(debug=self.debug)
+                self.engine_pid = self.get_pid()
             logger.info(':direct_hit: [bold cyan]Reuse[/bold cyan] existing engine process')
             # raise an error if new_process is True
             if self.new_process:
@@ -238,7 +244,7 @@ class RPCRunner(ABC):
         return process
 
     def _receive_stdout(self) -> None:
-        """Receive output from the subprocess, and log it if `self.debug=True`.
+        """Receive output from the subprocess, and log it in `trace` level.
 
         This function should be called in a separate thread.
         """
@@ -254,13 +260,34 @@ class RPCRunner(ABC):
             logger.trace(f'(engine) {data.strip()}')
             self.engine_outputs.append(data)
 
-    def check_engine_alive(self) -> bool:
-        """Check if the engine process is alive."""
+    def check_engine_alive(self) -> None:
+        """Check if the engine process is alive. This function should be called in a
+        separate thread.
+
+        Raises:
+            RuntimeError: if engine process is not alive.
+        """
         while self.engine_running:
             if self.engine_process.poll() is not None:
                 logger.error(self.get_process_output(self.engine_process))
                 logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
-                os._exit(1)  # exit main thread
+                factory.RPCFactory.clear()
+                raise RuntimeError('RPC server stopped unexpectedly')
+            time.sleep(1)
+
+    def check_engine_alive_psutil(self) -> None:
+        """Check if the engine process is alive using psutil. This function should be
+        called in a separate thread.
+
+        Raises:
+            RuntimeError: if engine process is not alive.
+        """
+        p = psutil.Process(self.engine_pid)
+        while self.engine_running:
+            if not p.is_running():
+                logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
+                factory.RPCFactory.clear()
+                raise RuntimeError('RPC server stopped unexpectedly')
             time.sleep(1)
 
     def get_process_output(self, process: subprocess.Popen) -> str:
@@ -278,6 +305,8 @@ class RPCRunner(ABC):
     def start(self) -> None:
         """Start rpc server."""
         if not self.new_process:
+            self.engine_running = True
+            threading.Thread(target=self.check_engine_alive_psutil, daemon=True).start()
             return
 
         with self.console.status('Initializing RPC server...') as status:
@@ -286,7 +315,9 @@ class RPCRunner(ABC):
             status.update(status=f'[green bold]Starting {" ".join(self.engine_info)} as RPC server...')
             self.engine_process = self._start_rpc(background=self.background, project_path=self.project_path)
             self.engine_running = True
+            self.engine_pid = self.engine_process.pid
             _tls.cache['engine_process'] = self.engine_process
+            _tls.cache['engine_pid'] = self.engine_pid
         logger.info(f'RPC server started at port {self.port}')
 
         # check if engine process is alive in a separate thread
@@ -409,7 +440,7 @@ class RPCRunner(ABC):
         pass
 
     @abstractmethod
-    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> None:
+    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> subprocess.Popen:
         pass
 
     def _get_plugin_url(self) -> Optional[str]:
@@ -484,6 +515,11 @@ class RPCRunner(ABC):
     @staticmethod
     @abstractmethod
     def test_connection(debug: bool = False) -> None:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_pid() -> int:
         pass
 
 
@@ -586,6 +622,14 @@ class BlenderRPCRunner(RPCRunner):
             _logger.debug('Connection test passed')
         except Exception:
             pass
+
+    @staticmethod
+    @remote_blender(default_imports=[])
+    def get_pid() -> int:
+        """Get blender process id."""
+        import os
+
+        return os.getpid()
 
 
 class UnrealRPCRunner(RPCRunner):
@@ -692,3 +736,11 @@ class UnrealRPCRunner(RPCRunner):
         import unreal
 
         unreal.log('Connection test passed')
+
+    @staticmethod
+    @remote_unreal(default_imports=[])
+    def get_pid() -> int:
+        """Get unreal process id."""
+        import os
+
+        return os.getpid()
