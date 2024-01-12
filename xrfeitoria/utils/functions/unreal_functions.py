@@ -69,36 +69,40 @@ def save_current_level(asset_path: 'Optional[str]' = None) -> None:
 
 
 @remote_unreal()
-def import_asset(path: 'Union[str, List[str]]', dst_dir_in_engine: 'Optional[str]' = None) -> 'Union[str, List[str]]':
+def import_asset(
+    path: 'Union[str, List[str]]', dst_dir_in_engine: 'Optional[str]' = None, replace: bool = True
+) -> 'Union[str, List[str]]':
     """Import assets to the default asset path.
 
     Args:
         path (Union[str, List[str]]): a file path or a list of file paths to import, e.g. "D:/assets/SMPL_XL.fbx"
         dst_dir_in_engine (Optional[str], optional): destination directory in the engine.
             Defaults to None falls back to '/Game/XRFeitoriaUnreal/Assets'
+        replace (bool, optional): whether to replace the existing asset. Defaults to True.
 
     Returns:
         Union[str, List[str]]: a path or a list of paths to the imported assets, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL"
     """
-    paths = XRFeitoriaUnrealFactory.utils.import_asset(path, dst_dir_in_engine)
+    paths = XRFeitoriaUnrealFactory.utils.import_asset(path, dst_dir_in_engine, replace=replace)
     if len(paths) == 1:
         return paths[0]
     return paths
 
 
 @remote_unreal()
-def import_anim(path: str, skeleton_path: str, dest_path: 'Optional[str]' = None) -> 'List[str]':
+def import_anim(path: str, skeleton_path: str, dest_path: 'Optional[str]' = None, replace: bool = True) -> 'List[str]':
     """Import animation to the default asset path.
 
     Args:
         path (str): The file path to import, e.g. "D:/assets/SMPL_XL-Animation.fbx".
         skeleton_path (str): The path to the skeleton, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL_Skeleton".
         dest_path (str, optional): The destination directory in the engine. Defaults to None, falls back to {skeleton_path.parent}/Animation.
+        replace (bool, optional): whether to replace the existing asset. Defaults to True.
 
     Returns:
         List[str]: A list of paths to the imported animations, e.g. ["/Game/XRFeitoriaUnreal/Assets/SMPL_XL-Animation"].
     """
-    return XRFeitoriaUnrealFactory.utils.import_anim(path, skeleton_path, dest_path)
+    return XRFeitoriaUnrealFactory.utils.import_anim(path, skeleton_path, dest_path, replace=replace)
 
 
 @remote_unreal()
