@@ -30,6 +30,20 @@ def duplicate_binding(binding: unreal.SequencerBindingProxy) -> None:
     # TODO: the event track would be lost after pasting, need to fix it
 
 
+def get_binding_id(binding: unreal.SequencerBindingProxy) -> unreal.MovieSceneObjectBindingID:
+    """Get the MovieSceneObjectBindingID from a SequencerBindingProxy.
+
+    Args:
+        binding (unreal.SequencerBindingProxy): The SequencerBindingProxy object.
+
+    Returns:
+        unreal.MovieSceneObjectBindingID: The MovieSceneObjectBindingID extracted from the binding.
+    """
+    binding_id = unreal.MovieSceneObjectBindingID()
+    binding_id.set_editor_property('Guid', binding.binding_id)
+    return binding_id
+
+
 def convert_frame_rate_to_fps(frame_rate: unreal.FrameRate) -> float:
     return frame_rate.numerator / frame_rate.denominator
 
@@ -246,7 +260,7 @@ def add_property_bool_track_to_binding(
     bool_section.set_end_frame_bounded(0)
 
     # set key
-    for channel in bool_section.find_channels_by_type(unreal.MovieSceneScriptingBoolChannel):
+    for channel in bool_section.get_channels_by_type(unreal.MovieSceneScriptingBoolChannel):
         channel.set_default(property_value)
 
     return bool_track, bool_section
@@ -267,7 +281,7 @@ def add_property_int_track_to_binding(
     int_section.set_end_frame_bounded(0)
 
     # set key
-    for channel in int_section.find_channels_by_type(unreal.MovieSceneScriptingIntegerChannel):
+    for channel in int_section.get_channels_by_type(unreal.MovieSceneScriptingIntegerChannel):
         channel.set_default(property_value)
 
     return int_track, int_section
@@ -288,7 +302,7 @@ def add_property_string_track_to_binding(
     string_section.set_end_frame_bounded(0)
 
     # set key
-    for channel in string_section.find_channels_by_type(unreal.MovieSceneScriptingStringChannel):
+    for channel in string_section.get_channels_by_type(unreal.MovieSceneScriptingStringChannel):
         channel: unreal.MovieSceneScriptingStringChannel
         if isinstance(property_value, str):
             channel.set_default(property_value)
@@ -544,7 +558,8 @@ def add_camera_to_sequence(
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
-    camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    # camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    camera_cut_section.set_camera_binding_id(get_binding_id(camera_binding))
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(camera_binding)
@@ -622,7 +637,8 @@ def add_spawnable_camera_to_sequence(
     # camera_binding_id = sequence.make_binding_id(camera_binding, unreal.MovieSceneObjectBindingSpace.LOCAL)
     # camera_cut_section.set_camera_binding_id(camera_binding_id)
 
-    camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    # camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    camera_cut_section.set_camera_binding_id(get_binding_id(camera_binding))
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(camera_binding)

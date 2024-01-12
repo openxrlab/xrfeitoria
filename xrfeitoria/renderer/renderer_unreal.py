@@ -18,7 +18,8 @@ except ModuleNotFoundError:
     pass
 
 try:
-    from ..data_structure.models import RenderJobUnreal, RenderPass
+    from ..data_structure.models import RenderJobUnreal as RenderJob
+    from ..data_structure.models import RenderPass
 except ModuleNotFoundError:
     pass
 
@@ -27,7 +28,7 @@ except ModuleNotFoundError:
 class RendererUnreal(RendererBase):
     """Renderer class for Unreal."""
 
-    render_queue: 'List[RenderJobUnreal]' = []
+    render_queue: 'List[RenderJob]' = []
 
     @classmethod
     def add_job(
@@ -39,7 +40,7 @@ class RendererUnreal(RendererBase):
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
-        anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
+        anti_aliasing: 'Optional[RenderJob.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
     ) -> None:
@@ -62,7 +63,7 @@ class RendererUnreal(RendererBase):
             The motion blur is turned off by default. If you want to turn it on, please set ``r.MotionBlurQuality`` to a non-zero value in ``console_variables``.
         """
         if anti_aliasing is None:
-            anti_aliasing = RenderJobUnreal.AntiAliasSetting()
+            anti_aliasing = RenderJob.AntiAliasSetting()
 
         # turn off motion blur by default
         if 'r.MotionBlurQuality' not in console_variables.keys():
@@ -72,7 +73,7 @@ class RendererUnreal(RendererBase):
                 "If you want to turn off the motion blur the same as default, set ``console_variables={..., 'r.MotionBlurQuality': 0}``."
             )
 
-        job = RenderJobUnreal(
+        job = RenderJob(
             map_path=map_path,
             sequence_path=sequence_path,
             output_path=Path(output_path).resolve(),

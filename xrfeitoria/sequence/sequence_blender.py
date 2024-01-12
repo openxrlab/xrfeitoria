@@ -5,7 +5,6 @@ from loguru import logger
 from ..actor.actor_blender import ActorBlender, ShapeBlenderWrapper
 from ..camera.camera_blender import CameraBlender
 from ..data_structure.constants import PathLike, Vector
-from ..data_structure.models import RenderPass
 from ..object.object_utils import ObjectUtilsBlender
 from ..renderer.renderer_blender import RendererBlender
 from ..rpc import remote_blender
@@ -13,7 +12,7 @@ from .sequence_base import SequenceBase
 
 try:
     import bpy  # isort:skip
-    from ..data_structure.models import TransformKeys  # isort:skip
+    from ..data_structure.models import RenderPass, TransformKeys  # isort:skip
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
 except ModuleNotFoundError:
     pass
