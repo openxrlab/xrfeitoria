@@ -34,6 +34,21 @@ class SequenceUnreal(SequenceBase):
     _object_utils = ObjectUtilsUnreal
     _renderer = RendererUnreal
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.save()
+        self.close()
+
+    @classmethod
+    def save(cls) -> None:
+        """Save the sequence."""
+        cls._save_seq_in_engine()
+        logger.info(f'++++  [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
+
+    @classmethod
+    def show(cls) -> None:
+        """Show the sequence in the engine."""
+        cls._show_seq_in_engine()
+
     @classmethod
     def add_to_renderer(
         cls,

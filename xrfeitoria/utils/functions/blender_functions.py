@@ -301,6 +301,19 @@ def get_rotation_to_look_at(location: 'Vector', target: 'Vector') -> 'Vector':
 
 
 @remote_blender()
+def check_sequence(seq_name: str) -> bool:
+    """Check whether the sequence exists.
+
+    Args:
+        seq_name (str): Name of the sequence.
+
+    Returns:
+        bool: True if the sequence exists.
+    """
+    return seq_name in bpy.data.collections.keys()
+
+
+@remote_blender()
 def init_scene_and_collection(name: str, cleanup: bool = False) -> None:
     """Init the default scene and default collection.
 

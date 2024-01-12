@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
+from typing_extensions import Self
 
 from .. import _tls
 from ..actor.actor_base import ActorBase
@@ -29,6 +30,12 @@ class SequenceBase(ABC):
     _renderer = RendererBase
     __platform__: EngineEnum = _tls.cache.get('platform', None)
 
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @classmethod
     def _new(
         cls,
@@ -43,7 +50,7 @@ class SequenceBase(ABC):
 
         Args:
             seq_name (str): Name of the sequence.
-            level (str): Level to link to the sequence.
+            level (Optional[str], optional): Name of the level. Defaults to None.
             seq_fps (int, optional): Frame per second of the new sequence. Defaults to 60.
             seq_length (int, optional): Frame length of the new sequence. Defaults to 60.
             replace (bool, optional): Replace the exist same-name sequence. Defaults to False.
@@ -74,17 +81,6 @@ class SequenceBase(ABC):
         cls._close_seq_in_engine()
         logger.info(f'<<<< [red]Closed[/red] sequence "{cls.name}" <<<<')
         cls.name = None
-
-    @classmethod
-    def save(cls) -> None:
-        """Save the sequence."""
-        cls._save_seq_in_engine()
-        logger.info(f'++++  [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
-
-    @classmethod
-    def show(cls) -> None:
-        """Show the sequence in the engine."""
-        cls._show_seq_in_engine()
 
     # ------ import actor ------ #
     @classmethod
@@ -496,14 +492,4 @@ class SequenceBase(ABC):
     @staticmethod
     @abstractmethod
     def _close_seq_in_engine() -> None:
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def _save_seq_in_engine() -> None:
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def _show_seq_in_engine() -> None:
         pass

@@ -1,8 +1,11 @@
 from typing import Dict, List, Optional, Tuple, Union
 
+from loguru import logger
+
 from ..actor.actor_blender import ActorBlender, ShapeBlenderWrapper
 from ..camera.camera_blender import CameraBlender
 from ..data_structure.constants import PathLike, Vector
+from ..data_structure.models import RenderPass
 from ..object.object_utils import ObjectUtilsBlender
 from ..renderer.renderer_blender import RendererBlender
 from ..rpc import remote_blender
@@ -55,6 +58,30 @@ class SequenceBlender(SequenceBase):
         )
         cls._object_utils.set_transform_keys(name=actor.name, transform_keys=transform_keys)
         return actor
+
+    @classmethod
+    def add_to_renderer(
+        cls,
+        output_path: PathLike,
+        resolution: Tuple[int, int],
+        render_passes: List[RenderPass],
+        **kwargs,
+    ):
+        cls._renderer.add_job(
+            sequence_name=cls.name,
+            output_path=output_path,
+            resolution=resolution,
+            render_passes=render_passes,
+            **kwargs,
+        )
+        # set renderer in engine (for storing the render settings like resolution, render_passes, etc.)
+        cls._renderer._set_renderer_in_engine(
+            job=cls._renderer.render_queue[-1].model_dump(mode='json'), tmp_render_path='/tmp'
+        )
+        logger.info(
+            f'[cyan]Added[/cyan] sequence "{cls.name}" to [bold]`Renderer`[/bold] '
+            f'(jobs to render: {len(cls._renderer.render_queue)})'
+        )
 
     #####################################
     ###### RPC METHODS (Private) ########
@@ -132,10 +159,6 @@ class SequenceBlender(SequenceBase):
         # XRFeitoriaBlenderFactory.close_sequence()
         level_scene = XRFeitoriaBlenderFactory.get_active_scene()
         XRFeitoriaBlenderFactory.set_level_properties(scene=level_scene, active_seq=None)
-
-    @staticmethod
-    def _show_seq_in_engine() -> None:
-        raise NotImplementedError
 
     # -------- spawn methods -------- #
     @staticmethod

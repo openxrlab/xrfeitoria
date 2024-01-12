@@ -16,7 +16,7 @@ class XRFeitoriaBlender:
         :class:`Actor <xrfeitoria.actor.actor_blender.ActorBlender>`: Actor class.\n
         :class:`Shape <xrfeitoria.actor.actor_blender.ShapeBlenderWrapper>`: Shape wrapper class.\n
         :class:`Renderer <xrfeitoria.renderer.renderer_blender.RendererBlender>`: Renderer class.\n
-        :class:`Sequence <xrfeitoria.sequence.sequence_wrapper.SequenceWrapperBlender>`: Sequence wrapper class.\n
+        :class:`sequence <xrfeitoria.sequence.sequence_wrapper.sequence_wrapper_blender>`: Sequence wrapper function.\n
         :class:`utils <xrfeitoria.utils.functions.blender_functions>`: Utilities functions executed in Blender.\n
         :meth:`render <xrfeitoria.renderer.renderer_blender.RendererBlender.render_jobs>`: Render jobs.\n
     """
@@ -51,7 +51,7 @@ class XRFeitoriaBlender:
         from .actor.actor_blender import ActorBlender, ShapeBlenderWrapper  # isort:skip
         from .material.material_blender import MaterialBlender  # isort:skip
         from .renderer.renderer_blender import RendererBlender  # isort:skip
-        from .sequence.sequence_wrapper import SequenceWrapperBlender  # isort:skip
+        from .sequence.sequence_wrapper import SequenceWrapperBlender, sequence_wrapper_blender  # isort:skip
         from .utils.runner import BlenderRPCRunner  # isort:skip
         from .utils.functions import blender_functions  # isort:skip
 
@@ -63,6 +63,7 @@ class XRFeitoriaBlender:
         self.Shape = ShapeBlenderWrapper
         self.Renderer = RendererBlender
         self.render = self.Renderer.render_jobs
+        self.sequence = sequence_wrapper_blender
         self.Sequence = SequenceWrapperBlender
         self.utils = blender_functions
         self._rpc_runner = BlenderRPCRunner(
@@ -85,7 +86,7 @@ class XRFeitoriaUnreal:
         :class:`Actor <xrfeitoria.actor.actor_unreal.ActorUnreal>`: Actor class.\n
         :class:`Shape <xrfeitoria.actor.actor_unreal.ShapeUnrealWrapper>`: Shape wrapper class.\n
         :class:`Renderer <xrfeitoria.renderer.renderer_unreal.RendererUnreal>`: Renderer class.\n
-        :class:`Sequence <xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal>`: Sequence wrapper class.\n
+        :class:`sequence <xrfeitoria.sequence.sequence_wrapper.sequence_wrapper_unreal>`: Sequence wrapper function.\n
         :class:`utils <xrfeitoria.utils.functions.unreal_functions>`: Utilities functions executed in Unreal.\n
         :meth:`render <xrfeitoria.renderer.renderer_unreal.RendererUnreal.render_jobs>`: Render jobs.\n
     """
@@ -118,7 +119,7 @@ class XRFeitoriaUnreal:
         from .camera.camera_unreal import CameraUnreal  # isort:skip
         from .actor.actor_unreal import ActorUnreal, ShapeUnrealWrapper  # isort:skip
         from .renderer.renderer_unreal import RendererUnreal  # isort:skip
-        from .sequence.sequence_wrapper import SequenceWrapperUnreal  # isort:skip
+        from .sequence.sequence_wrapper import SequenceWrapperUnreal, sequence_wrapper_unreal  # isort:skip
         from .utils.runner import UnrealRPCRunner  # isort:skip
         from .utils.functions import unreal_functions  # isort:skip
 
@@ -129,6 +130,7 @@ class XRFeitoriaUnreal:
         self.Shape = ShapeUnrealWrapper
         self.Renderer = RendererUnreal
         self.render = self.Renderer.render_jobs
+        self.sequence = sequence_wrapper_unreal
         self.Sequence = SequenceWrapperUnreal
         self.utils = unreal_functions
         self._rpc_runner = UnrealRPCRunner(
