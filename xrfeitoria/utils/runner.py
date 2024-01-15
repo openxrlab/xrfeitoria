@@ -267,13 +267,14 @@ class RPCRunner(ABC):
         Raises:
             RuntimeError: if engine process is not alive.
         """
+        logger.debug('(Thread) Start checking engine process')
         while self.engine_running:
             if self.engine_process.poll() is not None:
                 logger.error(self.get_process_output(self.engine_process))
                 logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
                 factory.RPCFactory.clear()
                 raise RuntimeError('RPC server stopped unexpectedly')
-            time.sleep(1)
+            time.sleep(5)
 
     def check_engine_alive_psutil(self) -> None:
         """Check if the engine process is alive using psutil. This function should be
@@ -282,13 +283,14 @@ class RPCRunner(ABC):
         Raises:
             RuntimeError: if engine process is not alive.
         """
+        logger.debug('(Thread) Start checking engine process, using psutil')
         p = psutil.Process(self.engine_pid)
         while self.engine_running:
             if not p.is_running():
-                logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
+                logger.error('[red]RPC server stopped unexpectedly[/red]')
                 factory.RPCFactory.clear()
                 raise RuntimeError('RPC server stopped unexpectedly')
-            time.sleep(1)
+            time.sleep(5)
 
     def get_process_output(self, process: subprocess.Popen) -> str:
         """Get process output when process is exited with non-zero code."""
@@ -352,7 +354,7 @@ class RPCRunner(ABC):
                 self.test_connection(debug=self.debug)
                 break
             except (RemoteDisconnected, ConnectionRefusedError, ProtocolError):
-                logger.debug(f'Waiting for RPC server to start [tryout {_num}/{tryout_num}]')
+                logger.debug(f'Waiting for RPC server to start (tryout {_num}/{tryout_num})')
                 _num += 1
                 time.sleep(tryout_sec)  # wait for 5 seconds
             if _num >= tryout_num:  # 3 minutes
