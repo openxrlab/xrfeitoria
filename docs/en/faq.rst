@@ -12,6 +12,39 @@ API
 
 .. _FAQ-stencil-value:
 
+How to use the plugin of Blender/Unreal under development
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+First you should clone the repo of XRFeitoria, and maybe modify the code of the plugin under ``src/XRFeitoriaBlender`` or ``src/XRFeitoriaUnreal``.
+Then you can use the plugin under development by setting ``dev_plugin=True`` in :class:`init_blender <xrfeitoria.factory.init_blender>` or :class:`init_unreal <xrfeitoria.factory.init_unreal>`.
+
+You can install the plugin by:
+
+.. tabs::
+    .. tab:: Blender
+        .. code-block:: bash
+            :linenos:
+
+            git clone https://github.com/openxrlab/xrfeitoria.git
+            cd xrfeitoria
+            pip install -e .
+            python -c "import xrfeitoria as xf; xf.init_blender(replace_plugin=True, dev_plugin=True)"
+
+            # or through the code in tests
+            python -m tests.blender.init --dev [-b]
+    
+    .. tab:: Unreal
+        .. code-block:: bash
+            :linenos:
+
+            git clone https://github.com/openxrlab/xrfeitoria.git
+            cd xrfeitoria
+            pip install -e .
+            python -c "import xrfeitoria as xf; xf.init_unreal(replace_plugin=True, dev_plugin=True)"
+
+            # or through the code in tests
+            python -m tests.unreal.init --dev [-b]
+
 What is ``stencil_value``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

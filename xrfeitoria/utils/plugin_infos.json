@@ -1,4 +1,9 @@
 {
+    "0.6.0": {
+        "XRFeitoria": "0.6.0",
+        "XRFeitoriaBpy": "0.6.0",
+        "XRFeitoriaUnreal": "0.6.0"
+    },
     "0.5.1": {
         "XRFeitoria": "0.5.1",
         "XRFeitoriaBpy": "0.5.1",

@@ -15,6 +15,7 @@ actor_info_type = TypedDict('actor_info', {'actor_name': str, 'mask_color': Tupl
 package_name = 'XRFeitoria'
 plugin_name_blender = 'XRFeitoriaBpy'
 plugin_name_unreal = 'XRFeitoriaUnreal'
+plugin_name_pattern = '{plugin_name}-{plugin_version}-{engine_version}-{platform}'
 xf_obj_name = '[XF]{obj_type}-{obj_idx:03d}'
 
 ##### Path Constants #####

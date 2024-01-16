@@ -1,98 +1,173 @@
 """Publish plugins to zip files.
-
->>> python -m xrfeitoria.utils.publish_plugins --unreal -s 0.5.0-Unreal5.2-Windows
->>> python -m xrfeitoria.utils.publish_plugins --blender -s 0.5.0-None-None
+>>> python -m xrfeitoria.utils.publish_plugins --help
 """
+import os
+import platform
+import re
+import subprocess
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Literal, Optional
+from typing import List, Optional
 
 from loguru import logger
 
-from .. import __version__
-from ..data_structure.constants import PathLike, plugin_name_blender, plugin_name_unreal
+from ..data_structure.constants import plugin_name_blender, plugin_name_pattern, plugin_name_unreal
+from ..utils import setup_logger
+from ..version import __version__, __version_tuple__
+from .runner import UnrealRPCRunner
 
 root = Path(__file__).parent.resolve()
 project_root = root.parents[1]
+src_root = project_root / 'src'
+dist_root = src_root / 'dist'
+
+
+@contextmanager
+def working_directory(path):
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
 
 
 def _make_archive(
-    plugin_folder: PathLike,
-    zip_name: Optional[str] = None,
-    folder_name: Optional[str] = None,
+    src_folder: Path,
+    dst_path: Optional[Path] = None,
+    folder_name_inside_zip: Optional[str] = None,
 ) -> Path:
     """Make archive of plugin folder.
 
+    Zip Plugin folder to ``{plugin_folder.parent}/{zip_name}.zip``.
+
     Args:
-        plugin_folder (PathLike): path to plugin folder.
-        zip_name (Optional[str], optional): name of the archive file.
-            E.g. dst_name='plugin', the archive file would be ``plugin.zip``.
+        plugin_folder (Path): path to plugin folder.
+        zip_name (Optional[str], optional): name of the archive file. E.g. dst_name='plugin', the archive file would be ``plugin.zip``.
             Defaults to None, fallback to {plugin_folder.name}.
+        folder_name (Optional[str], optional): name of the root folder in the archive.
     """
     import zipfile
 
-    if zip_name is None:
-        zip_name = plugin_folder.name
-    if folder_name is None:
-        folder_name = zip_name
+    if dst_path is None:
+        dst_path = src_folder.parent / f'{src_folder.name}.zip'
+    if folder_name_inside_zip is None:
+        folder_name_inside_zip = dst_path.stem
 
-    plugin_folder = Path(plugin_folder).resolve()
-    plugin_zip = plugin_folder.parent / f'{zip_name}.zip'
-    if plugin_zip.exists():
-        plugin_zip.unlink()
+    if dst_path.exists():
+        dst_path.unlink()
 
     filter_names = ['.git', '.idea', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate']
-    with zipfile.ZipFile(plugin_zip, 'w', compression=zipfile.ZIP_DEFLATED) as zipf:
-        for file in plugin_folder.rglob('*'):
+    with zipfile.ZipFile(dst_path, 'w', compression=zipfile.ZIP_DEFLATED) as zipf:
+        for file in src_folder.rglob('*'):
             # filter
             if any([folder in file.parts for folder in filter_names]):
                 continue
 
             # in zip, the folder name is the root folder
-            # {folder_name}/a/b/c
-            arcname = folder_name + '/' + file.relative_to(plugin_folder).as_posix()
+            # {folder_name_inside_zip}/a/b/c
+            arcname = folder_name_inside_zip + '/' + file.relative_to(src_folder).as_posix()
             zipf.write(file, arcname=arcname)
 
-    # plugin_folder = shutil.make_archive(plugin_zip.with_suffix(''), 'zip', plugin_folder.parent, plugin_folder.name)
-    logger.debug(f'Compressed {plugin_folder} => {plugin_zip}')
-    return plugin_zip
+    logger.info(f'Compressed {src_folder} => {dst_path}')
+    return dst_path
 
 
-def main(engine: Literal['unreal', 'blender'], suffix: Optional[str] = None):
-    if engine == 'blender':
-        plugin_name = plugin_name_blender
-        folder_name = plugin_name  # in zip, {XRFeitoriaBpy} is the root folder
-    elif engine == 'unreal':
-        # TODO: auto detect binaries
-        plugin_name = plugin_name_unreal
-        folder_name = None  # in zip, {XRFeitoriaUnreal-x.x.x-UE5.x-Windows} is the root folder
+def update_bpy_version(bpy_init_file: Path):
+    """Update version in ``src/XRFeitoriaBpy/__init__.py``.
 
-    dir_plugin = project_root / 'src' / plugin_name
+    Args:
+        bpy_init_file (Path): path to ``__init__.py`` file.
+    """
+    content = bpy_init_file.read_text()
+    # update version
+    content = re.sub(pattern=r"'version': \(.*\)", repl=f"'version': {__version_tuple__}", string=content)
+    bpy_init_file.write_text(content)
+    logger.info(f'Updated "{bpy_init_file}" with version {__version__}')
 
-    name = plugin_name
-    if suffix is not None:
-        name += f'-{suffix}'
-    else:
-        name += f'-{__version__}'
-    plugin_zip = _make_archive(dir_plugin, zip_name=name, folder_name=folder_name)
-    logger.info(f'Plugin for {engine}: {plugin_zip}')
+
+def update_uplugin_version(uplugin_path: Path):
+    """Update version in ``src/XRFeitoriaUnreal/XRFeitoria.uplugin``.
+
+    Args:
+        uplugin_file (Path): path to ``XRFeitoria.uplugin`` file.
+    """
+    content = uplugin_path.read_text()
+    # update version
+    content = re.sub(pattern=r'"VersionName": ".*"', repl=f'"VersionName": "{__version__}"', string=content)
+    uplugin_path.write_text(content)
+    logger.info(f'Updated "{uplugin_path}" with version {__version__}')
+
+
+def build_blender():
+    plugin_name = plugin_name_pattern.format(
+        plugin_name=plugin_name_blender,
+        plugin_version=__version__,
+        engine_version='None',
+        platform='None',
+    )  # e.g. XRFeitoriaBlender-0.5.0-None-None
+    dir_plugin = src_root / plugin_name_blender
+    update_bpy_version(dir_plugin / '__init__.py')
+
+    plugin_zip = _make_archive(
+        src_folder=dir_plugin,
+        dst_path=dist_root / f'{plugin_name}.zip',
+        folder_name_inside_zip=plugin_name_blender,
+    )
+    dst_plugin_zip = dist_root / plugin_zip.name
+    logger.info(f'Plugin for blender: "{dst_plugin_zip}"')
+
+
+def build_unreal(unreal_exec_list: List[Path]):
+    dir_plugin = src_root / plugin_name_unreal
+    uplugin_path = dir_plugin / f'{plugin_name_unreal}.uplugin'
+    update_uplugin_version(uplugin_path)
+    logger.info(f'Compiling plugin for Unreal Engine...')
+    for unreal_exec in unreal_exec_list:
+        uat_path = unreal_exec.parents[2] / 'Build/BatchFiles/RunUAT.bat'
+        unreal_infos = UnrealRPCRunner._get_engine_info(unreal_exec)
+        engine_version = ''.join(unreal_infos)  # e.g. Unreal5.1
+        plugin_name = plugin_name_pattern.format(
+            plugin_name=plugin_name_unreal,
+            plugin_version=__version__,
+            engine_version=engine_version,
+            platform=platform.system(),
+        )  # e.g. XRFeitoriaUnreal-0.5.0-None-Windows
+        dist_path = dist_root / plugin_name
+        subprocess.call([uat_path, 'BuildPlugin', f'-Plugin={uplugin_path}', f'-Package={dist_path}'])
+        _make_archive(src_folder=dist_path)
+        logger.info(f'Plugin for {engine_version}: "{dist_path}.zip"')
 
 
 if __name__ == '__main__':
     from typer import Option, run
 
     def wrapper(
-        unreal: bool = Option(False, '--unreal', '-u', help='Build plugin for Unreal'),
-        blender: bool = Option(False, '--blender', '-b', help='Build plugin for Blender'),
-        suffix: str = Option(
+        unreal_exec: List[Path] = Option(
             None,
-            '--suffix',
-            '-s',
-            help='Suffix of the compressed file, e.g. "XRFeitoriaUnreal-{suffix}.zip". if None, use version number',
-        ),
+            '-u',
+            resolve_path=True,
+            file_okay=True,
+            dir_okay=False,
+            exists=True,
+            help='Path to Unreal Engine executable. e.g. "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"',
+        )
     ):
-        if unreal:
-            main(engine='unreal', suffix=suffix)
-        if blender:
-            main(engine='blender', suffix=suffix)
+        """Publish plugins to zip files.
+
+        Examples:
+
+        >>> python -m xrfeitoria.utils.publish_plugins
+        -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+        -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+        -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+        """
+        print(unreal_exec)
+        setup_logger(level='INFO')
+        build_blender()
+        if len(unreal_exec) > 0:
+            build_unreal(unreal_exec_list=unreal_exec)
+        logger.info(f'Check "{dist_root}" for the plugin zip files.')
 
     run(wrapper)
