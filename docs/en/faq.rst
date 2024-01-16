@@ -32,7 +32,7 @@ You can install the plugin by:
 
             # or through the code in tests
             python -m tests.blender.init --dev [-b]
-    
+
     .. tab:: Unreal
         .. code-block:: bash
             :linenos:

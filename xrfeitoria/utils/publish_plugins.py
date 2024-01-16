@@ -1,4 +1,5 @@
 """Publish plugins to zip files.
+
 >>> python -m xrfeitoria.utils.publish_plugins --help
 """
 import os
