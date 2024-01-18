@@ -506,11 +506,11 @@ class RPCRunner(ABC):
         if self.engine_type == EngineEnum.unreal:
             plugin_name = plugin_name_unreal
             engine_version = ''.join(self.engine_info)  # e.g. Unreal5.1
-            platform = platform.system()  # Literal["Windows", "Linux", "Darwin"]
+            _platform = platform.system()  # Literal["Windows", "Linux", "Darwin"]
         elif self.engine_type == EngineEnum.blender:
             plugin_name = plugin_name_blender
             engine_version = 'None'  # support all blender versions
-            platform = 'None'  # support all platforms
+            _platform = 'None'  # support all platforms
         plugin_version = plugin_infos[str(compatible_version)][plugin_name]
         # e.g. XRFeitoriaBpy-0.5.0-None-None
         # e.g. XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows
@@ -518,7 +518,7 @@ class RPCRunner(ABC):
             plugin_name=plugin_name,
             plugin_version=plugin_version,
             engine_version=engine_version,
-            platform=platform,
+            platform=_platform,
         )
 
     @property
