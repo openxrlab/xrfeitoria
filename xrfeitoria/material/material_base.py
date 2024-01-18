@@ -2,9 +2,6 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
-from loguru import logger
-from typing_extensions import Self
-
 from ..data_structure.constants import PathLike
 from ..object.object_utils import ObjectUtilsBase
 
@@ -22,14 +19,14 @@ class MaterialBase(ABC):
         self._name = name
 
     @classmethod
-    def new(cls, mat_name: str) -> Self:
+    def new(cls, mat_name: str) -> 'MaterialBase':
         """Add a new material.
 
         Args:
             mat_name (str): Name of the material.
 
         Returns:
-            Self: The instance of the material.
+            MaterialBase: Material object.
         """
         cls._new_material_in_engine(mat_name)
         return cls(mat_name)

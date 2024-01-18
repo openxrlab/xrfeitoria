@@ -43,6 +43,7 @@ class RendererUnreal(RendererBase):
         anti_aliasing: 'Optional[RenderJob.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
+        export_audio: bool = False,
     ) -> None:
         """Add a rendering job to the renderer queue.
 
@@ -58,6 +59,7 @@ class RendererUnreal(RendererBase):
             anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export skeleton. Defaults to False.
+            export_audio (bool, optional): Whether to export audio. Defaults to False.
 
         Note:
             The motion blur is turned off by default. If you want to turn it on, please set ``r.MotionBlurQuality`` to a non-zero value in ``console_variables``.
@@ -84,6 +86,7 @@ class RendererUnreal(RendererBase):
             anti_aliasing=anti_aliasing,
             export_vertices=export_vertices,
             export_skeleton=export_skeleton,
+            export_audio=export_audio,
         )
         cls._add_job_in_engine(job.model_dump(mode='json'))
         cls.render_queue.append(job)

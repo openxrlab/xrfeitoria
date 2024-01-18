@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from loguru import logger
-from typing_extensions import Self
 
 from ..data_structure.constants import PathLike, Vector
 from ..object.object_base import ObjectBase
@@ -57,7 +56,7 @@ class ActorBase(ABC, ObjectBase):
         rotation: 'Vector' = None,
         scale: 'Vector' = None,
         stencil_value: int = 1,
-    ) -> Self:
+    ) -> 'ActorBase':
         """Imports an actor from a file and returns its corresponding actor.
 
         For Blender, support files in types: fbx, obj, abc, ply, stl.
@@ -77,7 +76,7 @@ class ActorBase(ABC, ObjectBase):
                 Ref to :ref:`FAQ-stencil-value` for details.
 
         Returns:
-            Self: the actor object.
+            ActorBase: the actor object.
         """
         if actor_name is None:
             actor_name = cls._object_utils.generate_obj_name(obj_type='actor')

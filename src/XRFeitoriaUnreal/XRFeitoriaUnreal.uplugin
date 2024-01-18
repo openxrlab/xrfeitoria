@@ -35,6 +35,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "PythonFoundationPackages",
+			"Enabled": true
+		},
+		{
 			"Name": "SequencerScripting",
 			"Enabled": true
 		}

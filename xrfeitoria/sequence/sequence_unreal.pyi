@@ -31,12 +31,12 @@ class SequenceUnreal(SequenceBase):
         anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
+        export_audio: bool = False,
     ) -> None: ...
     @classmethod
     def spawn_camera(
         cls, location: Vector, rotation: Vector, fov: float = ..., camera_name: str = ...
     ) -> CameraUnreal: ...
-    @classmethod
     @classmethod
     def spawn_actor(
         cls,
@@ -86,6 +86,13 @@ class SequenceUnreal(SequenceBase):
         anim_asset_path: Optional[str] = ...,
     ) -> None: ...
     @classmethod
+    def add_audio(
+        cls,
+        audio_asset_path: str,
+        start_frame: Optional[int] = None,
+        end_frame: Optional[int] = None,
+    ) -> None: ...
+    @classmethod
     def get_map_path(cls) -> str: ...
     @classmethod
     def get_seq_path(cls) -> str: ...
@@ -95,3 +102,5 @@ class SequenceUnreal(SequenceBase):
     def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None: ...
     @classmethod
     def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = ...) -> None: ...
+    @staticmethod
+    def _get_default_seq_path_in_engine() -> str: ...

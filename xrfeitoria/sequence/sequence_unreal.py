@@ -60,6 +60,7 @@ class SequenceUnreal(SequenceBase):
         anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
+        export_audio: bool = False,
     ) -> None:
         """Add the sequence to the renderer's job queue. Can only be called after the
         sequence is instantiated using
@@ -78,6 +79,7 @@ class SequenceUnreal(SequenceBase):
                 The anti-aliasing settings for the render job. Defaults to None.
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export the skeleton. Defaults to False.
+            export_audio (bool, optional): Whether to export audio. Defaults to False.
 
         Examples:
             >>> import xrfeitoria as xf
@@ -106,6 +108,7 @@ class SequenceUnreal(SequenceBase):
             anti_aliasing=anti_aliasing,
             export_vertices=export_vertices,
             export_skeleton=export_skeleton,
+            export_audio=export_audio,
         )
         logger.info(
             f'[cyan]Added[/cyan] sequence "{cls.name}" to [bold]`Renderer`[/bold] '
@@ -141,14 +144,7 @@ class SequenceUnreal(SequenceBase):
 
         Returns:
             ActorUnreal: The spawned actor object.
-
-        Raises:
-            AssertionError: If both `anim_asset_path` and `motion_data` are provided. Only one of them can be provided.
         """
-        assert not (
-            anim_asset_path is not None and motion_data is not None
-        ), 'Cannot provide both `anim_asset_path` and `motion_data`'
-
         transform_keys = SeqTransKey(
             frame=0, location=location, rotation=rotation, scale=scale, interpolation='CONSTANT'
         )
@@ -189,14 +185,7 @@ class SequenceUnreal(SequenceBase):
 
         Returns:
             ActorUnreal: The spawned actor.
-
-        Raises:
-            AssertionError: If both `anim_asset_path` and `motion_data` are provided. Only one of them can be provided.
         """
-        assert not (
-            anim_asset_path is not None and motion_data is not None
-        ), 'Cannot provide both `anim_asset_path` and `motion_data`'
-
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
@@ -216,6 +205,22 @@ class SequenceUnreal(SequenceBase):
             f'[cyan]Spawned[/cyan] actor "{actor_name}" with {len(transform_keys)} keys in sequence "{cls.name}"'
         )
         return ActorUnreal(actor_name)
+
+    @classmethod
+    def add_audio(
+        cls,
+        audio_asset_path: str,
+        start_frame: Optional[int] = None,
+        end_frame: Optional[int] = None,
+    ) -> None:
+        """Add an audio track to the sequence.
+
+        Args:
+            audio_asset_path (str): The path to the audio asset in the engine.
+            start_frame (Optional[int], optional): The start frame of the audio track. Defaults to None.
+            end_frame (Optional[int], optional): The end frame of the audio track. Defaults to None.
+        """
+        cls._add_audio_in_engine(audio_asset_path=audio_asset_path, start_frame=start_frame, end_frame=end_frame)
 
     @classmethod
     def get_map_path(cls) -> str:
@@ -278,6 +283,10 @@ class SequenceUnreal(SequenceBase):
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
+
+    @staticmethod
+    def _get_default_seq_path_in_engine() -> str:
+        return XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_PATH
 
     @staticmethod
     def _get_seq_info_in_engine(
@@ -501,4 +510,19 @@ class SequenceUnreal(SequenceBase):
             actor_name=shape_name,
             transform_keys=transform_keys,
             stencil_value=stencil_value,
+        )
+
+    # ------ add audio -------- #
+    @staticmethod
+    def _add_audio_in_engine(
+        audio_asset_path: str,
+        start_frame: 'Optional[int]' = None,
+        end_frame: 'Optional[int]' = None,
+    ):
+        # check asset
+        unreal_functions.check_asset_in_engine(audio_asset_path, raise_error=True)
+        XRFeitoriaUnrealFactory.Sequence.add_audio(
+            audio_asset=audio_asset_path,
+            start_frame=start_frame,
+            end_frame=end_frame,
         )

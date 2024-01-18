@@ -39,6 +39,15 @@ from .setup import get_exec_path
 # XXX: hardcode download url
 oss_root = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
 plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
+plugin_info_type = TypedDict(
+    'PluginInfo',
+    {
+        'plugin_name': str,
+        'plugin_version': str,
+        'engine_version': str,
+        'platform': Literal['Windows', 'Linux', 'Darwin'],
+    },
+)
 
 
 def _rmtree(path: Path) -> None:
@@ -478,17 +487,7 @@ class RPCRunner(ABC):
 
     @property
     @lru_cache
-    def plugin_info(
-        self,
-    ) -> TypedDict(
-        'PluginInfo',
-        {
-            'plugin_name': str,
-            'plugin_version': str,
-            'engine_version': str,
-            'platform': Literal['Windows', 'Linux', 'Darwin'],
-        },
-    ):
+    def plugin_info(self) -> plugin_info_type:
         # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
         plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
         plugin_versions = sorted((map(parse, plugin_infos.keys())))

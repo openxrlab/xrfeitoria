@@ -1,3 +1,4 @@
+"""Motion data structure and related functions."""
 from collections import OrderedDict
 from functools import partial
 from pathlib import Path
@@ -5,7 +6,6 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation as spRotation
-from typing_extensions import Self
 
 from ...data_structure.constants import PathLike
 from .constants import (
@@ -20,6 +20,8 @@ from .constants import (
 from .transform3d import Matrix
 
 ConverterType = Callable[[np.ndarray], np.ndarray]
+
+__all__ = ['Motion', 'SMPLMotion', 'SMPLXMotion', 'get_humandata']
 
 
 class Converter:
@@ -110,51 +112,51 @@ class Motion:
     def _bone2idx(self, bone_name) -> Optional[int]:
         return self.BONE_NAME_TO_IDX.get(bone_name)
 
-    def get_transl(self, frame=0) -> np.ndarray:
+    def _get_transl(self, frame=0) -> np.ndarray:
         return self.transl[frame, :3]
 
-    def get_global_orient(self, frame=0) -> np.ndarray:
+    def _get_global_orient(self, frame=0) -> np.ndarray:
         return self.global_orient[frame, :3]
 
-    def get_bone_rotvec(self, bone_name, frame=0) -> np.ndarray:
+    def _get_bone_rotvec(self, bone_name, frame=0) -> np.ndarray:
         idx = self._bone2idx(bone_name)
         if idx == 0:
-            return self.get_global_orient(frame)
+            return self._get_global_orient(frame)
         elif idx:
             return self.body_poses[frame, idx, :3]
         else:
             return np.zeros([3], dtype=np.float32)
 
-    def get_bone_rotation(self, bone_name: str, frame=0) -> spRotation:
-        rotvec = self.get_bone_rotvec(bone_name, frame)
+    def _get_bone_rotation(self, bone_name: str, frame=0) -> spRotation:
+        rotvec = self._get_bone_rotvec(bone_name, frame)
         return spRotation.from_rotvec(rotvec)  # type: ignore
 
     def get_bone_matrix_basis(self, bone_name: str, frame=0) -> np.ndarray:
         """pose2rest: relative to the bone space at rest pose.
 
-        Result:
-            np.ndarray: transform matrix like
-                [
-                    [R, T],
-                    [0, 1]
-                ]
+        Args:
+            bone_name (str): bone name
+            frame (int, optional): frame index. Defaults to 0.
+
+        Returns:
+            np.ndarray: transform matrix like [ [R, T], [0, 1] ]
         """
         idx = self._bone2idx(bone_name)
         if idx == 0:
-            transl = self.get_transl(frame)
+            transl = self._get_transl(frame)
         else:
             transl = np.zeros(3)
-        rot = self.get_bone_rotation(bone_name, frame)
+        rot = self._get_bone_rotation(bone_name, frame)
         matrix_basis = rot.as_matrix()
         matrix_basis = np.pad(matrix_basis, (0, 1))
         matrix_basis[:3, 3] = transl
         matrix_basis[3, 3] = 1
         return matrix_basis
 
-    def get_parent_bone_name(self, bone_name: str) -> Optional[str]:
+    def _get_parent_bone_name(self, bone_name: str) -> Optional[str]:
         ...
 
-    def convert_fps_smplx_data(self, smplx_data: Dict[str, np.ndarray], scaling: int) -> Dict[str, np.ndarray]:
+    def _convert_fps_smplx_data(self, smplx_data: Dict[str, np.ndarray], scaling: int) -> Dict[str, np.ndarray]:
         for key, value in smplx_data.items():
             if key in ['betas']:
                 continue
@@ -168,9 +170,8 @@ class Motion:
             fps (float): The desired frames per second.
 
         Raises:
-            NotImplementedError:
-                - If the desired fps is greater than the current fps, motion interpolation is not supported.
-                - If the desired fps is less than the current fps, motion interpolation is not supported.
+            NotImplementedError: If the fps is greater than the current fps.
+            NotImplementedError: If the fps is less than the current fps when undividable.
         """
         if fps == self.fps:
             return
@@ -183,9 +184,9 @@ class Motion:
             self.global_orient: np.ndarray = self.global_orient[::scaling, :]
             self.n_frames = self.body_poses.shape[0]
             if hasattr(self, 'smpl_data'):
-                self.smpl_data = self.convert_fps_smplx_data(self.smpl_data, scaling)
+                self.smpl_data = self._convert_fps_smplx_data(self.smpl_data, scaling)
             if hasattr(self, 'smplx_data'):
-                self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, scaling)
+                self.smplx_data = self._convert_fps_smplx_data(self.smplx_data, scaling)
             self.fps = fps
         elif fps > self.fps:
             # TODO: motion interpolation
@@ -199,6 +200,9 @@ class Motion:
 
         Args:
             frame_interval (int): The frame interval to use for slicing the motion sequence.
+
+        Raises:
+            TypeError: If the frame interval is not an integer.
         """
         assert isinstance(frame_interval, int), TypeError(f'scaling={frame_interval} should be int')
 
@@ -207,9 +211,9 @@ class Motion:
         self.global_orient: np.ndarray = self.global_orient[::frame_interval, :]
         self.n_frames = self.body_poses.shape[0]
         if hasattr(self, 'smpl_data'):
-            self.smpl_data = self.convert_fps_smplx_data(self.smpl_data, frame_interval)
+            self.smpl_data = self._convert_fps_smplx_data(self.smpl_data, frame_interval)
         if hasattr(self, 'smplx_data'):
-            self.smplx_data = self.convert_fps_smplx_data(self.smplx_data, frame_interval)
+            self.smplx_data = self._convert_fps_smplx_data(self.smplx_data, frame_interval)
 
     def sample_motion(self, n_frames: int):
         """Randomly sample motions, picking n_frames from the original motion sequence.
@@ -217,6 +221,9 @@ class Motion:
 
         Args:
             n_frames (int): The number of frames to sample. Randomly sampled from the original motion sequence.
+
+        Raises:
+            AssertionError: If the number of frames to sample is less than or equal to 0.
         """
         assert n_frames > 0, f'n_frames={n_frames}'
         if n_frames == self.n_frames:
@@ -289,7 +296,7 @@ class Motion:
             motion_data.append(frame_motion_data)
         return motion_data
 
-    def copy(self) -> Self:
+    def copy(self) -> 'Motion':
         """Return a copy of the motion instance."""
         return self.__class__(
             transl=self.transl.copy(),
@@ -331,7 +338,7 @@ class SMPLMotion(Motion):
         insert_rest_pose: bool = False,
         global_orient_adj: Optional[spRotation] = GLOBAL_ORIENT_ADJUSTMENT,
         vector_convertor: Optional[ConverterType] = Converter.vec_humandata2smplx,
-    ) -> Self:
+    ) -> 'SMPLMotion':
         """Create SMPLMotion instance from smpl_data.
 
         `smpl_data` should be a dict like object,
@@ -396,16 +403,16 @@ class SMPLMotion(Motion):
         instance.smpl_data = smpl_data
         return instance
 
-    def get_bone_rotvec(self, bone_name, frame=0) -> np.ndarray:
+    def _get_bone_rotvec(self, bone_name, frame=0) -> np.ndarray:
         idx = self._bone2idx(bone_name)
         if idx == 0:
-            return self.get_global_orient(frame)
+            return self._get_global_orient(frame)
         elif idx:
             return self.body_poses[frame, idx, :3]
         else:
             return np.zeros([3], dtype=np.float32)
 
-    def get_parent_bone_name(self, bone_name) -> Optional[str]:
+    def _get_parent_bone_name(self, bone_name) -> Optional[str]:
         idx = self._bone2idx(bone_name)
         if idx is None:
             raise ValueError(f'bone.name="{bone_name}" not in smpl skeleton.')
@@ -428,22 +435,6 @@ class SMPLMotion(Motion):
     ) -> None:
         """Dump the motion data to a humandata file at the given `filepath`.
 
-        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
-
-        The humandata file is a npz file containing the following keys:
-        ```
-        motion_data = {
-            '__data_len__': n_frames,
-            'smpl': {
-                'betas': betas,  # (1, 10)
-                'transl': transl,  # (n_frames, 3)
-                'global_orient': global_orient,  # (n_frames, 3)
-                'body_pose': body_pose,  # (n_frames, 69)
-            },
-            'meta': {'gender': 'neutral'},  # optional
-        }
-        ```
-
         Args:
             filepath (PathLike): The filepath to dump the motion data to.
             betas (np.ndarray): The betas array.
@@ -452,6 +443,24 @@ class SMPLMotion(Motion):
             transl_offset (np.ndarray): The translation offset. Defaults to np.zeros(3).
             root_location_t0 (Optional[np.ndarray]): The root location at time 0. Defaults to None.
             pelvis_location_t0 (Optional[np.ndarray]): The pelvis location at time 0. Defaults to None.
+
+        Note:
+            HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
+
+            The humandata file is a npz file containing the following keys:
+
+            .. code-block:: python
+
+                motion_data = {
+                    '__data_len__': n_frames,
+                    'smpl': {
+                        'betas': betas,  # (1, 10)
+                        'transl': transl,  # (n_frames, 3)
+                        'global_orient': global_orient,  # (n_frames, 3)
+                        'body_pose': body_pose,  # (n_frames, 69)
+                    },
+                    'meta': {'gender': 'neutral'},  # optional
+                }
         """
         humandata = get_humandata(
             smpl_x_data=self.smplx_data,
@@ -467,7 +476,7 @@ class SMPLMotion(Motion):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         np.savez(filepath, **humandata)
 
-    def copy(self) -> Self:
+    def copy(self) -> 'SMPLMotion':
         """Return a copy of the motion instance."""
         instance = self.__class__(
             transl=self.transl.copy(),
@@ -512,7 +521,7 @@ class SMPLXMotion(Motion):
         flat_hand_mean: bool = False,
         global_orient_adj: Optional[spRotation] = GLOBAL_ORIENT_ADJUSTMENT,
         vector_convertor: Optional[Callable[[np.ndarray], np.ndarray]] = Converter.vec_humandata2smplx,
-    ) -> Self:
+    ) -> 'SMPLXMotion':
         """Create SMPLXMotion instance from smplx_data.
 
         `smplx_data` should be a dict like object,
@@ -608,7 +617,7 @@ class SMPLXMotion(Motion):
         return instance
 
     @classmethod
-    def from_amass_data(cls, amass_data, insert_rest_pose: bool, flat_hand_mean: bool = True) -> Self:
+    def from_amass_data(cls, amass_data, insert_rest_pose: bool, flat_hand_mean: bool = True) -> 'SMPLXMotion':
         """Create a Motion instance from AMASS data (SMPLX)
 
         Args:
@@ -674,7 +683,7 @@ class SMPLXMotion(Motion):
 
         return cls.from_smplx_data(smplx_data, insert_rest_pose=False, fps=fps, flat_hand_mean=flat_hand_mean)
 
-    def get_parent_bone_name(self, bone_name) -> Optional[str]:
+    def _get_parent_bone_name(self, bone_name) -> Optional[str]:
         idx = self._bone2idx(bone_name)
         if idx is None:
             raise ValueError(f'bone.name="{bone_name}" not in smplx skeleton.')
@@ -697,28 +706,6 @@ class SMPLXMotion(Motion):
     ) -> None:
         """Dump the motion data to a humandata file at the given `filepath`.
 
-        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
-
-        The humandata file is a npz file containing the following keys:
-        ```python
-        humandata = {
-            '__data_len__': n_frames,
-            'smplx': {
-                'betas': betas,  # (1, 10)
-                'transl': transl,  # (n_frames, 3)
-                'global_orient': global_orient,  # (n_frames, 3)
-                'body_pose': body_pose,  # (n_frames, 63)
-                'jaw_pose': jaw_pose,  # (n_frames, 3)
-                'leye_pose': leye_pose,  # (n_frames, 3)
-                'reye_pose': reye_pose,  # (n_frames, 3)
-                'left_hand_pose': left_hand_pose,  # (n_frames, 45)
-                'right_hand_pose': right_hand_pose,  # (n_frames, 45)
-                'expression': expression,  # (n_frames, 10)
-            },
-            'meta': {'gender': 'neutral'},  # optional
-        }
-        ```
-
         Args:
             filepath (PathLike): The filepath to dump the motion data to.
             betas (np.ndarray): The betas array.
@@ -727,6 +714,31 @@ class SMPLXMotion(Motion):
             transl_offset (np.ndarray): The translation offset. Defaults to np.zeros(3).
             root_location_t0 (Optional[np.ndarray]): The root location at time 0. Defaults to None.
             pelvis_location_t0 (Optional[np.ndarray]): The pelvis location at time 0. Defaults to None.
+
+        Note:
+
+            HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
+
+            The humandata file is a npz file containing the following keys:
+
+            .. code-block:: python
+
+                humandata = {
+                    '__data_len__': n_frames,
+                    'smplx': {
+                        'betas': betas,  # (1, 10)
+                        'transl': transl,  # (n_frames, 3)
+                        'global_orient': global_orient,  # (n_frames, 3)
+                        'body_pose': body_pose,  # (n_frames, 63)
+                        'jaw_pose': jaw_pose,  # (n_frames, 3)
+                        'leye_pose': leye_pose,  # (n_frames, 3)
+                        'reye_pose': reye_pose,  # (n_frames, 3)
+                        'left_hand_pose': left_hand_pose,  # (n_frames, 45)
+                        'right_hand_pose': right_hand_pose,  # (n_frames, 45)
+                        'expression': expression,  # (n_frames, 10)
+                    },
+                    'meta': {'gender': 'neutral'},  # optional
+                }
         """
         humandata = get_humandata(
             smpl_x_data=self.smplx_data,
@@ -742,7 +754,7 @@ class SMPLXMotion(Motion):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         np.savez(filepath, **humandata)
 
-    def copy(self) -> Self:
+    def copy(self) -> 'SMPLXMotion':
         """Return a copy of the motion instance."""
         instance = self.__class__(
             transl=self.transl.copy(),

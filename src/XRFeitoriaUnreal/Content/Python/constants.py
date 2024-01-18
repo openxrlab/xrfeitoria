@@ -184,6 +184,7 @@ class RenderJobUnreal:
     anti_aliasing: AntiAliasSetting = AntiAliasSetting()
     export_vertices: bool = False
     export_skeleton: bool = False
+    export_audio: bool = False
 
     def __post_init__(self):
         self.render_passes = [RenderPass(**rp) for rp in self.render_passes]

@@ -393,13 +393,13 @@ def add_animation_to_binding(
 
 def add_fk_motion_to_binding(
     binding: unreal.SequencerBindingProxy,
-    motion_data: List[Dict[str, Dict[str, List[float]]]],
+    motion_data: List[Dict[str, Dict[str, Union[float, List[float]]]]],
 ) -> None:
     """Add FK motion to the given actor binding.
 
     Args:
         binding (unreal.SequencerBindingProxy): The binding of actor in sequence to add FK motion to.
-        motion_data (List[Dict[str, Dict[str, List[float]]]]): The FK motion data to add.
+        motion_data (List[Dict[str, Dict[str, Union[float, List[float]]]]]): The FK motion data.
     """
     rig_track: unreal.MovieSceneControlRigParameterTrack = (
         unreal.ControlRigSequencerLibrary.find_or_create_control_rig_track(
@@ -411,12 +411,21 @@ def add_fk_motion_to_binding(
     )
     rig_section: unreal.MovieSceneControlRigParameterSection = rig_track.get_section_to_key()
     param_names = list(rig_section.get_parameter_names())
-    bone_names = list(motion_data[0].keys())
-    assert all([f'{bone}_CONTROL' in param_names for bone in bone_names]), RuntimeError(
-        f'Not All bone names (from json): {bone_names} not in param names (from seq FK): {param_names}'
-    )
+    for bone_name, bone_data in motion_data[0].items():
+        if 'curve' in bone_data.keys():
+            bone_name = f'{bone_name}_CURVE_CONTROL'
+        else:
+            bone_name = f'{bone_name}_CONTROL'
+        assert bone_name in param_names, RuntimeError(f'bone name: {bone_name} not in param names: {param_names}')
 
-    def get_transform_from_bone_data(bone_data):
+    rig_proxies = unreal.ControlRigSequencerLibrary.get_control_rigs(binding.sequence)
+    for rig_proxy in rig_proxies:
+        ### TODO: judge if the track belongs to this actor
+        unreal.ControlRigSequencerLibrary.set_control_rig_apply_mode(
+            rig_proxy.control_rig, unreal.ControlRigFKRigExecuteMode.ADDITIVE
+        )
+
+    def get_transform_from_bone_data(bone_data: Dict[str, List[float]]):
         quat: Tuple[float, float, float, float] = bone_data.get('rotation')
         location: Tuple[float, float, float] = bone_data.get('location', (0, 0, 0))  # default location is (0, 0, 0)
 
@@ -430,11 +439,18 @@ def add_fk_motion_to_binding(
     for frame, motion_frame in enumerate(motion_data):
         for bone_name, bone_data in motion_frame.items():
             # TODO: set key type to STATIC
-            rig_section.add_transform_parameter_key(
-                parameter_name=f'{bone_name}_CONTROL',
-                time=get_time(binding.sequence, frame),
-                value=get_transform_from_bone_data(bone_data),
-            )
+            if 'curve' in bone_data.keys():
+                rig_section.add_scalar_parameter_key(
+                    parameter_name=f"{bone_name}_CURVE_CONTROL",
+                    time=get_time(binding.sequence, frame),
+                    value=bone_data['curve'],
+                )
+            else:
+                rig_section.add_transform_parameter_key(
+                    parameter_name=f'{bone_name}_CONTROL',
+                    time=get_time(binding.sequence, frame),
+                    value=get_transform_from_bone_data(bone_data),
+                )
 
 
 def get_spawnable_actor_from_binding(
@@ -670,9 +686,6 @@ def add_actor_to_sequence(
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
-    assert not (
-        animation_asset is not None and motion_data is not None
-    ), 'Cannot provide both animation_asset and motion_data'
     # get sequence settings
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
@@ -736,9 +749,6 @@ def add_spawnable_actor_to_sequence(
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
-    assert not (
-        animation_asset is not None and motion_data is not None
-    ), 'Cannot provide both animation_asset and motion_data'
     # get sequence settings
     if seq_fps is None:
         seq_fps = get_sequence_fps(sequence)
@@ -792,6 +802,33 @@ def add_spawnable_actor_to_sequence(
             'stencil_value': {'track': stencil_value_track, 'section': stencil_value_section},
         },
     }
+
+
+def add_audio_to_sequence(
+    sequence: unreal.LevelSequence,
+    audio_asset: unreal.SoundWave,
+    start_frame: Optional[int] = None,
+    end_frame: Optional[int] = None,
+) -> Dict[str, Any]:
+    # ------- add audio track ------- #
+    audio_track: unreal.MovieSceneAudioTrack = sequence.add_master_track(unreal.MovieSceneAudioTrack)
+    audio_section: unreal.MovieSceneAudioSection = audio_track.add_section()
+    audio_track.set_display_name(audio_asset.get_name())
+
+    # ------- set start frame ------- #
+    if start_frame is None:
+        start_frame = 0
+    audio_section.set_start_frame(start_frame=start_frame)
+
+    # ------- set end frame ------- #
+    if end_frame is None:
+        duration = audio_asset.get_editor_property('duration')
+        audio_section.set_end_frame_seconds(end_time=duration)
+    else:
+        audio_section.set_end_frame(end_frame=end_frame)
+    audio_section.set_sound(audio_asset)
+
+    return {'audio_track': {'track': audio_track, 'section': audio_section}}
 
 
 def generate_sequence(
@@ -1082,9 +1119,6 @@ class Sequence:
             AssertionError: If `animation_asset` and `motion_data` are both provided. Only one can be provided.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
-        assert not (
-            animation_asset is not None and motion_data is not None
-        ), 'Cannot provide both animation_asset and motion_data'
         if animation_asset and isinstance(animation_asset, str):
             animation_asset = unreal.load_asset(animation_asset)
         if isinstance(actor, str):
@@ -1113,6 +1147,31 @@ class Sequence:
                 motion_data=motion_data,
             )
             cls.bindings[actor_name] = bindings
+
+    @classmethod
+    def add_audio(
+        cls,
+        audio_asset: Union[str, unreal.SoundWave],
+        start_frame: Optional[int] = None,
+        end_frame: Optional[int] = None,
+    ):
+        """Spawn an audio in sequence.
+
+        Args:
+            audio_asset (Union[str, unreal.SoundWave]): audio path (e.g. '/Game/audio_sample') / loaded asset (via `unreal.load_asset('/Game/audio_sample')`)
+            start_frame (Optional[int], optional): start frame of the audio. Defaults to None.
+            end_frame (Optional[int], optional): end frame of the audio. Defaults to None.
+        Raises:
+            AssertionError: If `cls.sequence` is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        if isinstance(audio_asset, str):
+            audio_asset = unreal.load_asset(audio_asset)
+
+        bindings = add_audio_to_sequence(
+            sequence=cls.sequence, audio_asset=audio_asset, start_frame=start_frame, end_frame=end_frame
+        )
+        cls.bindings[audio_asset.get_name()] = bindings
 
 
 if __name__ == '__main__':

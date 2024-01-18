@@ -1,3 +1,4 @@
+"""Utilities for animation data loading and dumping."""
 from pathlib import Path
 from typing import Union
 
@@ -8,7 +9,7 @@ from .motion import Motion, SMPLMotion, SMPLXMotion
 
 
 def load_amass_motion(input_amass_smplx_path: PathLike) -> SMPLXMotion:
-    """Load AMASS SMPLX motion data.
+    """Load AMASS SMPLX motion data. Only for SMPLX motion for now.
 
     Args:
         input_amass_smplx_path (PathLike): Path to AMASS SMPLX motion data.
@@ -28,13 +29,14 @@ def load_amass_motion(input_amass_smplx_path: PathLike) -> SMPLXMotion:
 
 def load_humandata_motion(input_humandata_path: PathLike) -> Union[SMPLMotion, SMPLXMotion]:
     """Load humandata SMPL / SMPLX motion data.
+
     HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
 
     Args:
         input_humandata_path (PathLike): Path to humandata SMPL / SMPLX motion data.
 
     Returns:
-        Motion: Motion data, which consists of data read from humandata file.
+        Union[SMPLMotion, SMPLXMotion]: Motion data, which consists of data read from humandata file.
     """
     input_humandata_path = Path(input_humandata_path).resolve()
     if not input_humandata_path.exists():
@@ -52,31 +54,38 @@ def load_humandata_motion(input_humandata_path: PathLike) -> Union[SMPLMotion, S
     return src_motion
 
 
-def dump_humandata(motion: SMPLXMotion, save_filepath: PathLike, meta_filepath: PathLike):
-    """Dump human data to a file.
+def dump_humandata(motion: SMPLXMotion, save_filepath: PathLike, meta_filepath: PathLike) -> None:
+    """Dump human data to a file. This function must be associate with a meta file
+    provided by SMPL-XL.
 
     Args:
-        motion (SMPLXMotion): The SMPLXMotion object containing the motion data.
+        motion (SMPLXMotion): Motion data to dump.
         save_filepath (PathLike): The file path to save the dumped data.
         meta_filepath (PathLike): The file path to the meta information, storing the parameters of the SMPL-XL model.
 
-        The meta information is stored in the following format:
-        ```python
-        # meta = np.load(meta_filepath, allow_pickle=True)
-        meta = {
-            'smplx': {
-                'betas': betas,  # (10,)
-                'global_orient':  global_orient,  # (1, 3)
-                'transl': transl,  # (1, 3)
-                'root_location_t0': root_location_t0,  # (1, 3)
-                'pelvis_location_t0': pelvis_location_t0,  # (1, 3)
-            },
-            'meta': {'gender': 'neutral'}
-        }
-        ```
+    Note:
+        HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
 
-    Returns:
-        None
+        The humandata file is a npz file containing the following keys:
+
+        .. code-block:: python
+
+            humandata = {
+                '__data_len__': n_frames,
+                'smplx': {
+                    'betas': betas,  # (1, 10)
+                    'transl': transl,  # (n_frames, 3)
+                    'global_orient': global_orient,  # (n_frames, 3)
+                    'body_pose': body_pose,  # (n_frames, 63)
+                    'jaw_pose': jaw_pose,  # (n_frames, 3)
+                    'leye_pose': leye_pose,  # (n_frames, 3)
+                    'reye_pose': reye_pose,  # (n_frames, 3)
+                    'left_hand_pose': left_hand_pose,  # (n_frames, 45)
+                    'right_hand_pose': right_hand_pose,  # (n_frames, 45)
+                    'expression': expression,  # (n_frames, 10)
+                },
+                'meta': {'gender': 'neutral'},  # optional
+            }
     """
     meta_info = np.load(meta_filepath, allow_pickle=True)
     smplx = meta_info['smplx'].item()

@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
-from typing_extensions import Self
 
 from .. import _tls
 from ..actor.actor_base import ActorBase
@@ -30,7 +29,7 @@ class SequenceBase(ABC):
     _renderer = RendererBase
     __platform__: EngineEnum = _tls.cache.get('platform', None)
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> 'SequenceBase':
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
