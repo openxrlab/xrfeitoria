@@ -441,7 +441,7 @@ def add_fk_motion_to_binding(
             # TODO: set key type to STATIC
             if 'curve' in bone_data.keys():
                 rig_section.add_scalar_parameter_key(
-                    parameter_name=f"{bone_name}_CURVE_CONTROL",
+                    parameter_name=f'{bone_name}_CURVE_CONTROL',
                     time=get_time(binding.sequence, frame),
                     value=bone_data['curve'],
                 )
