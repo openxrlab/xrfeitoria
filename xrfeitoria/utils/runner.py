@@ -1,5 +1,6 @@
 """Runner for starting blender or unreal as a rpc server."""
 import json
+import os
 import platform
 import re
 import shutil
@@ -491,7 +492,7 @@ class RPCRunner(ABC):
         # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
         plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
         plugin_versions = sorted((map(parse, plugin_infos.keys())))
-        _version = parse(__version__)
+        _version = parse(os.environ.get('XRFEITORIA__VERSION') or __version__)
 
         # find compatible version, lower bound, e.g. 0.5.1 => 0.5.0
         if _version in plugin_versions:
