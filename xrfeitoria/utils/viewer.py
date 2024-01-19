@@ -6,6 +6,7 @@ from typing import List, Tuple, Union
 import numpy as np
 
 from ..data_structure.constants import PathLike
+from ..data_structure.models import RenderOutputEnumBlender
 
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'
 
@@ -104,12 +105,12 @@ class Viewer:
     """
 
     # folder names of each data modal
-    IMG = 'img'
-    MASK = 'mask'
-    DEPTH = 'depth'
-    FLOW = 'flow'
-    NORMAL = 'normal'
-    DIFFUSE = 'diffuse'
+    IMG = RenderOutputEnumBlender.img.name
+    MASK = RenderOutputEnumBlender.mask.name
+    DEPTH = RenderOutputEnumBlender.depth.name
+    FLOW = RenderOutputEnumBlender.flow.name
+    NORMAL = RenderOutputEnumBlender.normal.name
+    DIFFUSE = RenderOutputEnumBlender.diffuse.name
 
     def __init__(self, sequence_dir: PathLike) -> None:
         """Initialize with the sequence directory.

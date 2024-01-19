@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 
 try:
     from ..data_structure.models import TransformKeys  # isort:skip
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     pass
 
 

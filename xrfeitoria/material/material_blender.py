@@ -13,11 +13,6 @@ try:
 except ModuleNotFoundError:
     pass
 
-try:
-    from ..data_structure.models import TransformKeys  # isort:skip
-except ModuleNotFoundError:
-    pass
-
 
 @remote_blender(dec_class=True, suffix='_in_engine')
 class MaterialBlender(MaterialBase):

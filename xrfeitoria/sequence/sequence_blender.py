@@ -12,9 +12,13 @@ from .sequence_base import SequenceBase
 
 try:
     import bpy  # isort:skip
-    from ..data_structure.models import RenderPass, TransformKeys  # isort:skip
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
 except ModuleNotFoundError:
+    pass
+
+try:
+    from ..data_structure.models import RenderPass, TransformKeys  # isort:skip
+except (ImportError, ModuleNotFoundError):
     pass
 
 
@@ -63,7 +67,7 @@ class SequenceBlender(SequenceBase):
         cls,
         output_path: PathLike,
         resolution: Tuple[int, int],
-        render_passes: List[RenderPass],
+        render_passes: 'List[RenderPass]',
         **kwargs,
     ):
         cls._renderer.add_job(

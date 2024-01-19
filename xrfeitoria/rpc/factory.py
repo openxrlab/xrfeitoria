@@ -191,8 +191,9 @@ class RPCFactory:
             logger.log('RPC', f'response: {response}')
 
         except ConnectionRefusedError:
-            server_name = os.environ.get(f'RPC_SERVER_{cls.rpc_client.port}', cls.rpc_client.port)
-            raise ConnectionRefusedError(f'No connection could be made with "{server_name}"')
+            if cls.rpc_client:
+                server_name = os.environ.get(f'RPC_SERVER_{cls.rpc_client.port}', cls.rpc_client.port)
+                raise ConnectionRefusedError(f'No connection could be made with "{server_name}"')
 
         return code
 

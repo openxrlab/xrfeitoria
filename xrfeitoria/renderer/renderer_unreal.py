@@ -20,7 +20,7 @@ except ModuleNotFoundError:
 try:
     from ..data_structure.models import RenderJobUnreal as RenderJob
     from ..data_structure.models import RenderPass
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     pass
 
 

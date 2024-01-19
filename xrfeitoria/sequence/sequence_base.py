@@ -14,7 +14,7 @@ from ..utils import Validator
 
 try:
     from ..data_structure.models import SequenceTransformKey, TransformKeys, RenderPass  # isort:skip
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     SequenceTransformKey = TransformKeys = RenderPass = None
 
 

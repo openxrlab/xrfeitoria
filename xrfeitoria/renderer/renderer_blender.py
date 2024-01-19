@@ -24,14 +24,15 @@ from ..utils.functions import blender_functions
 from .renderer_base import RendererBase, render_status
 
 try:
-    from ..data_structure.models import RenderJobBlender, RenderPass  # isort:skip
-except ModuleNotFoundError:
-    pass
-
-try:
     # only for linting, not imported in runtime
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
 except ModuleNotFoundError:
+    pass
+
+
+try:
+    from ..data_structure.models import RenderJobBlender, RenderPass  # isort:skip
+except (ImportError, ModuleNotFoundError):
     pass
 
 

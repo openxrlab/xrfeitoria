@@ -130,6 +130,7 @@ class RenderOutputEnumUnreal(EnumBase):
     skeleton = 'skeleton'
     actor_infos = 'actor_infos'
     camera_params = cam_param_dir
+    audio = 'Audio'
 
 
 class InterpolationEnumUnreal(EnumBase):

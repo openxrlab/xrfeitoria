@@ -340,7 +340,7 @@ class RPCRunner(ABC):
         logger.info(f'RPC server started at port {self.port}')
 
         # check if engine process is alive in a separate thread
-        threading.Thread(target=self._receive_stdout).start()
+        threading.Thread(target=self._receive_stdout, daemon=True).start()
         threading.Thread(target=self.check_engine_alive, daemon=True).start()
 
     def wait_for_start(self, process: subprocess.Popen) -> None:
