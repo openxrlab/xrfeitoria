@@ -235,11 +235,12 @@ class RPCRunner(ABC):
                 raise RuntimeError(
                     f'RPC server in `RPC_PORT={self.port}` already started! '
                     'This is raised when calling `init_blender` or `init_unreal` with `new_progress=True`'
-                    'when an existing server (blender or unreal) is already running. \n'
+                    'if an existing server (blender or unreal) is already running. \n'
                     '3 ways to get around this: \n'
-                    '   - set `new_process=False` for using the existing server. \n'
-                    '   - stop the server (engine process) and try again; \n'
-                    "   - change the rpc port via system env 'RPC_PORT' and try again."
+                    '   - Set `new_process=False` for using the existing server. \n'
+                    '   - Stop the server (engine process) and try again; \n'
+                    "   - Change the rpc port via system env 'RPC_PORT' and try again.\n"
+                    'For multi-processing, please refer to https://xrfeitoria.readthedocs.io/en/latest/faq.html#rpc-port'
                 )
         except ConnectionRefusedError:
             return False
