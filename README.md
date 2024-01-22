@@ -99,6 +99,10 @@ python -m xrfeitoria.utils.publish_plugins `
     -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 ```
 
+### Frequently Asked Questions
+
+Please refer to [FAQ](https://xrfeitoria.readthedocs.io/en/latest/faq.html).
+
 
 ## :rocket: Amazing Projects Using XRFeitoria
 
