@@ -75,12 +75,29 @@ The reference documentation is available on [readthedocs](https://xrfeitoria.rea
 There are several [tutorials](/tutorials/).
 You can read them [here](https://xrfeitoria.readthedocs.io/en/latest/src/Tutorials.html).
 
-
 ### Sample codes
 
 There are several [samples](/samples/).
 Please follow the instructions [here](/samples/README.md).
 
+### Use plugins under development
+
+Details can be found [here](https://xrfeitoria.readthedocs.io/en/latest/faq.html#how-to-use-the-plugin-of-blender-unreal-under-development).
+
+If you want to publish plugins of your own, you can use the following command:
+
+```powershell
+# install xrfeitoria first
+cd xrfeitoria
+pip install .
+
+# for instance, build plugins for Blender, UE 5.1, UE 5.2, and UE 5.3 on Windows.
+# using powershell where backtick(`) is the line continuation character.
+python -m xrfeitoria.utils.publish_plugins `
+    -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
+    -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
+    -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+```
 
 
 ## :rocket: Amazing Projects Using XRFeitoria

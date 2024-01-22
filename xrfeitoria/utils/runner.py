@@ -38,7 +38,7 @@ from .downloader import download
 from .setup import get_exec_path
 
 # XXX: hardcode download url
-oss_root = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
+dist_root = os.environ.get('XRFEITORIA__DIST_ROOT') or 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
 plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
 plugin_info_type = TypedDict(
     'PluginInfo',
@@ -417,7 +417,7 @@ class RPCRunner(ABC):
 
     @property
     @lru_cache
-    def dst_plugin_version(self) -> str:
+    def installed_plugin_version(self) -> str:
         """Get plugin version installed."""
         assert (
             self.dst_plugin_dir.exists()
@@ -426,10 +426,9 @@ class RPCRunner(ABC):
         if self.engine_type == EngineEnum.blender:
             init_file = self.dst_plugin_dir / '__init__.py'
             _content = init_file.read_text()
-            _match = re.search(r"'version': (.*?),\n", _content)
+            _match = re.search(r"__version__ = version = '(.*?)'", _content)
             if _match:
-                dst_plugin_version_tuple = eval(_match.group(1))
-                dst_plugin_version = '.'.join(map(str, dst_plugin_version_tuple))
+                dst_plugin_version = _match.groups()[0]
             else:
                 raise ValueError("Failed to extract plugin version from '__init__.py'")
         elif self.engine_type == EngineEnum.unreal:
@@ -495,7 +494,7 @@ class RPCRunner(ABC):
         # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
         plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
         plugin_versions = sorted((map(parse, plugin_infos.keys())))
-        _version = parse(os.environ.get('XRFEITORIA__VERSION') or __version__)
+        _version = parse(__version__)
 
         # find compatible version, lower bound, e.g. 0.5.1 => 0.5.0
         if _version in plugin_versions:
@@ -503,6 +502,11 @@ class RPCRunner(ABC):
         else:
             _idx = bisect_left(plugin_versions, parse(__version__)) - 1
             compatible_version = plugin_versions[_idx]
+
+        # read from env (highest priority)
+        if os.environ.get('XRFEITORIA__VERSION'):
+            compatible_version = parse(os.environ['XRFEITORIA__VERSION'])
+
         logger.debug(f'Compatible plugin version: {compatible_version}')
 
         # get link
@@ -514,7 +518,7 @@ class RPCRunner(ABC):
             plugin_name = plugin_name_blender
             engine_version = 'None'  # support all blender versions
             _platform = 'None'  # support all platforms
-        plugin_version = plugin_infos[str(compatible_version)][plugin_name]
+        plugin_version = os.environ.get('XRFEITORIA__VERSION') or plugin_infos[str(compatible_version)][plugin_name]
         # e.g. XRFeitoriaBpy-0.5.0-None-None
         # e.g. XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows
         return dict(
@@ -527,18 +531,26 @@ class RPCRunner(ABC):
     @property
     @lru_cache
     def plugin_url(self) -> Optional[str]:
-        # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy-0.5.0-None-None.zip
-        # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
-        return f'{oss_root}/plugins/{plugin_name_pattern.format(**self.plugin_info)}.zip'
+        if dist_root.startswith('http'):
+            # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy-0.5.0-None-None.zip
+            # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
+            return f'{dist_root}/plugins/{plugin_name_pattern.format(**self.plugin_info)}.zip'
+        else:
+            # e.g. /path/to/dist/XRFeitoriaBpy-0.5.0-None-None.zip
+            # e.g. /path/to/dist/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
+            return f'{dist_root}/{plugin_name_pattern.format(**self.plugin_info)}.zip'
 
     def _install_plugin(self) -> None:
         """Install plugin."""
         if self.dst_plugin_dir.exists():
-            if parse(self.dst_plugin_version) < parse(self.plugin_info['plugin_version']):
+            if parse(self.installed_plugin_version) < parse(self.plugin_info['plugin_version']):
                 self.replace_plugin = True
-            if parse(self.dst_plugin_version) > parse(self.plugin_info['plugin_version']) and not self.replace_plugin:
+            if (
+                parse(self.installed_plugin_version) > parse(self.plugin_info['plugin_version'])
+                and not self.replace_plugin
+            ):
                 logger.warning(
-                    f'Plugin installed in "{self.dst_plugin_dir.as_posix()}" is in version {self.dst_plugin_version}, '
+                    f'Plugin installed in "{self.dst_plugin_dir.as_posix()}" is in version {self.installed_plugin_version}, '
                     f'newer than version {self.plugin_info["plugin_version"]} which is required by {package_name}-{__version__}. '
                     'May cause unexpected errors.'
                 )
@@ -608,7 +620,10 @@ class BlenderRPCRunner(RPCRunner):
                 logger.debug(f'Downloaded Plugin "{src_plugin_path.as_posix()}" exists')
                 return src_plugin_path
 
-            plugin_path = self._download(url=self.plugin_url, dst_dir=src_plugin_root)
+            if self.plugin_url.startswith('http'):
+                plugin_path = self._download(url=self.plugin_url, dst_dir=src_plugin_root)
+            else:
+                plugin_path = Path(self.plugin_url)
             if plugin_path != src_plugin_path:
                 shutil.move(plugin_path, src_plugin_path)
         return src_plugin_path
@@ -715,7 +730,7 @@ class UnrealRPCRunner(RPCRunner):
                     'Or clone the source code and build the plugin from source. '
                     'https://github.com/openxrlab/xrfeitoria.git'
                 )
-        else:
+        elif self.plugin_url.startswith('http'):
             src_plugin_root = tmp_dir / 'plugins'
             src_plugin_compress = src_plugin_root / Path(self.plugin_url).name  # with suffix (.zip)
             src_plugin_path = src_plugin_compress.with_suffix('')  # without suffix (.zip)
@@ -731,6 +746,10 @@ class UnrealRPCRunner(RPCRunner):
             plugin_compress = self._download(url=self.plugin_url, dst_dir=src_plugin_root)
             shutil.unpack_archive(plugin_compress, src_plugin_root)
             assert src_plugin_path.exists(), f'Failed to download plugin to {src_plugin_path}'
+        else:
+            # custom dist path
+            plugin_compress = Path(self.plugin_url)
+            src_plugin_path = plugin_compress.with_suffix('')  # without suffix (.zip)
         return src_plugin_path
 
     @staticmethod

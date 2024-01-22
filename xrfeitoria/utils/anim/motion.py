@@ -342,10 +342,8 @@ class SMPLMotion(Motion):
         """Create SMPLMotion instance from smpl_data.
 
         `smpl_data` should be a dict like object,
-        with required keys:
-            ["body_pose", "global_orient"]
-        and optional key:
-            ["transl"].
+        with required keys: ['betas', 'body_pose', 'global_orient']
+        and optional key: ['transl']
 
         Args:
             smpl_data: dict with require keys ["body_pose", "global_orient"]
@@ -525,10 +523,8 @@ class SMPLXMotion(Motion):
         """Create SMPLXMotion instance from smplx_data.
 
         `smplx_data` should be a dict like object,
-        with required keys:
-            ["body_pose", "global_orient"]
-        and optional key:
-            ["transl"]
+        with required keys: ['betas', "body_pose", "global_orient"]
+        and optional key: ['transl', 'jaw_pose', 'leye_pose', 'reye_pose', 'left_hand_pose', 'right_hand_pose', 'expression']
 
         Args:
             smplx_data: require keys ["body_pose", "global_orient"]
