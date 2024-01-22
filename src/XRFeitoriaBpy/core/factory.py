@@ -8,7 +8,7 @@ import bpy
 import numpy as np
 
 from .. import logger
-from ..constants import Tuple3
+from ..constants import MotionFrame, Tuple3
 
 
 class XRFeitoriaBlenderFactory:
@@ -1104,7 +1104,7 @@ class XRFeitoriaBlenderFactory:
         actor.animation_data.action = action
 
     def apply_motion_data_to_action(
-        motion_data: 'List[Dict[str, Dict[str, List[float]]]]',
+        motion_data: 'List[MotionFrame]',
         action: 'bpy.types.Action',
         scale: float = 1.0,
     ) -> None:
@@ -1158,7 +1158,7 @@ class XRFeitoriaBlenderFactory:
                         # fcurve.keyframe_points[f].co = (f, val)
                         fcurve.keyframe_points.insert(frame=f, value=val, options={'FAST'})
 
-    def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float]]]]', actor_name: str) -> None:
+    def apply_motion_data_to_actor(motion_data: 'List[MotionFrame]', actor_name: str) -> None:
         """Applies motion data to a given actor.
 
         Args:

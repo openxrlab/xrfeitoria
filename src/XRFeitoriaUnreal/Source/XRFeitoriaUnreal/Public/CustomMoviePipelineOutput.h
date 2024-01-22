@@ -42,12 +42,13 @@ THIRD_PARTY_INCLUDES_END
 #include "ImageWriteTask.h"
 #include "ImagePixelData.h"
 
-#include "HAL/PlatformFilemanager.h"
-#include "HAL/FileManager.h"
+// #include "HAL/PlatformFilemanager.h"
+// #include "HAL/FileManager.h"
+// #include "HAL/PlatformTime.h"
+
 #include "Misc/FileHelper.h"
 #include "Async/Async.h"
 #include "Misc/Paths.h"
-#include "HAL/PlatformTime.h"
 #include "Math/Float16.h"
 #include "MovieRenderPipelineCoreModule.h"
 #include "MoviePipelineOutputSetting.h"
@@ -105,7 +106,7 @@ public:
 	// UMaterialInterface* Material;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Render Pass")
-	ECustomImageFormat Extension;
+	ECustomImageFormat Extension = ECustomImageFormat::PNG;
 
 	FString SPassName;
 

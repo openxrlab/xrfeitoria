@@ -196,6 +196,7 @@ class init_blender(XRFeitoriaBlender):
             If ``dev_plugin=True``, the plugin under local directory would be used,
             which is under ``src/XRFeitoriaBlender``.
             You should git clone first, and then use this option if you want to develop the plugin.
+            Please ref to :ref:`FAQ-Plugin`.
 
             .. code-block:: bash
                 :linenos:
@@ -281,6 +282,7 @@ class init_unreal(XRFeitoriaUnreal):
             If ``dev_plugin=True``, the plugin under local directory would be used,
             which is under ``src/XRFeitoriaUnreal``.
             You should git clone first, and then use this option if you want to develop the plugin.
+            Please ref to :ref:`FAQ-Plugin`.
 
             .. code-block:: bash
                 :linenos:

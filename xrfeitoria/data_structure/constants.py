@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Tuple, TypedDict, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 ##### Typing Constants #####
 
@@ -8,6 +8,7 @@ Vector = Tuple[float, float, float]
 Matrix = Tuple[Vector, Vector, Vector]
 Transform = Tuple[Vector, Vector, Vector]
 PathLike = Union[str, Path]
+MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 actor_info_type = TypedDict('actor_info', {'actor_name': str, 'mask_color': Tuple[int, int, int]})
 
 ##### Package Constants #####

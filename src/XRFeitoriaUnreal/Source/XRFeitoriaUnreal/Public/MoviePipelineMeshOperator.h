@@ -6,7 +6,7 @@
 #include "MoviePipelineOutputSetting.h"
 #include "MoviePipelineMasterConfig.h"
 #include "Misc/FileHelper.h"
-#include "HAL/PlatformFilemanager.h"
+// #include "HAL/PlatformFilemanager.h"
 
 #if WITH_EDITOR
 #include "MovieSceneExportMetadata.h"

@@ -21,6 +21,7 @@ root = Path(__file__).parent.resolve()
 project_root = root.parents[1]
 src_root = project_root / 'src'
 dist_root = src_root / 'dist'
+dist_root.mkdir(exist_ok=True, parents=True)
 
 
 @contextmanager
@@ -84,6 +85,9 @@ def update_bpy_version(bpy_init_file: Path):
     content = bpy_init_file.read_text()
     # update version
     content = re.sub(pattern=r"'version': \(.*\)", repl=f"'version': {__version_tuple__}", string=content)
+    content = re.sub(
+        pattern=r'__version__ = version = .*', repl=f"__version__ = version = '{__version__}'", string=content
+    )
     bpy_init_file.write_text(content)
     logger.info(f'Updated "{bpy_init_file}" with version {__version__}')
 
@@ -164,7 +168,6 @@ if __name__ == '__main__':
         -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
         -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
         """
-        print(unreal_exec)
         setup_logger(level='INFO')
         build_blender()
         if len(unreal_exec) > 0:

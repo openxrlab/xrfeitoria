@@ -8,12 +8,12 @@
 #include "CustomMoviePipelineOutput.h"
 #include "CustomMoviePipelineDeferredPass.h"
 
-#define LOCTEXT_NAMESPACE "FXRFeitoriaGearModule"
+#define LOCTEXT_NAMESPACE "FXRFeitoriaUnrealModule"
 
 void FXRFeitoriaUnrealModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	UE_LOG(LogTemp, Log, TEXT( "XRFeitoriaGear Loaded. Doing initialization." ));
+	UE_LOG(LogTemp, Log, TEXT( "XRFeitoriaUnreal Loaded. Doing initialization." ));
 	URendererSettings* Settings = GetMutableDefault<URendererSettings>();
 
 #if ENGINE_MAJOR_VERSION == 5
