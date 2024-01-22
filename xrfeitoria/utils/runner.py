@@ -290,6 +290,7 @@ class RPCRunner(ABC):
             if self.engine_process.poll() is not None:
                 logger.error(self.get_process_output(self.engine_process))
                 logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
+                self.engine_running = False  # for multi-processing
                 factory.RPCFactory.clear()
                 raise RuntimeError('RPC server stopped unexpectedly')
             time.sleep(5)
@@ -306,6 +307,7 @@ class RPCRunner(ABC):
         while self.engine_running:
             if not p.is_running():
                 logger.error('[red]RPC server stopped unexpectedly[/red]')
+                self.engine_running = False  # for multi-processing
                 factory.RPCFactory.clear()
                 raise RuntimeError('RPC server stopped unexpectedly')
             time.sleep(5)
