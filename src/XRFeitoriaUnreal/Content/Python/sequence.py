@@ -6,6 +6,7 @@ from constants import (
     DEFAULT_SEQUENCE_DATA_ASSET,
     DEFAULT_SEQUENCE_PATH,
     ENGINE_MAJOR_VERSION,
+    MotionFrame,
     SequenceTransformKey,
     SubSystem,
     TransformKeys,
@@ -391,15 +392,12 @@ def add_animation_to_binding(
     set_animation_by_section(animation_section, animation_asset, animation_length, seq_fps)
 
 
-def add_fk_motion_to_binding(
-    binding: unreal.SequencerBindingProxy,
-    motion_data: List[Dict[str, Dict[str, Union[float, List[float]]]]],
-) -> None:
+def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data: List[MotionFrame]) -> None:
     """Add FK motion to the given actor binding.
 
     Args:
         binding (unreal.SequencerBindingProxy): The binding of actor in sequence to add FK motion to.
-        motion_data (List[Dict[str, Dict[str, Union[float, List[float]]]]]): The FK motion data.
+        motion_data (List[MotionFrame]): The FK motion data.
     """
     rig_track: unreal.MovieSceneControlRigParameterTrack = (
         unreal.ControlRigSequencerLibrary.find_or_create_control_rig_track(
@@ -682,7 +680,7 @@ def add_actor_to_sequence(
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     animation_asset: Optional[unreal.AnimSequence] = None,
-    motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
+    motion_data: Optional[List[MotionFrame]] = None,
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
@@ -743,7 +741,7 @@ def add_spawnable_actor_to_sequence(
     actor_name: str,
     actor_asset: Union[unreal.SkeletalMesh, unreal.StaticMesh],
     animation_asset: Optional[unreal.AnimSequence] = None,
-    motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
+    motion_data: Optional[List[MotionFrame]] = None,
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     seq_fps: Optional[float] = None,
@@ -1102,7 +1100,7 @@ class Sequence:
         transform_keys: 'Optional[TransformKeys]' = None,
         stencil_value: int = 1,
         animation_asset: 'Optional[Union[str, unreal.AnimSequence]]' = None,
-        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
     ) -> None:
         """Spawn an actor in sequence.
 
@@ -1112,7 +1110,7 @@ class Sequence:
             transform_keys (Optional[TransformKeys]): List of transform keys. Defaults to None.
             stencil_value (int): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
             animation_asset (Optional[Union[str, unreal.AnimSequence]]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
-            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
+            motion_data (Optional[List[MotionFrame]]): The motion data used for FK animation.
 
         Raises:
             AssertionError: If `cls.sequence` is not initialized.

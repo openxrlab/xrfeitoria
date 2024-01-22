@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
-from ...data_structure.constants import ImportFileFormatEnum, PathLike, Vector
+from ...data_structure.constants import ImportFileFormatEnum, MotionFrame, PathLike, Vector
 from ...rpc import remote_blender
 
 try:
@@ -67,11 +67,11 @@ def import_file(file_path: 'PathLike') -> None:
 
 
 @remote_blender()
-def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float]]]]', actor_name: str) -> None:
+def apply_motion_data_to_actor(motion_data: 'List[MotionFrame]', actor_name: str) -> None:
     """Applies motion data to a given actor in Blender.
 
     Args:
-        motion_data (List[Dict[str, Dict[str, List[float]]]]): A list of dictionaries containing motion data for the actor.
+        motion_data (List[MotionFrame]): A list of dictionaries containing motion data for the actor.
         actor_name (str): The name of the actor to apply the motion data to.
     """
     XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor_name)

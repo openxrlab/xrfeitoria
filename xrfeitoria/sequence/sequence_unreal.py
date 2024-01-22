@@ -4,7 +4,7 @@ from loguru import logger
 
 from ..actor.actor_unreal import ActorUnreal
 from ..camera.camera_unreal import CameraUnreal
-from ..data_structure.constants import PathLike, Vector
+from ..data_structure.constants import MotionFrame, PathLike, Vector
 from ..object.object_utils import ObjectUtilsUnreal
 from ..renderer.renderer_unreal import RendererUnreal
 from ..rpc import remote_unreal
@@ -125,7 +125,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
-        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine at the specified location, rotation, and
         scale.
@@ -140,7 +140,7 @@ class SequenceUnreal(SequenceBase):
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
-            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
+            motion_data (Optional[List[MotionFrame]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor object.
@@ -169,7 +169,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
-        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
+        motion_data: 'Optional[]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine with the given asset path, transform
         keys, actor name, stencil value, and animation asset path.
@@ -181,7 +181,7 @@ class SequenceUnreal(SequenceBase):
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
-            motion_data (Optional[List[Dict[str, Dict[str, List[float]]]]]): The motion data used for FK animation.
+            motion_data (Optional[List[MotionFrame]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor.
@@ -468,7 +468,7 @@ class SequenceUnreal(SequenceBase):
         actor_asset_path: str,
         transform_keys: 'Union[List[Dict], Dict]',
         anim_asset_path: 'Optional[str]' = None,
-        motion_data: 'Optional[List[Dict[str, Dict[str, List[float]]]]]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
         actor_name: str = 'Actor',
         stencil_value: int = 1,
     ) -> None:

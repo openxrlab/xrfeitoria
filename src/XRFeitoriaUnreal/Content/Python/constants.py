@@ -192,3 +192,4 @@ class RenderJobUnreal:
 
 
 TransformKeys = Union[List[SequenceTransformKey], SequenceTransformKey]
+MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]

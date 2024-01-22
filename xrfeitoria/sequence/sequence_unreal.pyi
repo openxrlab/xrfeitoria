@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Tuple
 
 from ..actor.actor_unreal import ActorUnreal
 from ..camera.camera_unreal import CameraUnreal
-from ..data_structure.constants import PathLike, Vector
+from ..data_structure.constants import MotionFrame, PathLike, Vector
 from ..data_structure.models import RenderJobUnreal, RenderPass, TransformKeys
 from ..object.object_utils import ObjectUtilsUnreal
 from ..renderer.renderer_unreal import RendererUnreal
@@ -47,7 +47,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: Optional[str] = None,
-        motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
+        motion_data: Optional[List[MotionFrame]] = None,
     ) -> ActorUnreal: ...
     @classmethod
     def spawn_actor_with_keys(
@@ -57,7 +57,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: Optional[str] = None,
-        motion_data: Optional[List[Dict[str, Dict[str, List[float]]]]] = None,
+        motion_data: Optional[List[MotionFrame]] = None,
     ) -> ActorUnreal: ...
     @classmethod
     def use_camera(

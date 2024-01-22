@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 import numpy as np
 from scipy.spatial.transform import Rotation as spRotation
 
-from ...data_structure.constants import PathLike
+from ...data_structure.constants import MotionFrame, PathLike
 from .constants import (
     NUM_SMPLX_BODYJOINTS,
     SMPL_IDX_TO_JOINTS,
@@ -272,7 +272,7 @@ class Motion:
                     continue
                 self.smplx_data[key] = np.insert(arr, 0, 0, axis=0)
 
-    def get_motion_data(self) -> List[Dict[str, Dict[str, List[float]]]]:
+    def get_motion_data(self) -> List[MotionFrame]:
         """Returns a list of dictionaries containing `rotation` and `location` for each
         bone of each frame in the animation.
 
@@ -280,9 +280,9 @@ class Motion:
         'rotation' and 'location' keys, which correspond to the rotation and location of the bone in that frame.
 
         Returns:
-            List[Dict[str, Dict[str, List[float]]]]: A list of dictionaries containing motion data for each frame of the animation.
+            List[MotionFrame]: A list of dictionaries containing motion data for each frame of the animation.
         """
-        motion_data: List[Dict[str, Dict[str, List[float]]]] = []
+        motion_data: List[MotionFrame] = []
         for frame in range(self.n_frames):
             frame_motion_data = {}
             for bone_name in self.BONE_NAMES:
