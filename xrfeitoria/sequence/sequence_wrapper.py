@@ -188,7 +188,11 @@ def sequence_wrapper_unreal(
 
     default_sequence_path = SequenceUnreal._get_default_seq_path_in_engine()
     seq_dir = seq_dir or default_sequence_path
-    if unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}') and not replace:
+    if (
+        unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}')
+        and unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}_data')
+        and not replace
+    ):
         SequenceUnreal._open(seq_name=seq_name, seq_dir=seq_dir)
     else:
         SequenceUnreal._new(
