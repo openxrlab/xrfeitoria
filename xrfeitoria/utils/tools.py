@@ -1,12 +1,13 @@
 """Utils tools for logging and progress bar."""
 
-
+import os
+import sys
 from pathlib import Path
 from typing import Iterable, Literal, Optional, Sequence, Tuple, Union
 
 import loguru
 from loguru import logger
-from rich import print as rprint
+from rich.console import Console
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -84,12 +85,21 @@ class LoggerWrapper:
         if cls.is_setup:
             return logger
 
+        cls.setup_encoding()
+
         # add custom level called RPC, which is the minimum level
         logger.level('RPC', no=1, color='<white>', icon='📢')
 
         logger.remove()  # remove default logger
-        logger.add(sink=lambda msg: rprint(msg, end=''), level=level, format=cls.logger_format)
-        # logger.add(RichHandler(level=level, rich_tracebacks=True, markup=True), level=level, format='{message}')
+        # logger.add(sink=lambda msg: rprint(msg, end=''), level=level, format=cls.logger_format)
+
+        c = Console(
+            # width=sys.maxsize,  # disable wrapping
+            log_time=False,
+            log_path=False,
+            log_time_format='',
+        )
+        logger.add(sink=lambda msg: c.print(msg, end=''), level=level, format=cls.logger_format)
         if log_path:
             # add file logger
             log_path = Path(log_path).resolve()
@@ -101,6 +111,38 @@ class LoggerWrapper:
             logger.info(f'Python Logging to "{log_path.as_posix()}"')
         cls.is_setup = True
         return logger
+
+    @staticmethod
+    def setup_encoding(
+        encoding: Optional[str] = None,
+        errorhandler: Literal['ignore', 'replace', 'backslashreplace', 'xmlcharrefreplace'] = 'backslashreplace',
+    ):
+        """Modify `PYTHONIOENCODING` to prevent suppress UnicodeEncodeError caused by logging of emojis.
+        It will affect the default behavior of `sys.stdin`, `sys.stdout` and `sys.stderr`.
+        Ref: https://docs.python.org/3/using/cmdline.html#envvar-PYTHONIOENCODING
+
+        Args:
+            errorhandler (Literal['ignore', 'replace', 'backslashreplace', 'xmlcharrefreplace'], optional):
+                specify which error handler to handle unsupported characters. 'strict' is forbidden. Defaults to 'replace'.
+                Ref to https://docs.python.org/3/library/stdtypes.html#str.encode
+        """
+        encodingname, _, handler = os.environ.get("PYTHONIOENCODING", "").lower().partition(":")
+        encoding = encodingname if encodingname else encoding
+        # Set an errorhandler except for "strict"
+        if handler in ("ignore", "replace", "backslashreplace", "xmlcharrefreplace"):
+            errorhandler = handler
+        elif handler in ("", "strict"):
+            print(
+                f'PYTHONIOENCODING is going to use "strict" errorhandler, which could raise errors during logging. Reset to "{errorhandler}"',
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f'PYTHONIOENCODING is set with invalid errorhandler "{handler}". Reset to "{errorhandler}"',
+                file=sys.stderr,
+            )
+        # if not encoding.lower().startswith("utf"):
+        os.environ["PYTHONIOENCODING"] = f"{encoding or ''}:{errorhandler}"
 
 
 def setup_logger(
@@ -123,7 +165,14 @@ def setup_logger(
         log_path (Path, optional): path to save the log file. Defaults to None.
         replace (bool, optional): replace the log file if exists. Defaults to True.
     """
-    return LoggerWrapper.setup_logging(level, log_path, replace)
+    try:
+        return LoggerWrapper.setup_logging(level, log_path, replace)
+    except Exception as e:
+        import traceback
+
+        print(repr(e))
+        print(traceback.format_exc())
+        raise e
 
 
 #### (rich) progress bar ####
