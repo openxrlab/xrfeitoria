@@ -130,16 +130,16 @@ class LoggerWrapper:
         # Set an errorhandler except for "strict"
         if handler in ('ignore', 'replace', 'backslashreplace', 'xmlcharrefreplace'):
             errorhandler = handler
-        elif handler in ('', 'strict'):
-            print(
-                f'PYTHONIOENCODING is going to use "strict" errorhandler, which could raise errors during logging. Reset to "{errorhandler}"',
-                file=sys.stderr,
-            )
-        else:
-            print(
-                f'PYTHONIOENCODING is set with invalid errorhandler "{handler}". Reset to "{errorhandler}"',
-                file=sys.stderr,
-            )
+        # elif handler in ('', 'strict'):
+        #     print(
+        #         f'PYTHONIOENCODING is going to use "strict" errorhandler, which could raise errors during logging. Reset to "{errorhandler}"',
+        #         file=sys.stderr,
+        #     )
+        # else:
+        #     print(
+        #         f'PYTHONIOENCODING is set with invalid errorhandler "{handler}". Reset to "{errorhandler}"',
+        #         file=sys.stderr,
+        #     )
         # if not encoding.lower().startswith("utf"):
         os.environ['PYTHONIOENCODING'] = f"{encoding or ''}:{errorhandler}"
 
