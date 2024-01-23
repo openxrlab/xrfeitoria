@@ -119,6 +119,10 @@ class RPCRunner(ABC):
         self.background = background
         self.debug = logger._core.min_level <= 10  # DEBUG level
 
+        # child threads
+        self.thread_engine_alive: Optional[threading.Thread] = None
+        self.thread_receive_stdout: Optional[threading.Thread] = None
+
         if reload_rpc_code:
             # clear registered functions and classes for reloading
             factory.RPCFactory.registered_function_names.clear()
@@ -197,6 +201,13 @@ class RPCRunner(ABC):
         # clear rpc server
         factory.RPCFactory.clear()
 
+        # stop threads
+        self.engine_running = False
+        if self.thread_receive_stdout:
+            self.thread_receive_stdout.join()
+        if self.thread_engine_alive:
+            self.thread_engine_alive.join()
+
         # stop engine process
         process = self.engine_process
         if process is not None:
@@ -207,12 +218,11 @@ class RPCRunner(ABC):
                         logger.debug(f'Killing child process {child.pid}')
                         child.kill()
                 process.kill()
-            self.engine_running = False
             self.engine_process = None
             self.engine_pid = None
-            if hasattr(_tls, 'cache'):  # prevent to be called from another thread
-                _tls.cache['engine_process'] = None
-                _tls.cache['engine_pid'] = None
+            # prevent to be called from another thread
+            _tls.cache['engine_process'] = None
+            _tls.cache['engine_pid'] = None
         else:
             logger.info(':bell: [bold red]Exiting runner[/bold red], reused engine process remains')
 
@@ -328,7 +338,7 @@ class RPCRunner(ABC):
         """Start rpc server."""
         if not self.new_process:
             self.engine_running = True
-            threading.Thread(target=self.check_engine_alive_psutil, daemon=True).start()
+            self.thread_engine_alive = threading.Thread(target=self.check_engine_alive_psutil, daemon=True).start()
             return
 
         with self.console.status('Initializing RPC server...') as status:
@@ -343,8 +353,8 @@ class RPCRunner(ABC):
         logger.info(f'RPC server started at port {self.port}')
 
         # check if engine process is alive in a separate thread
-        threading.Thread(target=self._receive_stdout, daemon=True).start()
-        threading.Thread(target=self.check_engine_alive, daemon=True).start()
+        self.thread_receive_stdout = threading.Thread(target=self._receive_stdout, daemon=True).start()
+        self.thread_engine_alive = threading.Thread(target=self.check_engine_alive, daemon=True).start()
 
     def wait_for_start(self, process: subprocess.Popen) -> None:
         """Wait 3 minutes for RPC server to start.
@@ -542,7 +552,7 @@ class RPCRunner(ABC):
 
     def _install_plugin(self) -> None:
         """Install plugin."""
-        if self.dst_plugin_dir.exists():
+        if self.dst_plugin_dir.exists() and not self.replace_plugin:
             if parse(self.installed_plugin_version) < parse(self.plugin_info['plugin_version']):
                 self.replace_plugin = True
             if (

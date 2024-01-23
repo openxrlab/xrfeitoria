@@ -856,6 +856,8 @@ class Sequence:
     sequence_path = None
     sequence_data_asset: unreal.DataAsset = None  # contains sequence_path and map_path
     sequence: unreal.LevelSequence = None
+    # TODO: make this work
+    # Currently if there's value in bindings and exited accidentally, the value will be kept and cause error
     bindings: Dict[str, Dict[str, Any]] = {}
 
     START_FRAME = -1
@@ -931,13 +933,16 @@ class Sequence:
         if seq_dir is None:
             seq_dir = DEFAULT_SEQUENCE_PATH
 
-        data_asset_path = f'{seq_dir}/{seq_name}{data_asset_suffix}'
-        if unreal.EditorAssetLibrary.does_asset_exist(f'{seq_dir}/{seq_name}'):
+        seq_path = f'{seq_dir}/{seq_name}'
+        data_asset_path = f'{seq_path}{data_asset_suffix}'
+        if unreal.EditorAssetLibrary.does_asset_exist(seq_path) or unreal.EditorAssetLibrary.does_asset_exist(
+            data_asset_path
+        ):
             if replace:
-                unreal.EditorAssetLibrary.delete_asset(f'{seq_dir}/{seq_name}')
+                unreal.EditorAssetLibrary.delete_asset(seq_path)
                 unreal.EditorAssetLibrary.delete_asset(data_asset_path)
             else:
-                raise Exception(f'Sequence `{seq_dir}/{seq_name}` already exists, use `replace=True` to replace it')
+                raise Exception(f'Sequence `{seq_path}` already exists, use `replace=True` to replace it')
 
         unreal.EditorLoadingAndSavingUtils.load_map(map_path)
         cls.map_path = map_path
@@ -947,7 +952,7 @@ class Sequence:
             seq_fps=seq_fps,
             seq_length=seq_length,
         )
-        cls.sequence_path = f'{seq_dir}/{seq_name}'
+        cls.sequence_path = seq_path
 
         cls.sequence_data_asset = cls.new_data_asset(
             asset_path=data_asset_path,
@@ -1081,7 +1086,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            cls.bindings[camera_name] = bindings
+            # cls.bindings[camera_name] = bindings
         else:
             camera = utils_actor.get_actor_by_name(camera_name)
             bindings = add_camera_to_sequence(
@@ -1090,7 +1095,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            cls.bindings[camera_name] = bindings
+            # cls.bindings[camera_name] = bindings
 
     @classmethod
     def add_actor(
@@ -1132,7 +1137,7 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
-            cls.bindings[actor_name] = bindings
+            # cls.bindings[actor_name] = bindings
 
         else:
             actor = utils_actor.get_actor_by_name(actor_name)
@@ -1144,7 +1149,7 @@ class Sequence:
                 animation_asset=animation_asset,
                 motion_data=motion_data,
             )
-            cls.bindings[actor_name] = bindings
+            # cls.bindings[actor_name] = bindings
 
     @classmethod
     def add_audio(
@@ -1169,7 +1174,7 @@ class Sequence:
         bindings = add_audio_to_sequence(
             sequence=cls.sequence, audio_asset=audio_asset, start_frame=start_frame, end_frame=end_frame
         )
-        cls.bindings[audio_asset.get_name()] = bindings
+        # cls.bindings[audio_asset.get_name()] = bindings
 
 
 if __name__ == '__main__':
