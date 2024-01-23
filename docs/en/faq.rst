@@ -79,23 +79,23 @@ Find out the plugin version in ``./xrfeitoria/version.py``. Or by:
     0.6.1.dev10+gd12997e.d20240122
 
 You can set the environment variable ``XRFEITORIA__DIST_ROOT`` and ``XRFEITORIA__VERSION`` to change the plugins used by XRFeitoria.
-And run your code ``xxx.py`` like:
+Run your code ``xxx.py`` like:
 
 .. tabs::
     .. tab:: UNIX
 
         .. code-block:: bash
 
-            XRFEITORIA__DIST_ROOT=/path/to/src/dist \
-            XRFEITORIA__VERSION=0.6.1.dev10+gd12997e.d20240122 \
+            XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)") \
+            XRFEITORIA__DIST_ROOT=src/dist \
                 python xxx.py
 
     .. tab:: Windows
 
         .. code-block:: powershell
 
-            $env:XRFEITORIA__DIST_ROOT="C:/path/to/src/dist"; `
-            $env:XRFEITORIA__VERSION="0.6.1.dev10+gd12997e.d20240122"; `
+            $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
+            $env:XRFEITORIA__DIST_ROOT="src/dist"; `
                 python xxx.py
 
 .. _FAQ-stencil-value:
