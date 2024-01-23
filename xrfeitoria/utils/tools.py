@@ -92,9 +92,8 @@ class LoggerWrapper:
 
         logger.remove()  # remove default logger
         # logger.add(sink=lambda msg: rprint(msg, end=''), level=level, format=cls.logger_format)
-
         c = Console(
-            # width=sys.maxsize,  # disable wrapping
+            width=sys.maxsize,  # disable wrapping
             log_time=False,
             log_path=False,
             log_time_format='',
