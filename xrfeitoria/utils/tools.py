@@ -125,12 +125,12 @@ class LoggerWrapper:
                 specify which error handler to handle unsupported characters. 'strict' is forbidden. Defaults to 'replace'.
                 Ref to https://docs.python.org/3/library/stdtypes.html#str.encode
         """
-        encodingname, _, handler = os.environ.get("PYTHONIOENCODING", "").lower().partition(":")
+        encodingname, _, handler = os.environ.get('PYTHONIOENCODING', '').lower().partition(':')
         encoding = encodingname if encodingname else encoding
         # Set an errorhandler except for "strict"
-        if handler in ("ignore", "replace", "backslashreplace", "xmlcharrefreplace"):
+        if handler in ('ignore', 'replace', 'backslashreplace', 'xmlcharrefreplace'):
             errorhandler = handler
-        elif handler in ("", "strict"):
+        elif handler in ('', 'strict'):
             print(
                 f'PYTHONIOENCODING is going to use "strict" errorhandler, which could raise errors during logging. Reset to "{errorhandler}"',
                 file=sys.stderr,
@@ -141,7 +141,7 @@ class LoggerWrapper:
                 file=sys.stderr,
             )
         # if not encoding.lower().startswith("utf"):
-        os.environ["PYTHONIOENCODING"] = f"{encoding or ''}:{errorhandler}"
+        os.environ['PYTHONIOENCODING'] = f"{encoding or ''}:{errorhandler}"
 
 
 def setup_logger(

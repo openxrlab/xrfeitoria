@@ -169,7 +169,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
-        motion_data: 'Optional[]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine with the given asset path, transform
         keys, actor name, stencil value, and animation asset path.
