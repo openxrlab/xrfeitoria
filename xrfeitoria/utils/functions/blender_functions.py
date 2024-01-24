@@ -7,7 +7,7 @@ from ...data_structure.constants import ImportFileFormatEnum, MotionFrame, PathL
 from ...rpc import remote_blender
 
 try:
-    # only for linting, not imported in runtime
+    # linting and for engine
     import bpy
     from XRFeitoriaBpy import logger  # defined in src/XRFeitoriaBpy/__init__.py
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py

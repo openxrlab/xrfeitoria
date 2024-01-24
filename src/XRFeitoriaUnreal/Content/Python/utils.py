@@ -116,7 +116,7 @@ def import_asset(
             import_tasks = [import_task]
             asset_tools.import_asset_tasks(import_tasks)
             asset_paths.extend(
-                [path.split('.')[0] for path in import_task.get_editor_property('imported_object_paths')]
+                [path.partition('.')[0] for path in import_task.get_editor_property('imported_object_paths')]
             )
         else:
             assetsTools = unreal.AssetToolsHelpers.get_asset_tools()
@@ -125,7 +125,7 @@ def import_asset(
             assetImportData.filenames = [path]
             assetImportData.replace_existing = replace
             assets: List[unreal.Object] = assetsTools.import_assets_automated(assetImportData)
-            asset_paths.extend([asset.get_path_name().split('.')[0] for asset in assets])
+            asset_paths.extend([asset.get_path_name().partition('.')[0] for asset in assets])
         unreal.EditorAssetLibrary.save_directory(dst_dir, False, True)  # save assets
         unreal.log(f'Imported asset: {path}')
     return asset_paths

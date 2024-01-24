@@ -25,7 +25,7 @@ app = Typer(pretty_exceptions_show_locals=False)
 
 
 @remote_blender()
-def add_smplx(betas: 'Tuple[float, ...]' = [0.0] * 10, gender: str = 'neutral') -> str:
+def add_smplx(betas: 'Tuple[float, ...]' = (0.0,) * 10, gender: str = 'neutral') -> str:
     """Add smplx mesh to scene and return the name of the armature and the mesh.
 
     Args:

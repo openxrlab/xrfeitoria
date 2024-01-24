@@ -35,7 +35,7 @@ smpl_xl_meta_file = root / 'SMPL-XL-001.npz'
 
 # 3. Define the output file path
 seq_name = 'seq_amass'
-output_path = Path(__file__).parents[2].resolve() / 'output/samples/unreal' / Path(__file__).stem
+output_path = Path(__file__).resolve().parents[2] / 'output/samples/unreal' / Path(__file__).stem
 output_path.mkdir(parents=True, exist_ok=True)
 saved_humandata_file = output_path / 'output.npz'
 

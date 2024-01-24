@@ -8,7 +8,7 @@ from ..utils import Validator
 from ..utils.functions import blender_functions
 
 try:
-    # only for linting, not imported in runtime
+    # linting and for engine
     import bpy
     import unreal
     from unreal_factory import XRFeitoriaUnrealFactory  # defined in src/XRFeitoriaUnreal/Content/Python

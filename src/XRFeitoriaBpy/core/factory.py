@@ -2,13 +2,23 @@ import json
 import math
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 import bpy
 import numpy as np
 
 from .. import logger
 from ..constants import MotionFrame, Tuple3
+
+
+class SequenceProperties(NamedTuple):
+    level: bpy.types.Scene
+    fps: int
+    frame_start: int
+    frame_end: int
+    frame_current: int
+    resolution_x: int
+    resolution_y: int
 
 
 class XRFeitoriaBlenderFactory:
@@ -146,18 +156,14 @@ class XRFeitoriaBlenderFactory:
         collection.sequence_properties.resolution_x = resolution_x
         collection.sequence_properties.resolution_y = resolution_y
 
-    def get_sequence_properties(
-        collection: 'bpy.types.Collection',
-    ) -> 'Tuple[bpy.types.Scene, int, int, int, int, int, int]':
+    def get_sequence_properties(collection: 'bpy.types.Collection') -> SequenceProperties:
         """Get the sequence properties.
 
         Args:
             collection (bpy.types.Collection): Collection of the sequence.
 
         Returns:
-            Tuple[bpy.types.Scene, int, int, int, int, int, int]:
-                The level(scene), FPS of the sequence, Start frame of the sequence, End frame of the sequence, Current frame of the sequence,
-                Resolution_x of the sequence, Resolution_y of the sequence.
+            SequenceProperties: Sequence properties.
         """
         level = collection.sequence_properties.level
         fps = collection.sequence_properties.fps
