@@ -100,7 +100,7 @@ def import_asset(
             continue
 
         unreal.log(f'Importing asset: {path}')
-        if path.endswith('.fbx'):
+        if path.lower().endswith('.fbx'):
             asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
             import_options = unreal.FbxImportUI()
             import_options.set_editor_property('import_animations', True)
