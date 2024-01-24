@@ -12,7 +12,7 @@ from .init import init_test
 from .level import level_test
 from .sequence import sequence_test
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/tests/blender'
 output_path = root / 'output' / Path(__file__).parent.relative_to(root)
 

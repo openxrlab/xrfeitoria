@@ -12,7 +12,7 @@ from xrfeitoria.utils import setup_logger
 from ..config import assets_path
 from ..utils import __timer__, _init_unreal, visualize_vertices
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/tests/unreal/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 seq_name = 'seq_test'

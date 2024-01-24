@@ -11,7 +11,7 @@ from xrfeitoria.utils import setup_logger
 
 from ..config import unreal_exec, unreal_project
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 log_path = output_path / 'unreal.log'

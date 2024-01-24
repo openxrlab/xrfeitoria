@@ -10,7 +10,7 @@ from xrfeitoria.utils import setup_logger
 
 from ..utils import __timer__, _init_blender
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 
