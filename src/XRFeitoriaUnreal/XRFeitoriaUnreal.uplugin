@@ -8,9 +8,8 @@
 	"CreatedBy": "OpenXRLab",
 	"CreatedByURL": "https://openxrlab.org.cn",
 	"DocsURL": "https://xrfeitoria.readthedocs.io/en/latest/",
-	"WhitelistPlatforms":["Win64", "Mac", "Linux"],
+	"SupportURL": "https://xrfeitoria.readthedocs.io/en/latest/",
 	"MarketplaceURL": "",
-	"SupportURL": "",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -19,7 +18,8 @@
 		{
 			"Name": "XRFeitoriaUnreal",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms":["Win64", "Mac", "Linux"],
 		}
 	],
 	"Plugins": [
