@@ -217,9 +217,14 @@ class init_blender(XRFeitoriaBlender):
             background=background,
             new_process=new_process,
         )
-        self._rpc_runner.start()
-        self.utils.init_scene_and_collection(default_level_blender, self._cleanup)
-        self.utils.set_env_color(color=(1.0, 1.0, 1.0, 1.0))
+        try:
+            self._rpc_runner.start()
+            self.utils.init_scene_and_collection(default_level_blender, self._cleanup)
+            self.utils.set_env_color(color=(1.0, 1.0, 1.0, 1.0))
+        except Exception as e:
+            self.logger.error(e)
+            self._rpc_runner.stop()
+            raise e
 
     def __enter__(self) -> 'init_blender':
         return self
@@ -303,8 +308,13 @@ class init_unreal(XRFeitoriaUnreal):
             background=background,
             new_process=new_process,
         )
-        # xf_runner.Renderer.clear()
-        self._rpc_runner.start()
+        try:
+            self._rpc_runner.start()
+            # xf_runner.Renderer.clear()
+        except Exception as e:
+            self.logger.error(e)
+            self._rpc_runner.stop()
+            raise e
 
     def __enter__(self) -> 'init_unreal':
         return self
