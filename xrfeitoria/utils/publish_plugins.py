@@ -39,6 +39,7 @@ def _make_archive(
     src_folder: Path,
     dst_path: Optional[Path] = None,
     folder_name_inside_zip: Optional[str] = None,
+    filter_names: List[str] = ['.git', '.idea', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate'],
 ) -> Path:
     """Make archive of plugin folder.
 
@@ -49,6 +50,8 @@ def _make_archive(
         zip_name (Optional[str], optional): name of the archive file. E.g. dst_name='plugin', the archive file would be ``plugin.zip``.
             Defaults to None, fallback to {plugin_folder.name}.
         folder_name (Optional[str], optional): name of the root folder in the archive.
+        filter_names (List[str], optional): list of folder names to be ignored.
+            Defaults to ['.git', '.idea', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate'].
     """
     import zipfile
 
@@ -60,7 +63,6 @@ def _make_archive(
     if dst_path.exists():
         dst_path.unlink()
 
-    filter_names = ['.git', '.idea', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate']
     with zipfile.ZipFile(dst_path, 'w', compression=zipfile.ZIP_DEFLATED) as zipf:
         for file in src_folder.rglob('*'):
             # filter
@@ -138,10 +140,22 @@ def build_unreal(unreal_exec_list: List[Path]):
             plugin_version=__version__,
             engine_version=engine_version,
             platform=platform.system(),
-        )  # e.g. XRFeitoriaUnreal-0.5.0-None-Windows
+        )  # e.g. XRFeitoriaUnreal-0.6.0-Unreal5.3-Windows
+        plugin_src_name = plugin_name_pattern.format(
+            plugin_name=plugin_name_unreal,
+            plugin_version=__version__,
+            engine_version=engine_version,
+            platform='Source',
+        )  # e.g. XRFeitoriaUnreal-0.6.0-Unreal5.3-Source
         dist_path = dist_root / plugin_name
         subprocess.call([uat_path, 'BuildPlugin', f'-Plugin={uplugin_path}', f'-Package={dist_path}'])
         _make_archive(src_folder=dist_path)
+        _make_archive(
+            src_folder=dist_path,
+            dst_path=dist_root / f'{plugin_src_name}.zip',
+            folder_name_inside_zip=plugin_name_unreal,
+            filter_names=['.DS_Store', '__pycache__', 'Intermediate', 'Binaries'],
+        )
         logger.info(f'Plugin for {engine_version}: "{dist_path}.zip"')
 
 
