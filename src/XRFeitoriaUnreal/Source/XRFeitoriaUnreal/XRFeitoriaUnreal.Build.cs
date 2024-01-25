@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright OpenXRLab 2024. All Rights Reserved.
 
 using UnrealBuildTool;
 

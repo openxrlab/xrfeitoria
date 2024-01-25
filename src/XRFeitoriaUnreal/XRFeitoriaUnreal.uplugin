@@ -9,7 +9,7 @@
 	"CreatedByURL": "https://openxrlab.org.cn",
 	"DocsURL": "https://xrfeitoria.readthedocs.io/en/latest/",
 	"SupportURL": "https://xrfeitoria.readthedocs.io/en/latest/",
-	"MarketplaceURL": "",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/ace631ac6e664dd281ab66bcae56ad55",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -19,7 +19,7 @@
 			"Name": "XRFeitoriaUnreal",
 			"Type": "Editor",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms":["Win64", "Mac", "Linux"],
+			"WhitelistPlatforms":["Win64", "Mac", "Linux"]
 		}
 	],
 	"Plugins": [
