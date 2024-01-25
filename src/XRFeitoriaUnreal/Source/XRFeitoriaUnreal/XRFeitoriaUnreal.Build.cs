@@ -1,4 +1,4 @@
-// Copyright OpenXRLab 2024. All Rights Reserved.
+// Copyright OpenXRLab 2023-2024. All Rights Reserved.
 
 using UnrealBuildTool;
 
