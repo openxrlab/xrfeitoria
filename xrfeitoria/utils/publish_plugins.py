@@ -8,7 +8,7 @@ import re
 import subprocess
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from loguru import logger
 
@@ -39,7 +39,7 @@ def _make_archive(
     src_folder: Path,
     dst_path: Optional[Path] = None,
     folder_name_inside_zip: Optional[str] = None,
-    filter_names: List[str] = ['.git', '.idea', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate'],
+    filter_names: Tuple[str, ...] = ('.git', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate'),
 ) -> Path:
     """Make archive of plugin folder.
 
@@ -50,8 +50,8 @@ def _make_archive(
         zip_name (Optional[str], optional): name of the archive file. E.g. dst_name='plugin', the archive file would be ``plugin.zip``.
             Defaults to None, fallback to {plugin_folder.name}.
         folder_name (Optional[str], optional): name of the root folder in the archive.
-        filter_names (List[str], optional): list of folder names to be ignored.
-            Defaults to ['.git', '.idea', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate'].
+        filter_names (Tuple[str, ...], optional): names of folders to be ignored.
+            Defaults to ('.git', '.vscode', '.gitignore', '.DS_Store', '__pycache__', 'Intermediate').
     """
     import zipfile
 
@@ -130,7 +130,7 @@ def build_unreal(unreal_exec_list: List[Path]):
     dir_plugin = src_root / plugin_name_unreal
     uplugin_path = dir_plugin / f'{plugin_name_unreal}.uplugin'
     update_uplugin_version(uplugin_path)
-    logger.info(f'Compiling plugin for Unreal Engine...')
+    logger.info('Compiling plugin for Unreal Engine...')
     for unreal_exec in unreal_exec_list:
         uat_path = unreal_exec.parents[2] / 'Build/BatchFiles/RunUAT.bat'
         unreal_infos = UnrealRPCRunner._get_engine_info(unreal_exec)
@@ -154,7 +154,7 @@ def build_unreal(unreal_exec_list: List[Path]):
             src_folder=dist_path,
             dst_path=dist_root / f'{plugin_src_name}.zip',
             folder_name_inside_zip=plugin_name_unreal,
-            filter_names=['.DS_Store', '__pycache__', 'Intermediate', 'Binaries'],
+            filter_names=('.DS_Store', '__pycache__', 'Intermediate', 'Binaries'),
         )
         logger.info(f'Plugin for {engine_version}: "{dist_path}.zip"')
 
