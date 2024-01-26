@@ -6,21 +6,19 @@ This is a script to add shapes in unreal.
 
 from pathlib import Path
 
-from loguru import logger
-
 import xrfeitoria as xf
+from xrfeitoria.utils import setup_logger
 
 from ..config import unreal_exec, unreal_project
-from ..utils import setup_logger
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 default_level = '/Game/Levels/Default'
 
 
 def main(debug=False, background=False):
-    setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
 
     # unreal will start in a separate process in RPC Server mode automatically,
     # and close using `xf_runner.close()`

@@ -7,19 +7,19 @@ import math
 from pathlib import Path
 
 import xrfeitoria as xf
+from xrfeitoria.utils import setup_logger
 
 from ..config import unreal_exec, unreal_project
-from ..utils import setup_logger
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/samples/unreal/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
-log_path = output_path / 'blender.log'
+log_path = output_path / 'unreal.log'
 default_level = '/Game/Levels/Default'
 
 
 def main(debug=False, background=False):
-    logger = setup_logger(debug=debug, log_path=log_path)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=log_path)
     xf_runner = xf.init_unreal(exec_path=unreal_exec, project_path=unreal_project, background=background)
 
     # open a level, this can be omitted if you don't need to open a level

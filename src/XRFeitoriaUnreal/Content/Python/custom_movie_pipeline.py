@@ -115,6 +115,12 @@ class CustomMoviePipeline:
         export_setting.skeletal_mesh_operator_option.save_skeleton_position = enable
 
     @staticmethod
+    def set_export_audio(movie_preset: unreal.MoviePipelineMasterConfig) -> None:
+        export_setting: unreal.MoviePipelineWaveOutput = movie_preset.find_or_add_setting_by_class(
+            unreal.MoviePipelineWaveOutput
+        )
+
+    @staticmethod
     def add_render_passes(movie_preset: unreal.MoviePipelineMasterConfig, render_passes: List[RenderPass]) -> None:
         """Add render passes to a movie preset.
 
@@ -224,7 +230,7 @@ class CustomMoviePipeline:
             anti_alias_config.override_anti_aliasing = True
         if anti_alias.warmup_frames:
             anti_alias_config.use_camera_cut_for_warm_up = True
-            anti_alias_config.render_warm_up_count = anti_alias['warmup_frames']
+            anti_alias_config.render_warm_up_count = anti_alias.warmup_frames
         if anti_alias.render_warmup_frame:
             anti_alias_config.render_warm_up_frames = True
 
@@ -273,6 +279,7 @@ class CustomMoviePipeline:
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0.0},
         export_vertices: bool = False,
         export_skeleton: bool = False,
+        export_audio: bool = False,
     ) -> unreal.MoviePipelineMasterConfig:
         """
         Create a movie preset from args.
@@ -303,6 +310,8 @@ class CustomMoviePipeline:
         cls.set_render_all_cameras(movie_preset, enable=True)
         cls.set_export_vertices(movie_preset, enable=export_vertices)
         cls.set_export_skeleton(movie_preset, enable=export_skeleton)
+        if export_audio:
+            cls.set_export_audio(movie_preset)
 
         return movie_preset
 
@@ -389,6 +398,7 @@ class CustomMoviePipeline:
             console_variables=job.console_variables,
             export_vertices=job.export_vertices,
             export_skeleton=job.export_skeleton,
+            export_audio=job.export_audio,
         )
         new_job.set_configuration(movie_preset)
         unreal.log(f'Added new job ({new_job.job_name}) to queue')

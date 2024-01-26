@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Tuple, Union
 
+from loguru import logger
+
 from ..actor.actor_blender import ActorBlender, ShapeBlenderWrapper
 from ..camera.camera_blender import CameraBlender
 from ..data_structure.constants import PathLike, Vector
@@ -10,9 +12,13 @@ from .sequence_base import SequenceBase
 
 try:
     import bpy  # isort:skip
-    from ..data_structure.models import TransformKeys  # isort:skip
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
 except ModuleNotFoundError:
+    pass
+
+try:
+    from ..data_structure.models import RenderPass, TransformKeys  # isort:skip
+except (ImportError, ModuleNotFoundError):
     pass
 
 
@@ -56,6 +62,30 @@ class SequenceBlender(SequenceBase):
         cls._object_utils.set_transform_keys(name=actor.name, transform_keys=transform_keys)
         return actor
 
+    @classmethod
+    def add_to_renderer(
+        cls,
+        output_path: PathLike,
+        resolution: Tuple[int, int],
+        render_passes: 'List[RenderPass]',
+        **kwargs,
+    ):
+        cls._renderer.add_job(
+            sequence_name=cls.name,
+            output_path=output_path,
+            resolution=resolution,
+            render_passes=render_passes,
+            **kwargs,
+        )
+        # set renderer in engine (for storing the render settings like resolution, render_passes, etc.)
+        cls._renderer._set_renderer_in_engine(
+            job=cls._renderer.render_queue[-1].model_dump(mode='json'), tmp_render_path='/tmp'
+        )
+        logger.info(
+            f'[cyan]Added[/cyan] sequence "{cls.name}" to [bold]`Renderer`[/bold] '
+            f'(jobs to render: {len(cls._renderer.render_queue)})'
+        )
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
@@ -96,6 +126,8 @@ class SequenceBlender(SequenceBase):
             frame_start=0,
             frame_end=seq_length - 1,
             frame_current=0,
+            resolution_x=level_scene.render.resolution_x,
+            resolution_y=level_scene.render.resolution_y,
         )
         level_scene.frame_start = 0
         level_scene.frame_end = seq_length - 1
@@ -131,10 +163,6 @@ class SequenceBlender(SequenceBase):
         level_scene = XRFeitoriaBlenderFactory.get_active_scene()
         XRFeitoriaBlenderFactory.set_level_properties(scene=level_scene, active_seq=None)
 
-    @staticmethod
-    def _show_seq_in_engine() -> None:
-        raise NotImplementedError
-
     # -------- spawn methods -------- #
     @staticmethod
     def _import_actor_in_engine(
@@ -146,10 +174,10 @@ class SequenceBlender(SequenceBase):
         """Import.
 
         Args:
-            file_path (PathLike): _description_
-            transform_keys (Union[List[Dict], Dict]): _description_
-            actor_name (str, optional): _description_. Defaults to 'Actor'.
-            stencil_value (int, optional): _description_. Defaults to 1.
+            file_path (PathLike): Path of the imported file.
+            transform_keys (Union[List[Dict], Dict]): Transform keys of the imported actor.
+            actor_name (str, optional): Name of the actor. Defaults to 'Actor'.
+            stencil_value (int, optional): Stencil value of the actor. Defaults to 1.
         """
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
@@ -157,7 +185,10 @@ class SequenceBlender(SequenceBase):
         ActorBlender._import_actor_from_file_in_engine(file_path=file_path, actor_name=actor_name)
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=actor_name, transform_keys=transform_keys)
         # XXX: set stencil value. may use actor property
-        bpy.data.objects[actor_name].pass_index = stencil_value
+        actor = bpy.data.objects[actor_name]
+        actor.pass_index = stencil_value
+        for child in actor.children_recursive:
+            child.pass_index = stencil_value
 
     @staticmethod
     def _spawn_camera_in_engine(
@@ -229,7 +260,10 @@ class SequenceBlender(SequenceBase):
         )
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=shape_name, transform_keys=transform_keys)
         # XXX: set stencil value. may use actor property
-        bpy.data.objects[shape_name].pass_index = stencil_value
+        actor = bpy.data.objects[shape_name]
+        actor.pass_index = stencil_value
+        for child in actor.children_recursive:
+            child.pass_index = stencil_value
 
     # -------- use methods -------- #
     @staticmethod
@@ -307,6 +341,8 @@ class SequenceBlender(SequenceBase):
 
         # set level actor's properties
         actor.pass_index = stencil_value
+        for child in actor.children_recursive:
+            child.pass_index = stencil_value
         if action:
             XRFeitoriaBlenderFactory.apply_action_to_actor(action=action, actor=actor)
         ObjectUtilsBlender._set_transform_keys_in_engine(obj_name=actor_name, transform_keys=transform_keys)

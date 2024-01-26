@@ -36,7 +36,13 @@ class SequenceBase(ABC):
         stencil_value: int = ...,
     ) -> ...: ...
     @classmethod
-    def spawn_camera(cls, location: Vector, rotation: Vector, fov: float = ..., camera_name: str = ...) -> ...: ...
+    def spawn_camera(
+        cls,
+        location: Vector,
+        rotation: Vector,
+        fov: float = ...,
+        camera_name: str = ...,
+    ) -> ...: ...
     @classmethod
     def spawn_camera_with_keys(
         cls,
@@ -45,10 +51,19 @@ class SequenceBase(ABC):
         camera_name: str = ...,
     ) -> ...: ...
     def use_camera(
-        cls, camera, location: Optional[Vector] = ..., rotation: Optional[Vector] = ..., fov: float = ...
+        cls,
+        camera,
+        location: Optional[Vector] = ...,
+        rotation: Optional[Vector] = ...,
+        fov: float = ...,
     ) -> None: ...
     @classmethod
-    def use_camera_with_keys(cls, camera, transform_keys: TransformKeys, fov: float = ...) -> None: ...
+    def use_camera_with_keys(
+        cls,
+        camera,
+        transform_keys: TransformKeys,
+        fov: float = ...,
+    ) -> None: ...
     @classmethod
     def use_actor(
         cls,
@@ -89,5 +104,9 @@ class SequenceBase(ABC):
     ) -> ...: ...
     @classmethod
     def add_to_renderer(
-        cls, output_path: PathLike, resolution: Tuple[int, int], render_passes: List[RenderPass], **kwargs
+        cls,
+        output_path: PathLike,
+        resolution: Tuple[int, int],
+        render_passes: List[RenderPass],
+        **kwargs,
     ): ...

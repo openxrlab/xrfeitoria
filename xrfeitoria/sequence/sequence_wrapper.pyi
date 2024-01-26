@@ -1,46 +1,18 @@
 from typing import ContextManager, List, Optional, Union
 
+from ..data_structure.constants import default_level_blender
 from .sequence_blender import SequenceBlender as SequenceBlender
 from .sequence_unreal import SequenceUnreal as SequenceUnreal
 
-class SequenceWrapperBase:
+class SequenceWrapperBlender:
     @classmethod
     def new(
-        cls,
-        seq_name: str,
-        level: Union[str, List[str]] = ...,
-        seq_fps: int = ...,
-        seq_length: int = ...,
-        replace: bool = ...,
-    ) -> ...: ...
-    @classmethod
-    def open(cls, seq_name: str) -> ...: ...
-
-class SequenceWrapperBlender(SequenceWrapperBase):
-    @classmethod
-    def new(
-        cls,
-        seq_name: str,
-        level: str = ...,
-        seq_fps: int = ...,
-        seq_length: int = ...,
-        replace: bool = ...,
-    ) -> ContextManager[SequenceBlender]:
-        """Create a new sequence and close the sequence after exiting the it.
-
-        Args:
-            seq_name (str): Name of the sequence.
-            level (Optional[str], optional): Name of the level. Defaults to None. When None, use the default level named 'XRFeitoria'.
-            seq_fps (int, optional): Frame per second of the new sequence. Defaults to 60.
-            seq_length (int, optional): Frame length of the new sequence. Defaults to 1.
-            replace (bool, optional): Replace the exist same-name sequence. Defaults to False.
-        Yields:
-            SequenceBlender: Sequence object.
-        """
+        cls, seq_name: str, level: str = ..., seq_fps: int = ..., seq_length: int = ..., replace: bool = ...
+    ) -> ContextManager[SequenceBlender]: ...
     @classmethod
     def open(cls, seq_name: str) -> ContextManager[SequenceBlender]: ...
 
-class SequenceWrapperUnreal(SequenceWrapperBase):
+class SequenceWrapperUnreal:
     @classmethod
     def new(
         cls,
@@ -52,4 +24,20 @@ class SequenceWrapperUnreal(SequenceWrapperBase):
         seq_dir: Optional[str] = ...,
     ) -> ContextManager[SequenceUnreal]: ...
     @classmethod
-    def open(cls, seq_name: str) -> ContextManager[SequenceUnreal]: ...
+    def open(cls, seq_name: str, seq_dir: Optional[str] = ...) -> ContextManager[SequenceUnreal]: ...
+
+def sequence_wrapper_blender(
+    seq_name: str,
+    level: str = default_level_blender,
+    seq_fps: int = 30,
+    seq_length: int = 1,
+    replace: bool = False,
+) -> Union[SequenceBlender, ContextManager[SequenceBlender]]: ...
+def sequence_wrapper_unreal(
+    seq_name: str,
+    seq_dir: Optional[str] = None,
+    level: Optional[str] = None,
+    seq_fps: int = 30,
+    seq_length: int = 1,
+    replace: bool = False,
+) -> Union[SequenceUnreal, ContextManager[SequenceUnreal]]: ...

@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Tuple, Type, TypeVar, Union
+from typing import Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import bpy
 
@@ -8,6 +8,7 @@ default_level_blender = 'XRFeitoria'
 
 Tuple3 = Tuple[float, float, float]
 PathLike = Union[str, Path]
+MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 
 
 class EnumBase(str, Enum):

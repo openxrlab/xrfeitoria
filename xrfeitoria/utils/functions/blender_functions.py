@@ -1,13 +1,13 @@
 """Remote functions for blender."""
 
 from pathlib import Path
-from typing import Dict, List, Literal, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
-from ...data_structure.constants import ImportFileFormatEnum, PathLike, Vector
+from ...data_structure.constants import ImportFileFormatEnum, MotionFrame, PathLike, Vector
 from ...rpc import remote_blender
 
 try:
-    # only for linting, not imported in runtime
+    # linting and for engine
     import bpy
     from XRFeitoriaBpy import logger  # defined in src/XRFeitoriaBpy/__init__.py
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
@@ -67,14 +67,25 @@ def import_file(file_path: 'PathLike') -> None:
 
 
 @remote_blender()
-def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float]]]]', actor_name: str) -> None:
+def apply_motion_data_to_actor(motion_data: 'List[MotionFrame]', actor_name: str) -> None:
     """Applies motion data to a given actor in Blender.
 
     Args:
-        motion_data (List[Dict[str, Dict[str, List[float]]]]): A list of dictionaries containing motion data for the actor.
+        motion_data (List[MotionFrame]): A list of dictionaries containing motion data for the actor.
         actor_name (str): The name of the actor to apply the motion data to.
     """
     XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor_name)
+
+
+@remote_blender()
+def apply_shape_keys_to_mesh(shape_keys: 'List[Dict[str, float]]', mesh_name: str) -> None:
+    """Apply shape keys to the given mesh.
+
+    Args:
+        shape_keys (List[Dict[str, float]]): A list of dictionaries representing the shape keys and their values.
+        mesh_name (str): Name of the mesh.
+    """
+    XRFeitoriaBlenderFactory.apply_shape_keys_to_mesh(shape_keys=shape_keys, mesh_name=mesh_name)
 
 
 @remote_blender()
@@ -100,7 +111,8 @@ def cleanup_unused():
 
 @remote_blender()
 def save_blend(save_path: 'PathLike' = None, pack: bool = False):
-    """Save the current blend file to the given path.
+    """Save the current blend file to the given path. If no path is given, save to the
+    current blend file path.
 
     Args:
         save_path (PathLike, optional): Path to save the blend file. Defaults to None.
@@ -153,6 +165,22 @@ def set_hdr_map(hdr_map_path: 'PathLike') -> None:
     """
     scene = XRFeitoriaBlenderFactory.get_active_scene()
     XRFeitoriaBlenderFactory.set_hdr_map(scene=scene, hdr_map_path=hdr_map_path)
+
+
+@remote_blender()
+def set_active_level(level_name: str):
+    """Sets the active level in XRFeitoria Blender Factory.
+
+    Args:
+        level_name (str): The name of the level to set as active. (e.g. 'Scene')
+
+    Example:
+        >>> import xrfeitoria as xf
+        >>> xf_runner = xf.init_blender()
+        >>> xf_runner.utils.set_active_level('Scene')  # Return to default level defined by blender
+    """
+    level = XRFeitoriaBlenderFactory.get_scene(level_name)
+    XRFeitoriaBlenderFactory.set_scene_active(level)
 
 
 @remote_blender()
@@ -273,6 +301,19 @@ def get_rotation_to_look_at(location: 'Vector', target: 'Vector') -> 'Vector':
 
 
 @remote_blender()
+def check_sequence(seq_name: str) -> bool:
+    """Check whether the sequence exists.
+
+    Args:
+        seq_name (str): Name of the sequence.
+
+    Returns:
+        bool: True if the sequence exists.
+    """
+    return seq_name in bpy.data.collections.keys()
+
+
+@remote_blender()
 def init_scene_and_collection(name: str, cleanup: bool = False) -> None:
     """Init the default scene and default collection.
 
@@ -314,3 +355,20 @@ def enable_gpu(gpu_num: int = 1):
         gpu_num (int, optional): Number of GPUs to use. Defaults to 1.
     """
     XRFeitoriaBlenderFactory.enable_gpu(gpu_num=gpu_num)
+
+
+@remote_blender()
+def install_plugin(plugin_path: 'PathLike', plugin_name_blender: 'Optional[str]' = None):
+    """Install plugin in blender.
+
+    Args:
+        path (PathLike): Path to the plugin.
+    """
+    bpy.ops.preferences.addon_install(filepath=Path(plugin_path).resolve().as_posix())
+    if plugin_name_blender is None:
+        plugin_name_blender = Path(plugin_path).stem
+        logger.warning(f'Plugin name not specified, use {plugin_name_blender} as default.')
+    bpy.ops.preferences.addon_enable(module=plugin_name_blender)
+    bpy.ops.wm.save_userpref()
+
+    logger.info(f'Plugin {plugin_name_blender} installed successfully.')

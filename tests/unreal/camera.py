@@ -5,12 +5,13 @@
 import numpy as np
 
 from xrfeitoria.data_structure.constants import xf_obj_name
+from xrfeitoria.utils import setup_logger
 
-from ..utils import __timer__, _init_unreal, setup_logger
+from ..utils import __timer__, _init_unreal
 
 
 def camera_test(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_unreal(background=background) as xf_runner:
         with __timer__('spawn camera'):
             camera0 = xf_runner.Camera.spawn()

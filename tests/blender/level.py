@@ -3,16 +3,15 @@
 """
 from pathlib import Path
 
-from loguru import logger
-
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.factory import XRFeitoriaBlender
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path
-from ..utils import __timer__, _init_blender, setup_logger
+from ..utils import __timer__, _init_blender
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/tests/blender/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 
@@ -43,7 +42,7 @@ def seq_simple(xf_runner: XRFeitoriaBlender, seq_name: str = 'seq_simple'):
 
 
 def level_test(debug=False, background=False):
-    setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_blender(background=background, new_process=True, cleanup=False, project_path=blend_sample) as xf_runner:
         with __timer__('create and sequence'):
             seq_simple(xf_runner)

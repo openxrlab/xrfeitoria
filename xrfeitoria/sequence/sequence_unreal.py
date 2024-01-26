@@ -4,7 +4,7 @@ from loguru import logger
 
 from ..actor.actor_unreal import ActorUnreal
 from ..camera.camera_unreal import CameraUnreal
-from ..data_structure.constants import PathLike, Vector
+from ..data_structure.constants import MotionFrame, PathLike, Vector
 from ..object.object_utils import ObjectUtilsUnreal
 from ..renderer.renderer_unreal import RendererUnreal
 from ..rpc import remote_unreal
@@ -21,7 +21,7 @@ try:
     from ..data_structure.models import RenderJobUnreal, RenderPass
     from ..data_structure.models import SequenceTransformKey as SeqTransKey
     from ..data_structure.models import TransformKeys
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     pass
 
 
@@ -34,6 +34,21 @@ class SequenceUnreal(SequenceBase):
     _object_utils = ObjectUtilsUnreal
     _renderer = RendererUnreal
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.save()
+        self.close()
+
+    @classmethod
+    def save(cls) -> None:
+        """Save the sequence."""
+        cls._save_seq_in_engine()
+        logger.info(f'++++  [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
+
+    @classmethod
+    def show(cls) -> None:
+        """Show the sequence in the engine."""
+        cls._show_seq_in_engine()
+
     @classmethod
     def add_to_renderer(
         cls,
@@ -41,15 +56,16 @@ class SequenceUnreal(SequenceBase):
         resolution: Tuple[int, int],
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
-        console_variables: Dict[str, float] = {},
+        console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
         anti_aliasing: 'Optional[RenderJobUnreal.AntiAliasSetting]' = None,
         export_vertices: bool = False,
         export_skeleton: bool = False,
+        export_audio: bool = False,
     ) -> None:
         """Add the sequence to the renderer's job queue. Can only be called after the
         sequence is instantiated using
         :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.new` or
-        :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.o pen`.
+        :meth:`~xrfeitoria.sequence.sequence_wrapper.SequenceWrapperUnreal.open`.
 
         Args:
             output_path (PathLike): The path where the rendered output will be saved.
@@ -57,12 +73,13 @@ class SequenceUnreal(SequenceBase):
             render_passes (List[RenderPass]): The list of render passes to be rendered.
             file_name_format (str, optional): The format of the output file name.
                 Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
-            console_variables (Dict[str, float], optional): The console variables to be set before rendering. Defaults to {}.
+            console_variables (Dict[str, float], optional): The console variables to be set before rendering. Defaults to {'r.MotionBlurQuality': 0}.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional):
                 The anti-aliasing settings for the render job. Defaults to None.
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export the skeleton. Defaults to False.
+            export_audio (bool, optional): Whether to export audio. Defaults to False.
 
         Examples:
             >>> import xrfeitoria as xf
@@ -91,6 +108,7 @@ class SequenceUnreal(SequenceBase):
             anti_aliasing=anti_aliasing,
             export_vertices=export_vertices,
             export_skeleton=export_skeleton,
+            export_audio=export_audio,
         )
         logger.info(
             f'[cyan]Added[/cyan] sequence "{cls.name}" to [bold]`Renderer`[/bold] '
@@ -101,12 +119,13 @@ class SequenceUnreal(SequenceBase):
     def spawn_actor(
         cls,
         actor_asset_path: str,
-        location: 'Vector',
-        rotation: 'Vector',
+        location: 'Optional[Vector]' = None,
+        rotation: 'Optional[Vector]' = None,
         scale: 'Optional[Vector]' = None,
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine at the specified location, rotation, and
         scale.
@@ -114,13 +133,14 @@ class SequenceUnreal(SequenceBase):
         Args:
             cls: The class object.
             actor_asset_path (str): The actor asset path in engine to spawn.
-            location (Vector): The location to spawn the actor at. unit: meter.
-            rotation (Vector): The rotation to spawn the actor with. unit: degree.
+            location (Optional[Vector, optional]): The location to spawn the actor at. unit: meter.
+            rotation (Optional[Vector, optional]): The rotation to spawn the actor with. unit: degree.
             scale (Optional[Vector], optional): The scale to spawn the actor with. Defaults to None.
             actor_name (Optional[str], optional): The name to give the spawned actor. Defaults to None.
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
+            motion_data (Optional[List[MotionFrame]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor object.
@@ -134,6 +154,7 @@ class SequenceUnreal(SequenceBase):
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys.model_dump(),
             anim_asset_path=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             stencil_value=stencil_value,
         )
@@ -148,6 +169,7 @@ class SequenceUnreal(SequenceBase):
         actor_name: Optional[str] = None,
         stencil_value: int = 1,
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
     ) -> ActorUnreal:
         """Spawns an actor in the Unreal Engine with the given asset path, transform
         keys, actor name, stencil value, and animation asset path.
@@ -159,6 +181,7 @@ class SequenceUnreal(SequenceBase):
             stencil_value (int in [0, 255], optional): The stencil value to use for the spawned actor. Defaults to 1.
                 Ref to :ref:`FAQ-stencil-value` for details.
             anim_asset_path (Optional[str], optional): The engine path to the animation asset of the actor. Defaults to None.
+            motion_data (Optional[List[MotionFrame]]): The motion data used for FK animation.
 
         Returns:
             ActorUnreal: The spawned actor.
@@ -174,6 +197,7 @@ class SequenceUnreal(SequenceBase):
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys,
             anim_asset_path=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             stencil_value=stencil_value,
         )
@@ -181,6 +205,22 @@ class SequenceUnreal(SequenceBase):
             f'[cyan]Spawned[/cyan] actor "{actor_name}" with {len(transform_keys)} keys in sequence "{cls.name}"'
         )
         return ActorUnreal(actor_name)
+
+    @classmethod
+    def add_audio(
+        cls,
+        audio_asset_path: str,
+        start_frame: Optional[int] = None,
+        end_frame: Optional[int] = None,
+    ) -> None:
+        """Add an audio track to the sequence.
+
+        Args:
+            audio_asset_path (str): The path to the audio asset in the engine.
+            start_frame (Optional[int], optional): The start frame of the audio track. Defaults to None.
+            end_frame (Optional[int], optional): The end frame of the audio track. Defaults to None.
+        """
+        cls._add_audio_in_engine(audio_asset_path=audio_asset_path, start_frame=start_frame, end_frame=end_frame)
 
     @classmethod
     def get_map_path(cls) -> str:
@@ -201,9 +241,52 @@ class SequenceUnreal(SequenceBase):
         """
         return cls._get_seq_path_in_engine()
 
+    @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
+            end_frame (Optional[int]): The end frame of the playback range. If not provided, the default end frame will be used.
+
+        Returns:
+            None
+        """
+        cls._set_playback_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. If not provided, the default start frame will be used.
+            end_frame (Optional[int]): The end frame of the playback range. If not provided, the default end frame will be used.
+
+        Returns:
+            None
+        """
+        cls._set_camera_cut_player_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @classmethod
+    def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> None:
+        """Open an exist sequence.
+
+        Args:
+            seq_name (str): Name of the sequence.
+            seq_dir (Optional[str], optional): Path of the sequence.
+                Defaults to None and fallback to the default path '/Game/XRFeitoriaUnreal/Sequences'.
+        """
+        cls._open_seq_in_engine(seq_name=seq_name, seq_dir=seq_dir)
+        cls.name = seq_name
+        logger.info(f'>>>> [cyan]Opened[/cyan] sequence "{cls.name}" >>>>')
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
+
+    @staticmethod
+    def _get_default_seq_path_in_engine() -> str:
+        return XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_PATH
 
     @staticmethod
     def _get_seq_info_in_engine(
@@ -287,6 +370,16 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _show_seq_in_engine() -> None:
         XRFeitoriaUnrealFactory.Sequence.show()
+
+    @staticmethod
+    def _set_playback_in_engine(start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None) -> None:
+        XRFeitoriaUnrealFactory.Sequence.set_playback(start_frame=start_frame, end_frame=end_frame)
+
+    @staticmethod
+    def _set_camera_cut_player_in_engine(
+        start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None
+    ) -> None:
+        XRFeitoriaUnrealFactory.Sequence.set_camera_cut_playback(start_frame=start_frame, end_frame=end_frame)
 
     # ------ add actor and camera -------- #
 
@@ -375,6 +468,7 @@ class SequenceUnreal(SequenceBase):
         actor_asset_path: str,
         transform_keys: 'Union[List[Dict], Dict]',
         anim_asset_path: 'Optional[str]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
         actor_name: str = 'Actor',
         stencil_value: int = 1,
     ) -> None:
@@ -391,6 +485,7 @@ class SequenceUnreal(SequenceBase):
         XRFeitoriaUnrealFactory.Sequence.add_actor(
             actor=actor_asset_path,
             animation_asset=anim_asset_path,
+            motion_data=motion_data,
             actor_name=actor_name,
             transform_keys=transform_keys,
             stencil_value=stencil_value,
@@ -415,4 +510,19 @@ class SequenceUnreal(SequenceBase):
             actor_name=shape_name,
             transform_keys=transform_keys,
             stencil_value=stencil_value,
+        )
+
+    # ------ add audio -------- #
+    @staticmethod
+    def _add_audio_in_engine(
+        audio_asset_path: str,
+        start_frame: 'Optional[int]' = None,
+        end_frame: 'Optional[int]' = None,
+    ):
+        # check asset
+        unreal_functions.check_asset_in_engine(audio_asset_path, raise_error=True)
+        XRFeitoriaUnrealFactory.Sequence.add_audio(
+            audio_asset=audio_asset_path,
+            start_frame=start_frame,
+            end_frame=end_frame,
         )

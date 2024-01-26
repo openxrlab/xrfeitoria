@@ -52,7 +52,7 @@ class RendererBase(ABC):
     @classmethod
     def clear(cls):
         """Clear all rendering jobs in the renderer queue."""
-        logger.warning('[red] Clearing Renderer jobs[/red]')
+        logger.warning('[red]Clearing Renderer jobs[/red]')
         cls._clear_queue_in_engine()
         cls.render_queue.clear()
 

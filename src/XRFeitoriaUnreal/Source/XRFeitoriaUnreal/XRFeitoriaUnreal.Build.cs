@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright OpenXRLab 2023-2024. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -45,6 +45,7 @@ public class XRFeitoriaUnreal : ModuleRules
 				"MovieSceneTools",
 				"MovieSceneTracks",
 				"LevelSequence",
+				"LevelSequenceEditor",
 				"SequencerScripting",
 				"SequencerScriptingEditor",
 			}

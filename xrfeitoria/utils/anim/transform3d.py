@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation as spRotation
-from typing_extensions import Self
 
 
 class Matrix:
@@ -23,25 +22,25 @@ class Matrix:
                 )
         self.data = mat
 
-    def to_4x4(self) -> Self:
+    def to_4x4(self) -> 'Matrix':
         mat = np.eye(4)
         old = self.data[:4, :4]
         mat[: old.shape[0], : old.shape[1]] = old
         return Matrix(mat)
 
-    def to_3x3(self) -> Self:
+    def to_3x3(self) -> 'Matrix':
         mat = np.eye(3)
         old = self.data[:3, :3]
         mat[: old.shape[0], : old.shape[1]] = old
         return Matrix(mat)
 
-    def to_2x2(self) -> Self:
+    def to_2x2(self) -> 'Matrix':
         mat = np.eye(2)
         old = self.data[:2, :2]
         mat[: old.shape[0], : old.shape[1]] = old
         return Matrix(mat)
 
-    def inverted(self) -> Self:
+    def inverted(self) -> 'Matrix':
         return Matrix(np.linalg.inv(self.data))
 
     def decompose(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -56,14 +55,14 @@ class Matrix:
         except Exception as e:
             raise TypeError(f'Unsupported operand type for @, value: {value}')
 
-    def __matmul__(self, other) -> Self:
+    def __matmul__(self, other) -> 'Matrix':
         right = self._to_matmul_type(other)
         left = self.data
         if self.data.shape[1] != other.data.shape[0]:
             raise ValueError('Matrix multiplication: shape mismatch: ' f'{left.shape} @ {right.shape}')
         return Matrix(left @ right)
 
-    def __rmatmul__(self, other) -> Self:
+    def __rmatmul__(self, other) -> 'Matrix':
         left = self._to_matmul_type(other)
         right = self.data
         if self.data.shape[1] != other.data.shape[0]:
@@ -139,30 +138,27 @@ class Vector:
         return self.__str__()
 
 
-def decompose_trs(
-    mat: npt.ArrayLike,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def decompose_trs(mat: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Decompose a 4x4 transformation matrix into 3 parts:
     translation, rotation, scale.
 
-    Parameters
-    ----------
-    mat : npt.ArrayLike
-        A transformation matrix of shape (N, 4, 4) or (4, 4)
-        e.g.
-            [
-                [1, 0, 0, x],
-                [0, 1, 0, y],
-                [0, 0, 1, z],
-                [0, 0, 0, 1],
-            ]
+    Args:
+        mat: npt.ArrayLike
+            A transformation matrix of shape (N, 4, 4) or (4, 4)
+            e.g.
+                [
+                    [1, 0, 0, x],
+                    [0, 1, 0, y],
+                    [0, 0, 1, z],
+                    [0, 0, 0, 1],
+                ]
 
-    Returns
-    -------
-    Tuple[np.ndarray, np.ndarray, np.ndarray]
-        - translation(x, y, z): np.ndarray of shape (N, 3) or (3,)
-        - quaternion(w, x, y, z): np.ndarray of shape (N, 4)
-        - scaling(x, y, z): np.ndarray of shape (N, 3) or (3,)
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+            - translation(x, y, z): np.ndarray of shape (N, 3) or (3,)
+            - quaternion(w, x, y, z): np.ndarray of shape (N, 4)
+            - scaling(x, y, z): np.ndarray of shape (N, 3) or (3,)
     """
     mat = np.array(mat)
     ndim = mat.ndim

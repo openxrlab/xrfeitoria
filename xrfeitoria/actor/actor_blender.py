@@ -4,6 +4,7 @@ from typing import Dict, Literal, Optional, Tuple
 from loguru import logger
 
 from ..data_structure.constants import Vector, default_level_blender
+from ..material.material_blender import MaterialBlender
 from ..object.object_utils import ObjectUtilsBlender
 from ..rpc import remote_blender
 from ..utils import Validator
@@ -18,7 +19,7 @@ except ModuleNotFoundError:
 
 try:
     from ..data_structure.models import TransformKeys  # isort:skip
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     pass
 
 
@@ -42,6 +43,9 @@ class ActorBlender(ActorBase):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
         self._object_utils.set_transform_keys(name=self.name, transform_keys=transform_keys)
+
+    def set_material(self, mat: MaterialBlender) -> None:
+        self._set_material_in_engine(actor_name=self.name, mat_name=mat._name)
 
     #####################################
     ###### RPC METHODS (Private) ########
@@ -82,7 +86,7 @@ class ActorBlender(ActorBase):
         """
         object = bpy.data.objects[actor_name]
         object.pass_index = value
-        for child in object.children:
+        for child in object.children_recursive:
             child.pass_index = value
 
     @staticmethod
@@ -127,6 +131,32 @@ class ActorBlender(ActorBase):
             XRFeitoriaBlenderFactory.import_mo_fbx(mo_fbx_file=animation_path, actor_name=actor_name)
         else:
             raise TypeError(f"Invalid anim file, expected 'json', 'blend', or 'fbx' (got {anim_file_ext[1:]} instead).")
+
+    @staticmethod
+    def _set_material_in_engine(actor_name: str, mat_name: str) -> None:
+        """Set material to an actor. If the actor has multiple meshes, set material to
+        the 1st mesh.
+
+        Args:
+            actor_name (str): Name of the actor.
+            mat_name (str): Name of the material.
+        """
+        actor = bpy.data.objects[actor_name]
+        material = XRFeitoriaBlenderFactory.get_material(mat_name=mat_name)
+
+        if actor.type == 'ARMATURE':
+            if len(actor.children) == 0:
+                raise TypeError(f'Actor {actor_name} has no meshes, thus cannot set material to it.')
+            mesh = actor.children[0]
+        elif actor.type == 'MESH':
+            mesh = actor
+
+        if mesh.data.materials:
+            # assign to 1-st material slot
+            mesh.data.materials[0] = material
+        else:
+            # no existing slot
+            mesh.data.materials.append(material)
 
 
 @remote_blender(dec_class=True, suffix='_in_engine')

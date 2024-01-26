@@ -2,13 +2,23 @@ import json
 import math
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 import bpy
 import numpy as np
 
 from .. import logger
-from ..constants import Tuple3
+from ..constants import MotionFrame, Tuple3
+
+
+class SequenceProperties(NamedTuple):
+    level: bpy.types.Scene
+    fps: int
+    frame_start: int
+    frame_end: int
+    frame_current: int
+    resolution_x: int
+    resolution_y: int
 
 
 class XRFeitoriaBlenderFactory:
@@ -123,6 +133,8 @@ class XRFeitoriaBlenderFactory:
         frame_start: int,
         frame_end: int,
         frame_current: int,
+        resolution_x: int,
+        resolution_y: int,
     ) -> None:
         """Set the sequence properties.
 
@@ -133,29 +145,35 @@ class XRFeitoriaBlenderFactory:
             frame_start (int): Start frame of the sequence.
             frame_end (int): End frame of the sequence.
             frame_current (int): Current frame of the sequence.
+            resoltion_x (int): Resolution_x of the sequence.
+            resoltion_y (int): Resolution_y of the sequence.
         """
         collection.sequence_properties.level = level
         collection.sequence_properties.fps = fps
         collection.sequence_properties.frame_start = frame_start
         collection.sequence_properties.frame_end = frame_end
         collection.sequence_properties.frame_current = frame_current
+        collection.sequence_properties.resolution_x = resolution_x
+        collection.sequence_properties.resolution_y = resolution_y
 
-    def get_sequence_properties(collection: 'bpy.types.Collection') -> 'Tuple[bpy.types.Scene, int, int, int, int]':
+    def get_sequence_properties(collection: 'bpy.types.Collection') -> SequenceProperties:
         """Get the sequence properties.
 
         Args:
             collection (bpy.types.Collection): Collection of the sequence.
 
         Returns:
-            Tuple[bpy.types.Scene, int, int, int, int]:
-                The level(scene), FPS of the sequence, Start frame of the sequence, End frame of the sequence, Current frame of the sequence.
+            SequenceProperties: Sequence properties.
         """
         level = collection.sequence_properties.level
         fps = collection.sequence_properties.fps
         frame_start = collection.sequence_properties.frame_start
         frame_end = collection.sequence_properties.frame_end
         frame_current = collection.sequence_properties.frame_current
-        return level, fps, frame_start, frame_end, frame_current
+        resolution_x = collection.sequence_properties.resolution_x
+        resolution_y = collection.sequence_properties.resolution_y
+
+        return SequenceProperties(level, fps, frame_start, frame_end, frame_current, resolution_x, resolution_y)
 
     def open_sequence(seq_name: str) -> 'bpy.types.Scene':
         """Open the given sequence.
@@ -166,9 +184,15 @@ class XRFeitoriaBlenderFactory:
         # get sequence collection
         seq_collection = XRFeitoriaBlenderFactory.get_collection(seq_name)
         # get sequence properties
-        level_scene, fps, frame_start, frame_end, frame_current = XRFeitoriaBlenderFactory.get_sequence_properties(
-            collection=seq_collection
-        )
+        (
+            level_scene,
+            fps,
+            frame_start,
+            frame_end,
+            frame_current,
+            resolution_x,
+            resolution_y,
+        ) = XRFeitoriaBlenderFactory.get_sequence_properties(collection=seq_collection)
         # deactivate all cameras in this level
         for obj in level_scene.objects:
             if obj.type == 'CAMERA':
@@ -187,6 +211,8 @@ class XRFeitoriaBlenderFactory:
         level_scene.frame_end = frame_end
         level_scene.frame_current = frame_current
         level_scene.render.fps = fps
+        level_scene.render.resolution_x = resolution_x
+        level_scene.render.resolution_y = resolution_y
 
         # set cameras in this sequence to active
         for obj in seq_collection.objects:
@@ -205,6 +231,8 @@ class XRFeitoriaBlenderFactory:
         for actor_data in seq_collection.sequence_properties.level_actors:
             actor = actor_data.actor
             actor.pass_index = actor_data.sequence_stencil_value
+            for child in actor.children_recursive:
+                child.pass_index = actor_data.sequence_stencil_value
             if actor_data.sequence_animation:
                 XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.sequence_animation, actor=actor)
 
@@ -227,12 +255,25 @@ class XRFeitoriaBlenderFactory:
         # clear all sequences in this level
         for collection in level_scene.collection.children:
             if XRFeitoriaBlenderFactory.is_sequence_collecion(collection):
+                # save sequence properties
+                XRFeitoriaBlenderFactory.set_sequence_properties(
+                    collection=collection,
+                    level=level_scene,
+                    fps=level_scene.render.fps,
+                    frame_start=level_scene.frame_start,
+                    frame_end=level_scene.frame_end,
+                    frame_current=level_scene.frame_current,
+                    resolution_x=level_scene.render.resolution_x,
+                    resolution_y=level_scene.render.resolution_y,
+                )
                 # unlink the sequence from the level
                 XRFeitoriaBlenderFactory.unlink_collection_from_scene(collection=collection, scene=level_scene)
                 # restore level actors' properties
                 for actor_data in collection.sequence_properties.level_actors:
                     actor = actor_data.actor
                     actor.pass_index = actor_data.level_stencil_value
+                    for child in actor.children_recursive:
+                        child.pass_index = actor_data.level_stencil_value
                     if actor_data.level_animation:
                         XRFeitoriaBlenderFactory.apply_action_to_actor(action=actor_data.level_animation, actor=actor)
                     else:
@@ -414,8 +455,11 @@ class XRFeitoriaBlenderFactory:
         Args:
             collection (bpy.types.Collection): The collection to be set as the active collection.
         """
-        layer_collection = bpy.context.view_layer.layer_collection.children[collection.name]
-        bpy.context.view_layer.active_layer_collection = layer_collection
+        if collection.name in bpy.context.view_layer.layer_collection.children.keys():
+            layer_collection = bpy.context.view_layer.layer_collection.children[collection.name]
+            bpy.context.view_layer.active_layer_collection = layer_collection
+        elif collection.name == bpy.context.view_layer.layer_collection.name:
+            bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
 
     def set_frame_range(scene: 'bpy.types.Scene', start: int, end: int) -> None:
         """Set the frame range of the given scene.
@@ -934,6 +978,19 @@ class XRFeitoriaBlenderFactory:
     #####################################
     ############### Import ##############
     #####################################
+    def import_texture(texture_file: str) -> bpy.types.Image:
+        """Import an image as a texture.
+
+        Args:
+            texture_file (str): File path of the image.
+        Returns:
+            bpy.types.Image: The imported texture.
+        """
+        try:
+            texture = bpy.data.images.load(filepath=str(texture_file))
+        except Exception:
+            raise Exception(f'Failed to import texture: {texture_file}')
+        return texture
 
     def import_fbx(fbx_file: str) -> None:
         """Import an fbx file. Only support binary fbx.
@@ -999,7 +1056,8 @@ class XRFeitoriaBlenderFactory:
             raise Exception(f'Failed to import glb: {glb_file}\n{e}')
 
     def import_mo_json(mo_json_file: Path, actor_name: str) -> None:
-        """Import an animation from json, and apply the animation to the given actor.
+        """Import an animation from json, and apply the animation to the given actor. In
+        form of quaternion.
 
         Args:
             mo_json_file (Path): json file path.
@@ -1052,14 +1110,15 @@ class XRFeitoriaBlenderFactory:
         actor.animation_data.action = action
 
     def apply_motion_data_to_action(
-        motion_data: 'List[Dict[str, Dict]]',
+        motion_data: 'List[MotionFrame]',
         action: 'bpy.types.Action',
         scale: float = 1.0,
     ) -> None:
         """Apply motion data in dict to object.
 
         Args:
-            motion_data (List[Dict[str, Dict]]): Motion data in the form of dict, normally imported from json.
+            motion_data (List[Dict[str, Dict]]): Motion data in the form of dict,
+                containing rotation (quaternion) and location.
             action (bpy.types.Action): Action.
             scale (float, optional): Scale of movement in location of animation. Defaults to 1.0.
         """
@@ -1105,16 +1164,30 @@ class XRFeitoriaBlenderFactory:
                         # fcurve.keyframe_points[f].co = (f, val)
                         fcurve.keyframe_points.insert(frame=f, value=val, options={'FAST'})
 
-    def apply_motion_data_to_actor(motion_data: 'List[Dict[str, Dict[str, List[float]]]]', actor_name: str) -> None:
+    def apply_motion_data_to_actor(motion_data: 'List[MotionFrame]', actor_name: str) -> None:
         """Applies motion data to a given actor.
 
         Args:
-            motion_data: A list of dictionaries containing motion data for the actor.
+            motion_data: A list of dictionaries containing motion data (quaternion) for the actor.
             actor_name: The name of the actor to apply the motion data to.
         """
         action = bpy.data.actions.new('Action')
         XRFeitoriaBlenderFactory.apply_motion_data_to_action(motion_data=motion_data, action=action)
         XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor=bpy.data.objects[actor_name])
+
+    def apply_shape_keys_to_mesh(shape_keys: 'List[Dict[str, float]]', mesh_name: str) -> None:
+        """Apply shape keys to the given mesh.
+
+        Args:
+            shape_keys (List[Dict[str, float]]): A list of dictionaries representing the shape keys and their values.
+            mesh_name (str): Name of the mesh.
+        """
+        actor = bpy.data.objects[mesh_name]
+        for f in range(len(shape_keys)):
+            for key, value in shape_keys[f].items():
+                actor.data.shape_keys.key_blocks[key].value = value
+                # set keyframe
+                actor.data.shape_keys.key_blocks[key].keyframe_insert(data_path='value', frame=f)
 
     #####################################
     ############# validate ##############
@@ -1257,3 +1330,18 @@ class XRFeitoriaBlenderFactory:
             return bbox_min, bbox_max
         else:
             raise ValueError(f'Invalid object type: {obj.type}')
+
+    #####################################
+    ############# Material ##############
+    #####################################
+    def get_material(mat_name: str) -> 'bpy.types.Material':
+        if mat_name not in bpy.data.materials.keys():
+            raise ValueError(f"Material '{mat_name}' does not exists in this blend file.")
+        return bpy.data.materials[mat_name]
+
+    def new_mat_node(mat: 'bpy.types.Material', type: str, name: Optional[str] = None) -> bpy.types.Node:
+        _nodes = mat.node_tree.nodes
+        node = _nodes.new(type=type)
+        if name:
+            node.name = name
+        return node

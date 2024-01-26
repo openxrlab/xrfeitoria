@@ -515,6 +515,7 @@ src/XRFeitoriaUnreal/Binaries/
 **/output/
 
 # Python
+scripts/
 xrfeitoria/version.py
 
 # Tutorials

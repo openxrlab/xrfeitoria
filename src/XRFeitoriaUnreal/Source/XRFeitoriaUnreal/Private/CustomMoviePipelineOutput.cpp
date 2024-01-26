@@ -1,5 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright OpenXRLab 2023-2024. All Rights Reserved.
 
 #include "CustomMoviePipelineOutput.h"
 
@@ -13,9 +12,10 @@
 #include "Misc/StringFormatArg.h"
 #include "Misc/FileHelper.h"
 #include "Misc/FrameRate.h"
-#include "HAL/PlatformFilemanager.h"
-#include "HAL/PlatformTime.h"
 #include "Misc/Paths.h"
+
+// #include "HAL/PlatformFilemanager.h"
+// #include "HAL/PlatformTime.h"
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"

@@ -11,6 +11,16 @@ Remote Functions
     xrfeitoria.utils.functions.blender_functions
     xrfeitoria.utils.functions.unreal_functions
 
+Animation utils
+---------------
+
+.. autosummary::
+    :toctree: generated/
+    :template: custom-module.rst
+
+    xrfeitoria.utils.anim.motion
+    xrfeitoria.utils.anim.utils
+
 RPC runner
 ----------
 

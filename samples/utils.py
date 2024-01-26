@@ -11,7 +11,7 @@ from loguru import logger
 import xrfeitoria as xf
 from xrfeitoria.camera.camera_parameter import CameraParameter
 from xrfeitoria.utils import projector
-from xrfeitoria.utils.tools import Logger
+from xrfeitoria.utils import setup_logger as _setup_logger
 
 try:
     from .config import blender_exec, unreal_exec, unreal_project
@@ -64,15 +64,6 @@ def visualize_vertices(camera_name, actor_names: List[str], seq_output_path: Pat
     logger.info(f'Overlap image saved to: "{save_path.as_posix()}"')
 
 
-def setup_logger(debug: bool = False, log_path: str = None, reload: bool = True):
-    if reload:
-        os.environ['RPC_RELOAD'] = '1'  # reload modules on every call
-    logger = Logger.setup_logging(level='DEBUG' if debug else 'INFO', log_path=log_path)
-    if debug:
-        os.environ['RPC_DEBUG'] = '1'
-    return logger
-
-
 @contextmanager
 def __timer__(step_name: str):
     t1 = time.time()
@@ -96,7 +87,7 @@ _init_blender = partial(
     xf.init_blender,
     exec_path=blender_exec,
     new_process=False,
-    replace_plugin=True,
+    replace_plugin=False,
     dev_plugin=False,
 )
 _init_unreal = partial(
@@ -104,6 +95,6 @@ _init_unreal = partial(
     exec_path=unreal_exec,
     project_path=unreal_project,
     new_process=False,
-    replace_plugin=True,
+    replace_plugin=False,
     dev_plugin=False,
 )

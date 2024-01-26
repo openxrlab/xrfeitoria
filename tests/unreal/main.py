@@ -3,7 +3,9 @@
 """
 from pathlib import Path
 
-from ..utils import _init_unreal, setup_logger
+from xrfeitoria.utils import setup_logger
+
+from ..utils import _init_unreal
 from .actor import actor_test
 from .camera import camera_test
 from .init import init_test
@@ -12,9 +14,10 @@ from .sequence import sequence_test
 root = Path(__file__).parent
 
 
-def main(debug: bool = False, background: bool = False):
-    logger = setup_logger(debug=debug, log_path=root / 'unreal.log')
-    with _init_unreal(background=background) as xf_runner:
+def main(debug: bool = False, dev: bool = False, background: bool = False):
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=root / 'unreal.log')
+
+    with _init_unreal(background=background, dev_plugin=dev) as xf_runner:
         init_test(debug=debug, background=background)
         actor_test(debug=debug, background=background)
         camera_test(debug=debug, background=background)
@@ -28,6 +31,7 @@ if __name__ == '__main__':
 
     args = argparse.ArgumentParser()
     args.add_argument('--debug', action='store_true')
+    args.add_argument('--dev', action='store_true')
     args = args.parse_args()
 
-    main(debug=args.debug)
+    main(debug=args.debug, dev=args.dev)

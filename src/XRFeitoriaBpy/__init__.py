@@ -4,10 +4,11 @@ from . import constants, operators, properties, ui  # isort:skip
 bl_info = {
     'name': 'XRFeitoriaBpy',
     'author': 'OpenXRLab',
-    'version': (0, 5, 1),
+    'version': (0, 6, 0),
     'blender': (3, 3, 0),
     'category': 'Tools',
 }
+__version__ = version = '0.6.0'
 
 
 def register():

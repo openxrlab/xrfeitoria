@@ -13,24 +13,42 @@ from functools import lru_cache
 from http.client import RemoteDisconnected
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple, TypedDict
 from urllib.error import HTTPError, URLError
 from xmlrpc.client import ProtocolError
 
+import psutil
 from loguru import logger
 from packaging.version import parse
 from rich import get_console
 from rich.prompt import Confirm
 
 from .. import __version__, _tls
-from ..data_structure.constants import EngineEnum, PathLike, plugin_name_blender, plugin_name_unreal, tmp_dir
-from ..rpc import BLENDER_PORT, UNREAL_PORT, remote_blender, remote_unreal
+from ..data_structure.constants import (
+    EngineEnum,
+    PathLike,
+    package_name,
+    plugin_name_blender,
+    plugin_name_pattern,
+    plugin_name_unreal,
+    tmp_dir,
+)
+from ..rpc import BLENDER_PORT, UNREAL_PORT, factory, remote_blender, remote_unreal
 from .downloader import download
 from .setup import get_exec_path
 
 # XXX: hardcode download url
-oss_root = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
+dist_root = os.environ.get('XRFEITORIA__DIST_ROOT') or 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
 plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
+plugin_info_type = TypedDict(
+    'PluginInfo',
+    {
+        'plugin_name': str,
+        'plugin_version': str,
+        'engine_version': str,
+        'platform': Literal['Windows', 'Linux', 'Darwin'],
+    },
+)
 
 
 def _rmtree(path: Path) -> None:
@@ -70,6 +88,7 @@ class RPCRunner(ABC):
         new_process: bool = False,
         engine_exec: Optional[PathLike] = None,
         project_path: PathLike = '',
+        reload_rpc_code: bool = False,
         replace_plugin: bool = False,
         dev_plugin: bool = False,
         background: bool = True,
@@ -80,6 +99,9 @@ class RPCRunner(ABC):
             new_process (bool, optional): whether to start a new process. Defaults to False.
             engine_exec (Optional[PathLike], optional): path to engine executable. Defaults to None.
             project_path (PathLike, optional): path to project. Defaults to ''.
+            reload_rpc_code (bool, optional): whether to reload the registered rpc functions and classes.
+                If you are developing the package or writing a custom remote function, set this to True to reload the code.
+                This will only be in effect when `new_process=False` if the engine process is reused. Defaults to False.
             replace_plugin (bool, optional): whether to replace the plugin installed for the engine. Defaults to False.
             dev_plugin (bool, optional): Whether to use the plugin under local directory.
                 If False, would use the plugin downloaded from a remote server. Defaults to False.
@@ -87,13 +109,24 @@ class RPCRunner(ABC):
         """
         self.console = get_console()
         self.engine_type: EngineEnum = _tls.cache.get('platform', None)
+        self.engine_pid: Optional[int] = None
         self.engine_process: Optional[subprocess.Popen] = None
         self.engine_running: bool = False
+        self.engine_outputs: List[str] = []
         self.new_process = new_process
         self.replace_plugin = replace_plugin
         self.dev_plugin = dev_plugin
         self.background = background
-        self.debug = os.environ.get('RPC_DEBUG', '0') == '1'  # logger.level('DEBUG')
+        self.debug = logger._core.min_level <= 10  # DEBUG level
+
+        # child threads
+        self.thread_engine_alive: Optional[threading.Thread] = None
+        self.thread_receive_stdout: Optional[threading.Thread] = None
+
+        if reload_rpc_code:
+            # clear registered functions and classes for reloading
+            factory.RPCFactory.registered_function_names.clear()
+            factory.RPCFactory.reload_rpc_code = True
 
         if self.dev_plugin:
             self.replace_plugin = True
@@ -165,18 +198,31 @@ class RPCRunner(ABC):
 
     def stop(self) -> None:
         """Stop rpc server."""
-        import psutil
+        # clear rpc server
+        factory.RPCFactory.clear()
 
+        # stop threads
+        self.engine_running = False
+        if self.thread_receive_stdout:
+            self.thread_receive_stdout.join()
+        if self.thread_engine_alive:
+            self.thread_engine_alive.join()
+
+        # stop engine process
         process = self.engine_process
         if process is not None:
             logger.info(':bell: [bold red]Exiting RPC Server[/bold red], killing engine process')
-            self.engine_running = False
-            for child in psutil.Process(process.pid).children(recursive=True):
-                if child.is_running():
-                    logger.debug(f'Killing child process {child.pid}')
-                    child.kill()
-            process.kill()
+            if psutil.pid_exists(self.engine_pid):
+                for child in psutil.Process(self.engine_pid).children(recursive=True):
+                    if child.is_running():
+                        logger.debug(f'Killing child process {child.pid}')
+                        child.kill()
+                process.kill()
             self.engine_process = None
+            self.engine_pid = None
+            # prevent to be called from another thread
+            _tls.cache['engine_process'] = None
+            _tls.cache['engine_pid'] = None
         else:
             logger.info(':bell: [bold red]Exiting runner[/bold red], reused engine process remains')
 
@@ -192,17 +238,19 @@ class RPCRunner(ABC):
         try:
             with self.console.status('[bold green]Try to reuse existing engine process...[/bold green]'):
                 self.test_connection(debug=self.debug)
+                self.engine_pid = self.get_pid()
             logger.info(':direct_hit: [bold cyan]Reuse[/bold cyan] existing engine process')
             # raise an error if new_process is True
             if self.new_process:
                 raise RuntimeError(
                     f'RPC server in `RPC_PORT={self.port}` already started! '
                     'This is raised when calling `init_blender` or `init_unreal` with `new_progress=True`'
-                    'when an existing server (blender or unreal) is already running. \n'
+                    'if an existing server (blender or unreal) is already running. \n'
                     '3 ways to get around this: \n'
-                    '   - set `new_process=False` for using the existing server. \n'
-                    '   - stop the server (engine process) and try again; \n'
-                    "   - change the rpc port via system env 'RPC_PORT' and try again."
+                    '   - Set `new_process=False` for using the existing server. \n'
+                    '   - Stop the server (engine process) and try again; \n'
+                    "   - Change the rpc port via system env 'RPC_PORT' and try again.\n"
+                    'For multi-processing, please refer to https://xrfeitoria.readthedocs.io/en/latest/faq.html#rpc-port'
                 )
         except ConnectionRefusedError:
             return False
@@ -223,9 +271,74 @@ class RPCRunner(ABC):
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         return process
 
-    def start(self):
+    def _receive_stdout(self) -> None:
+        """Receive output from the subprocess, and log it in `trace` level.
+
+        This function should be called in a separate thread.
+        """
+        # start receiving
+        while True:
+            try:
+                data = self.engine_process.stdout.readline().decode()
+            except AttributeError:
+                break
+            if not data:
+                break
+            # log in debug level
+            logger.trace(f'(engine) {data.strip()}')
+            self.engine_outputs.append(data)
+
+    def check_engine_alive(self) -> None:
+        """Check if the engine process is alive. This function should be called in a
+        separate thread.
+
+        Raises:
+            RuntimeError: if engine process is not alive.
+        """
+        logger.debug('(Thread) Start checking engine process')
+        while self.engine_running:
+            if self.engine_process.poll() is not None:
+                logger.error(self.get_process_output(self.engine_process))
+                logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
+                self.engine_running = False  # for multi-processing
+                factory.RPCFactory.clear()
+                raise RuntimeError('RPC server stopped unexpectedly')
+            time.sleep(5)
+
+    def check_engine_alive_psutil(self) -> None:
+        """Check if the engine process is alive using psutil. This function should be
+        called in a separate thread.
+
+        Raises:
+            RuntimeError: if engine process is not alive.
+        """
+        logger.debug('(Thread) Start checking engine process, using psutil')
+        p = psutil.Process(self.engine_pid)
+        while self.engine_running:
+            if not p.is_running():
+                logger.error('[red]RPC server stopped unexpectedly[/red]')
+                self.engine_running = False  # for multi-processing
+                factory.RPCFactory.clear()
+                raise RuntimeError('RPC server stopped unexpectedly')
+            time.sleep(5)
+
+    def get_process_output(self, process: subprocess.Popen) -> str:
+        """Get process output when process is exited with non-zero code."""
+        # engine_out = process.stdout.read().decode("utf-8")
+        engine_out = ''.join(self.engine_outputs)
+        out = (
+            f'Engine process exited with code {process.poll()}\n\n'
+            '[gray]>>>> Engine output >>>>\n\n[/gray]'
+            f'{engine_out}\n'
+            '[gray]<<<< Engine output <<<<\n[/gray]'
+        )
+        return out
+
+    def start(self) -> None:
         """Start rpc server."""
         if not self.new_process:
+            self.engine_running = True
+            self.thread_engine_alive = threading.Thread(target=self.check_engine_alive_psutil, daemon=True).start()
             return
 
         with self.console.status('Initializing RPC server...') as status:
@@ -234,31 +347,14 @@ class RPCRunner(ABC):
             status.update(status=f'[green bold]Starting {" ".join(self.engine_info)} as RPC server...')
             self.engine_process = self._start_rpc(background=self.background, project_path=self.project_path)
             self.engine_running = True
+            self.engine_pid = self.engine_process.pid
             _tls.cache['engine_process'] = self.engine_process
+            _tls.cache['engine_pid'] = self.engine_pid
         logger.info(f'RPC server started at port {self.port}')
 
         # check if engine process is alive in a separate thread
-        threading.Thread(target=self.check_engine_alive, daemon=True).start()
-
-    def check_engine_alive(self) -> bool:
-        """Check if the engine process is alive."""
-        while self.engine_running:
-            if self.engine_process.poll() is not None:
-                logger.error(self.get_process_output(self.engine_process))
-                logger.error('[red]RPC server stopped unexpectedly, check the engine output above[/red]')
-                os._exit(1)  # exit main thread
-            time.sleep(1)
-
-    @staticmethod
-    def get_process_output(process: subprocess.Popen) -> str:
-        """Get process output when process is exited with non-zero code."""
-        out = (
-            f'Engine process exited with code {process.poll()}\n\n'
-            '>>>> Engine output >>>>\n\n'
-            f'{process.stdout.read().decode("utf-8")}'
-            '\n\n<<<< Engine output <<<<\n'
-        )
-        return out
+        self.thread_receive_stdout = threading.Thread(target=self._receive_stdout, daemon=True).start()
+        self.thread_engine_alive = threading.Thread(target=self.check_engine_alive, daemon=True).start()
 
     def wait_for_start(self, process: subprocess.Popen) -> None:
         """Wait 3 minutes for RPC server to start.
@@ -275,13 +371,20 @@ class RPCRunner(ABC):
         _num = 0
         while True:
             if process.poll() is not None:
-                logger.error(self.get_process_output(process))
+                error_msg = self.get_process_output(process)
+                logger.error(error_msg)
+
+                if 'Unable to open a display' in error_msg:
+                    raise RuntimeError(
+                        'Failed to start RPC server. Please run blender in background mode. '
+                        'Set `background=True` in `init_blender`. '
+                    )
                 raise RuntimeError('RPC server failed to start. Check the engine output above.')
             try:
                 self.test_connection(debug=self.debug)
                 break
             except (RemoteDisconnected, ConnectionRefusedError, ProtocolError):
-                logger.debug(f'Waiting for RPC server to start [tryout {_num}/{tryout_num}]')
+                logger.debug(f'Waiting for RPC server to start (tryout {_num}/{tryout_num})')
                 _num += 1
                 time.sleep(tryout_sec)  # wait for 5 seconds
             if _num >= tryout_num:  # 3 minutes
@@ -312,7 +415,7 @@ class RPCRunner(ABC):
     @property
     @lru_cache
     def dst_plugin_dir(self) -> Path:
-        """Get plugin directory."""
+        """Get plugin directory to install."""
         if self.engine_type == EngineEnum.blender:
             dst_plugin_dir = _get_user_addon_path(version=self.engine_info[1]) / plugin_name_blender
         elif self.engine_type == EngineEnum.unreal:
@@ -321,6 +424,29 @@ class RPCRunner(ABC):
             raise NotImplementedError
         dst_plugin_dir.parent.mkdir(exist_ok=True, parents=True)
         return dst_plugin_dir
+
+    @property
+    @lru_cache
+    def installed_plugin_version(self) -> str:
+        """Get plugin version installed."""
+        assert (
+            self.dst_plugin_dir.exists()
+        ), f'Plugin not installed in "{self.dst_plugin_dir.as_posix()}", should not call this function'
+
+        if self.engine_type == EngineEnum.blender:
+            init_file = self.dst_plugin_dir / '__init__.py'
+            _content = init_file.read_text()
+            _match = re.search(r"__version__ = version = '(.*?)'", _content)
+            if _match:
+                dst_plugin_version = _match.groups()[0]
+            else:
+                dst_plugin_version = '0.0.0'  # cannot find version
+        elif self.engine_type == EngineEnum.unreal:
+            uplugin_file = self.dst_plugin_dir / f'{plugin_name_unreal}.uplugin'
+            dst_plugin_version = json.loads(uplugin_file.read_text())['VersionName']
+        else:
+            raise NotImplementedError
+        return dst_plugin_version
 
     def _download(self, url: str, dst_dir: Path) -> Path:
         """Check if the url is valid and download the plugin to the given directory."""
@@ -332,9 +458,9 @@ class RPCRunner(ABC):
                 code=e.code,
                 msg=(
                     'Failed to download plugin.\n'
-                    f'Sorry, pre-built plugin for {"".join(self.engine_info)} in {platform.system()} is not supported.\n'
-                    'Set `dev_plugin=True` in init_blender/init_unreal to build the plugin from source.\n'
-                    'Clone the source code from https://github.com/openxrlab/xrfeitoria.git'
+                    f'Sorry, pre-built plugin for {plugin_name_pattern.format(**self.plugin_info)} is not provided. '
+                    'You can try to build the plugin from source.\n'
+                    'Follow the instructions here: https://xrfeitoria.readthedocs.io/en/latest/faq.html#how-to-use-the-plugin-of-blender-unreal-under-development'
                 ),
                 hdrs=e.hdrs,
                 fp=e.fp,
@@ -369,10 +495,12 @@ class RPCRunner(ABC):
         pass
 
     @abstractmethod
-    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> None:
+    def _start_rpc(self, background: bool = True, project_path: Optional[Path] = '') -> subprocess.Popen:
         pass
 
-    def _get_plugin_url(self) -> Optional[str]:
+    @property
+    @lru_cache
+    def plugin_info(self) -> plugin_info_type:
         # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
         plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
         plugin_versions = sorted((map(parse, plugin_infos.keys())))
@@ -384,23 +512,58 @@ class RPCRunner(ABC):
         else:
             _idx = bisect_left(plugin_versions, parse(__version__)) - 1
             compatible_version = plugin_versions[_idx]
+
+        # read from env (highest priority)
+        if os.environ.get('XRFEITORIA__VERSION'):
+            compatible_version = parse(os.environ['XRFEITORIA__VERSION'])
+
         logger.debug(f'Compatible plugin version: {compatible_version}')
 
         # get link
         if self.engine_type == EngineEnum.unreal:
-            _plugin_name = plugin_name_unreal
-            _platform = f'{"".join(self.engine_info)}-{platform.system()}'  # e.g. Unreal5.1-Windows
+            plugin_name = plugin_name_unreal
+            engine_version = ''.join(self.engine_info)  # e.g. Unreal5.1
+            _platform = platform.system()  # Literal["Windows", "Linux", "Darwin"]
         elif self.engine_type == EngineEnum.blender:
-            _plugin_name = plugin_name_blender
-            _platform = 'None-None'
-        _plugin_version = plugin_infos[str(compatible_version)][_plugin_name]
-        # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy-0.5.0-None-None.zip
-        # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
-        return f'{oss_root}/plugins/{_plugin_name}-{_plugin_version}-{_platform}.zip'
+            plugin_name = plugin_name_blender
+            engine_version = 'None'  # support all blender versions
+            _platform = 'None'  # support all platforms
+        plugin_version = os.environ.get('XRFEITORIA__VERSION') or plugin_infos[str(compatible_version)][plugin_name]
+        # e.g. XRFeitoriaBpy-0.5.0-None-None
+        # e.g. XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows
+        return dict(
+            plugin_name=plugin_name,
+            plugin_version=plugin_version,
+            engine_version=engine_version,
+            platform=_platform,
+        )
+
+    @property
+    @lru_cache
+    def plugin_url(self) -> Optional[str]:
+        if dist_root.startswith('http'):
+            # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy-0.5.0-None-None.zip
+            # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
+            return f'{dist_root}/plugins/{plugin_name_pattern.format(**self.plugin_info)}.zip'
+        else:
+            # e.g. /path/to/dist/XRFeitoriaBpy-0.5.0-None-None.zip
+            # e.g. /path/to/dist/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
+            return f'{dist_root}/{plugin_name_pattern.format(**self.plugin_info)}.zip'
 
     def _install_plugin(self) -> None:
         """Install plugin."""
-        if self.dst_plugin_dir.exists():
+        if self.dst_plugin_dir.exists() and not self.replace_plugin:
+            if parse(self.installed_plugin_version) < parse(self.plugin_info['plugin_version']):
+                self.replace_plugin = True
+            if (
+                parse(self.installed_plugin_version) > parse(self.plugin_info['plugin_version'])
+                and not self.replace_plugin
+            ):
+                logger.warning(
+                    f'Plugin installed in "{self.dst_plugin_dir.as_posix()}" is in version {self.installed_plugin_version}, '
+                    f'newer than version {self.plugin_info["plugin_version"]} which is required by {package_name}-{__version__}. '
+                    'May cause unexpected errors.'
+                )
             if not self.replace_plugin:
                 logger.debug(f'Plugin "{self.dst_plugin_dir.as_posix()}" already exists')
                 return
@@ -446,6 +609,11 @@ class RPCRunner(ABC):
     def test_connection(debug: bool = False) -> None:
         pass
 
+    @staticmethod
+    @abstractmethod
+    def get_pid() -> int:
+        pass
+
 
 class BlenderRPCRunner(RPCRunner):
     def get_src_plugin_path(self) -> Path:
@@ -456,14 +624,16 @@ class BlenderRPCRunner(RPCRunner):
             src_plugin_dir = Path(__file__).resolve().parents[2] / 'src' / plugin_name_blender
             src_plugin_path = _make_archive(src_plugin_dir)
         else:
-            url = self._get_plugin_url()
             src_plugin_root = tmp_dir / 'plugins'
-            src_plugin_path = src_plugin_root / Path(url).name  # with suffix (.zip)
+            src_plugin_path = src_plugin_root / Path(self.plugin_url).name  # with suffix (.zip)
             if src_plugin_path.exists():
                 logger.debug(f'Downloaded Plugin "{src_plugin_path.as_posix()}" exists')
                 return src_plugin_path
 
-            plugin_path = self._download(url=url, dst_dir=src_plugin_root)
+            if self.plugin_url.startswith('http'):
+                plugin_path = self._download(url=self.plugin_url, dst_dir=src_plugin_root)
+            else:
+                plugin_path = Path(self.plugin_url)
             if plugin_path != src_plugin_path:
                 shutil.move(plugin_path, src_plugin_path)
         return src_plugin_path
@@ -547,6 +717,14 @@ class BlenderRPCRunner(RPCRunner):
         except Exception:
             pass
 
+    @staticmethod
+    @remote_blender(default_imports=[])
+    def get_pid() -> int:
+        """Get blender process id."""
+        import os
+
+        return os.getpid()
+
 
 class UnrealRPCRunner(RPCRunner):
     """UnrealRPCRunner."""
@@ -558,14 +736,13 @@ class UnrealRPCRunner(RPCRunner):
             if not src_plugin_path.exists():
                 raise FileNotFoundError(
                     f'Plugin source code not found in {src_plugin_path}, '
-                    'please set `dev_plugin=False` to download the pre-built plugin. '
+                    'please set `dev_plugin=False` to download the pre-built plugin. \n'
                     'Or clone the source code and build the plugin from source. '
                     'https://github.com/openxrlab/xrfeitoria.git'
                 )
-        else:
-            url = self._get_plugin_url()
+        elif self.plugin_url.startswith('http'):
             src_plugin_root = tmp_dir / 'plugins'
-            src_plugin_compress = src_plugin_root / Path(url).name  # with suffix (.zip)
+            src_plugin_compress = src_plugin_root / Path(self.plugin_url).name  # with suffix (.zip)
             src_plugin_path = src_plugin_compress.with_suffix('')  # without suffix (.zip)
             if src_plugin_path.exists():
                 logger.debug(f'Downloaded Plugin "{src_plugin_path.as_posix()}" exists')
@@ -576,17 +753,19 @@ class UnrealRPCRunner(RPCRunner):
                 assert src_plugin_path.exists(), f'Failed to unzip {src_plugin_compress} to {src_plugin_path}'
                 return src_plugin_path
 
-            plugin_compress = self._download(url=url, dst_dir=src_plugin_root)
+            plugin_compress = self._download(url=self.plugin_url, dst_dir=src_plugin_root)
             shutil.unpack_archive(plugin_compress, src_plugin_root)
             assert src_plugin_path.exists(), f'Failed to download plugin to {src_plugin_path}'
+        else:
+            # custom dist path
+            plugin_compress = Path(self.plugin_url)
+            src_plugin_path = plugin_compress.with_suffix('')  # without suffix (.zip)
         return src_plugin_path
 
     @staticmethod
     def _get_engine_info(engine_exec: Path) -> Tuple[str, str]:
-        try:
-            _version = re.findall(r'UE_(\d+\.\d+)', engine_exec.as_posix())[0]
-        except IndexError:
-            raise FileNotFoundError(f'Cannot find unreal executable in {engine_exec}')
+        build_info = json.loads((engine_exec.parents[2] / 'Build' / 'Build.version').read_text())
+        _version = f'{build_info["MajorVersion"]}.{build_info["MinorVersion"]}'
         return 'Unreal', _version
 
     def _get_cmd(
@@ -654,3 +833,11 @@ class UnrealRPCRunner(RPCRunner):
         import unreal
 
         unreal.log('Connection test passed')
+
+    @staticmethod
+    @remote_unreal(default_imports=[])
+    def get_pid() -> int:
+        """Get unreal process id."""
+        import os
+
+        return os.getpid()

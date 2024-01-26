@@ -131,9 +131,12 @@ graphviz_output_format = 'svg'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+html_context = {
+    'github_user': 'openxrlab',
+    'github_repo': 'xrfeitoria',
+}
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_css_files = ['override.css']  # override py property
 html_theme_options = {
     'navigation_depth': 3,

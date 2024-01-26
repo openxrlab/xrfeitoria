@@ -6,6 +6,8 @@ from constants import (
     DEFAULT_SEQUENCE_DATA_ASSET,
     DEFAULT_SEQUENCE_PATH,
     ENGINE_MAJOR_VERSION,
+    ENGINE_MINOR_VERSION,
+    MotionFrame,
     SequenceTransformKey,
     SubSystem,
     TransformKeys,
@@ -17,7 +19,6 @@ from utils_actor import get_actor_mesh_component
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
 EditorAssetSub = SubSystem.EditorAssetSub
 EditorLevelSub = SubSystem.EditorLevelSub
-START_FRAME = -1
 
 ################################################################################
 # misc
@@ -29,6 +30,20 @@ def duplicate_binding(binding: unreal.SequencerBindingProxy) -> None:
     exported_txt = EditorLevelSequenceSub.copy_bindings([binding])
     EditorLevelSequenceSub.paste_bindings(exported_txt, unreal.MovieScenePasteBindingsParams())
     # TODO: the event track would be lost after pasting, need to fix it
+
+
+def get_binding_id(binding: unreal.SequencerBindingProxy) -> unreal.MovieSceneObjectBindingID:
+    """Get the MovieSceneObjectBindingID from a SequencerBindingProxy.
+
+    Args:
+        binding (unreal.SequencerBindingProxy): The SequencerBindingProxy object.
+
+    Returns:
+        unreal.MovieSceneObjectBindingID: The MovieSceneObjectBindingID extracted from the binding.
+    """
+    binding_id = unreal.MovieSceneObjectBindingID()
+    binding_id.set_editor_property('Guid', binding.binding_id)
+    return binding_id
 
 
 def convert_frame_rate_to_fps(frame_rate: unreal.FrameRate) -> float:
@@ -46,9 +61,10 @@ def get_animation_length(animation_asset: unreal.AnimSequence, seq_fps: float = 
         # TODO: check if this is true
         anim_frame_rate = animation_asset.get_editor_property('target_frame_rate')
         anim_frame_rate = convert_frame_rate_to_fps(anim_frame_rate)
-        assert (
-            anim_frame_rate == seq_fps
-        ), f'anim fps {anim_frame_rate} != seq fps {seq_fps}, this would cause animation interpolation.'
+        if anim_frame_rate == seq_fps:
+            unreal.log_warning(
+                f'anim fps {anim_frame_rate} != seq fps {seq_fps}, this would cause animation interpolation.'
+            )
 
         anim_len = animation_asset.get_editor_property('number_of_sampled_frames')
 
@@ -246,7 +262,7 @@ def add_property_bool_track_to_binding(
     bool_section.set_end_frame_bounded(0)
 
     # set key
-    for channel in bool_section.find_channels_by_type(unreal.MovieSceneScriptingBoolChannel):
+    for channel in bool_section.get_channels_by_type(unreal.MovieSceneScriptingBoolChannel):
         channel.set_default(property_value)
 
     return bool_track, bool_section
@@ -267,7 +283,7 @@ def add_property_int_track_to_binding(
     int_section.set_end_frame_bounded(0)
 
     # set key
-    for channel in int_section.find_channels_by_type(unreal.MovieSceneScriptingIntegerChannel):
+    for channel in int_section.get_channels_by_type(unreal.MovieSceneScriptingIntegerChannel):
         channel.set_default(property_value)
 
     return int_track, int_section
@@ -288,7 +304,7 @@ def add_property_string_track_to_binding(
     string_section.set_end_frame_bounded(0)
 
     # set key
-    for channel in string_section.find_channels_by_type(unreal.MovieSceneScriptingStringChannel):
+    for channel in string_section.get_channels_by_type(unreal.MovieSceneScriptingStringChannel):
         channel: unreal.MovieSceneScriptingStringChannel
         if isinstance(property_value, str):
             channel.set_default(property_value)
@@ -377,6 +393,69 @@ def add_animation_to_binding(
     set_animation_by_section(animation_section, animation_asset, animation_length, seq_fps)
 
 
+def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data: List[MotionFrame]) -> None:
+    """Add FK motion to the given actor binding.
+
+    Args:
+        binding (unreal.SequencerBindingProxy): The binding of actor in sequence to add FK motion to.
+        motion_data (List[MotionFrame]): The FK motion data.
+    """
+    rig_track: unreal.MovieSceneControlRigParameterTrack = (
+        unreal.ControlRigSequencerLibrary.find_or_create_control_rig_track(
+            world=get_world(),
+            level_sequence=binding.sequence,
+            control_rig_class=unreal.FKControlRig,
+            binding=binding,
+        )
+    )
+    rig_section: unreal.MovieSceneControlRigParameterSection = rig_track.get_section_to_key()
+    param_names = list(rig_section.get_parameter_names())
+    for bone_name, bone_data in motion_data[0].items():
+        if 'curve' in bone_data.keys():
+            bone_name = f'{bone_name}_CURVE_CONTROL'
+        else:
+            bone_name = f'{bone_name}_CONTROL'
+        assert bone_name in param_names, RuntimeError(f'bone name: {bone_name} not in param names: {param_names}')
+
+    if ENGINE_MAJOR_VERSION == 5 and ENGINE_MINOR_VERSION < 2:
+        msg = 'FKRigExecuteMode is not supported in < UE5.2, may cause unexpected result using FK motion.'
+        unreal.log_warning(msg)
+    else:
+        rig_proxies = unreal.ControlRigSequencerLibrary.get_control_rigs(binding.sequence)
+        for rig_proxy in rig_proxies:
+            ### TODO: judge if the track belongs to this actor
+            unreal.ControlRigSequencerLibrary.set_control_rig_apply_mode(
+                rig_proxy.control_rig, unreal.ControlRigFKRigExecuteMode.ADDITIVE
+            )
+
+    def get_transform_from_bone_data(bone_data: Dict[str, List[float]]):
+        quat: Tuple[float, float, float, float] = bone_data.get('rotation')
+        location: Tuple[float, float, float] = bone_data.get('location', (0, 0, 0))  # default location is (0, 0, 0)
+
+        # HACK: convert space
+        location = [location[0] * 100, -location[1] * 100, location[2] * 100]  # cm -> m, y -> -y
+        quat = (-quat[1], quat[2], -quat[3], quat[0])  # (w, x, y, z) -> (-x, y, -z, w)
+
+        transform = unreal.Transform(location=location, rotation=unreal.Quat(*quat).rotator())
+        return transform
+
+    for frame, motion_frame in enumerate(motion_data):
+        for bone_name, bone_data in motion_frame.items():
+            # TODO: set key type to STATIC
+            if 'curve' in bone_data.keys():
+                rig_section.add_scalar_parameter_key(
+                    parameter_name=f'{bone_name}_CURVE_CONTROL',
+                    time=get_time(binding.sequence, frame),
+                    value=bone_data['curve'],
+                )
+            else:
+                rig_section.add_transform_parameter_key(
+                    parameter_name=f'{bone_name}_CONTROL',
+                    time=get_time(binding.sequence, frame),
+                    value=get_transform_from_bone_data(bone_data),
+                )
+
+
 def get_spawnable_actor_from_binding(
     sequence: unreal.MovieSceneSequence,
     binding: unreal.SequencerBindingProxy,
@@ -410,13 +489,13 @@ def add_level_visibility_to_sequence(
     # add level visibility section
     level_visible_section: unreal.MovieSceneLevelVisibilitySection = level_visibility_track.add_section()
     level_visible_section.set_visibility(unreal.LevelVisibility.VISIBLE)
-    level_visible_section.set_start_frame(START_FRAME)
+    level_visible_section.set_start_frame(Sequence.START_FRAME)
     level_visible_section.set_end_frame(seq_length)
 
     level_hidden_section: unreal.MovieSceneLevelVisibilitySection = level_visibility_track.add_section()
     level_hidden_section.set_row_index(1)
     level_hidden_section.set_visibility(unreal.LevelVisibility.HIDDEN)
-    level_hidden_section.set_start_frame(START_FRAME)
+    level_hidden_section.set_start_frame(Sequence.START_FRAME)
     level_hidden_section.set_end_frame(seq_length)
     return level_visible_section, level_hidden_section
 
@@ -480,7 +559,7 @@ def add_camera_to_sequence(
     camera_binding = sequence.add_possessable(camera)
     camera_track: unreal.MovieScene3DTransformTrack = camera_binding.add_track(unreal.MovieScene3DTransformTrack)  # type: ignore
     camera_section: unreal.MovieScene3DTransformSection = camera_track.add_section()  # type: ignore
-    camera_section.set_start_frame(START_FRAME)
+    camera_section.set_start_frame(Sequence.START_FRAME)
     camera_section.set_end_frame(seq_length)
     camera_component_binding = sequence.add_possessable(camera.camera_component)
     camera_component_binding.set_parent(camera_binding)
@@ -492,13 +571,14 @@ def add_camera_to_sequence(
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)  # type: ignore
 
     # add a camera cut track for this camera
-    # make sure the camera cut is stretched to the START_FRAME mark
+    # make sure the camera cut is stretched to the Sequence.START_FRAME mark
     camera_cut_section: unreal.MovieSceneCameraCutSection = camera_cut_track.add_section()  # type: ignore
-    camera_cut_section.set_start_frame(START_FRAME)
+    camera_cut_section.set_start_frame(Sequence.START_FRAME)
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
-    camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    # camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    camera_cut_section.set_camera_binding_id(get_binding_id(camera_binding))
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(camera_binding)
@@ -562,9 +642,9 @@ def add_spawnable_camera_to_sequence(
     # camera_cut_track = sequence.add_track(unreal.MovieSceneCameraCutTrack)
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)
 
-    # add a camera cut track for this camera, make sure the camera cut is stretched to the START_FRAME mark
+    # add a camera cut track for this camera, make sure the camera cut is stretched to the Sequence.START_FRAME mark
     camera_cut_section: unreal.MovieSceneCameraCutSection = camera_cut_track.add_section()
-    camera_cut_section.set_start_frame(START_FRAME)
+    camera_cut_section.set_start_frame(Sequence.START_FRAME)
     camera_cut_section.set_end_frame(seq_length)
 
     # set the camera cut to use this camera
@@ -576,7 +656,8 @@ def add_spawnable_camera_to_sequence(
     # camera_binding_id = sequence.make_binding_id(camera_binding, unreal.MovieSceneObjectBindingSpace.LOCAL)
     # camera_cut_section.set_camera_binding_id(camera_binding_id)
 
-    camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    # camera_cut_section.set_camera_binding_id(camera_binding.get_binding_id())
+    camera_cut_section.set_camera_binding_id(get_binding_id(camera_binding))
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(camera_binding)
@@ -604,6 +685,7 @@ def add_actor_to_sequence(
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     animation_asset: Optional[unreal.AnimSequence] = None,
+    motion_data: Optional[List[MotionFrame]] = None,
     seq_fps: Optional[float] = None,
     seq_length: Optional[int] = None,
 ) -> Dict[str, Any]:
@@ -613,6 +695,8 @@ def add_actor_to_sequence(
     if seq_length is None:
         if animation_asset:
             seq_length = get_animation_length(animation_asset, seq_fps)
+        if motion_data:
+            seq_length = len(motion_data)
         else:
             seq_length = sequence.get_playback_end()
 
@@ -634,6 +718,10 @@ def add_actor_to_sequence(
     # add animation
     if animation_asset:
         add_animation_to_binding(actor_binding, animation_asset, seq_length, seq_fps)
+
+    # add motion data (FK / ControlRig)
+    if motion_data:
+        add_fk_motion_to_binding(actor_binding, motion_data)
 
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(actor_binding)
@@ -658,6 +746,7 @@ def add_spawnable_actor_to_sequence(
     actor_name: str,
     actor_asset: Union[unreal.SkeletalMesh, unreal.StaticMesh],
     animation_asset: Optional[unreal.AnimSequence] = None,
+    motion_data: Optional[List[MotionFrame]] = None,
     actor_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     actor_stencil_value: int = 1,
     seq_fps: Optional[float] = None,
@@ -669,6 +758,8 @@ def add_spawnable_actor_to_sequence(
     if seq_length is None:
         if animation_asset:
             seq_length = get_animation_length(animation_asset, seq_fps)
+        if motion_data:
+            seq_length = len(motion_data)
         else:
             seq_length = sequence.get_playback_end()
 
@@ -694,6 +785,10 @@ def add_spawnable_actor_to_sequence(
     if animation_asset:
         add_animation_to_binding(actor_binding, animation_asset, seq_length, seq_fps)
 
+    # add motion data (FK / ControlRig)
+    if motion_data:
+        add_fk_motion_to_binding(actor_binding, motion_data)
+
     # ------- add transform track ------- #
     transform_track, transform_section = add_or_find_transform_track_to_binding(actor_binding)
     if actor_transform_keys:
@@ -710,6 +805,35 @@ def add_spawnable_actor_to_sequence(
             'stencil_value': {'track': stencil_value_track, 'section': stencil_value_section},
         },
     }
+
+
+def add_audio_to_sequence(
+    sequence: unreal.LevelSequence,
+    audio_asset: unreal.SoundWave,
+    start_frame: Optional[int] = None,
+    end_frame: Optional[int] = None,
+) -> Dict[str, Any]:
+    fps = get_sequence_fps(sequence)
+    # ------- add audio track ------- #
+    audio_track: unreal.MovieSceneAudioTrack = sequence.add_track(unreal.MovieSceneAudioTrack)
+    audio_section: unreal.MovieSceneAudioSection = audio_track.add_section()
+    audio_track.set_display_name(audio_asset.get_name())
+
+    # ------- set start frame ------- #
+    if start_frame is None:
+        start_frame = 0
+
+    # ------- set end frame ------- #
+    if end_frame is None:
+        duration = audio_asset.get_editor_property('duration')
+        end_frame = start_frame + int(duration * fps)
+    audio_section.set_end_frame(end_frame=end_frame)
+    audio_section.set_start_frame(start_frame=start_frame)
+
+    # ------- set audio ------- #
+    audio_section.set_sound(audio_asset)
+
+    return {'audio_track': {'track': audio_track, 'section': audio_section}}
 
 
 def generate_sequence(
@@ -739,7 +863,11 @@ class Sequence:
     sequence_path = None
     sequence_data_asset: unreal.DataAsset = None  # contains sequence_path and map_path
     sequence: unreal.LevelSequence = None
+    # TODO: make this work
+    # Currently if there's value in bindings and exited accidentally, the value will be kept and cause error
     bindings: Dict[str, Dict[str, Any]] = {}
+
+    START_FRAME = -1
 
     def __init__(self) -> NoReturn:
         raise Exception('Sequence (XRFeitoriaUnreal/Python) should not be instantiated')
@@ -812,13 +940,16 @@ class Sequence:
         if seq_dir is None:
             seq_dir = DEFAULT_SEQUENCE_PATH
 
-        data_asset_path = f'{seq_dir}/{seq_name}{data_asset_suffix}'
-        if unreal.EditorAssetLibrary.does_asset_exist(f'{seq_dir}/{seq_name}'):
+        seq_path = f'{seq_dir}/{seq_name}'
+        data_asset_path = f'{seq_path}{data_asset_suffix}'
+        if unreal.EditorAssetLibrary.does_asset_exist(seq_path) or unreal.EditorAssetLibrary.does_asset_exist(
+            data_asset_path
+        ):
             if replace:
-                unreal.EditorAssetLibrary.delete_asset(f'{seq_dir}/{seq_name}')
+                unreal.EditorAssetLibrary.delete_asset(seq_path)
                 unreal.EditorAssetLibrary.delete_asset(data_asset_path)
             else:
-                raise Exception(f'Sequence `{seq_dir}/{seq_name}` already exists, use `replace=True` to replace it')
+                raise Exception(f'Sequence `{seq_path}` already exists, use `replace=True` to replace it')
 
         unreal.EditorLoadingAndSavingUtils.load_map(map_path)
         cls.map_path = map_path
@@ -828,7 +959,7 @@ class Sequence:
             seq_fps=seq_fps,
             seq_length=seq_length,
         )
-        cls.sequence_path = f'{seq_dir}/{seq_name}'
+        cls.sequence_path = seq_path
 
         cls.sequence_data_asset = cls.new_data_asset(
             asset_path=data_asset_path,
@@ -890,6 +1021,53 @@ class Sequence:
         map_path = seq_data_asset.get_editor_property('MapPath').export_text()
         return seq_path.split('.')[0], map_path.split('.')[0]
 
+    @classmethod
+    def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the camera cut playback.
+
+        Args:
+            start_frame (Optional[int], optional): start frame of the camera cut playback. Defaults to None.
+            end_frame (Optional[int], optional): end frame of the camera cut playback. Defaults to None.
+
+        Raises:
+            AssertionError: If the sequence is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        camera_tracks = cls.sequence.find_master_tracks_by_type(unreal.MovieSceneCameraCutTrack)
+        for camera_track in camera_tracks:
+            for section in camera_track.get_sections():
+                if start_frame:
+                    section.set_start_frame(start_frame)
+                if end_frame:
+                    section.set_end_frame(end_frame)
+
+    @classmethod
+    def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
+        """Set the playback range for the sequence.
+
+        Args:
+            start_frame (Optional[int]): The start frame of the playback range. Defaults to None.
+            end_frame (Optional[int]): The end frame of the playback range. Defaults to None.
+
+        Raises:
+            AssertionError: If the sequence is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        master_tracks = cls.sequence.get_tracks()
+
+        if start_frame:
+            cls.START_FRAME = start_frame
+            cls.sequence.set_playback_start(start_frame=start_frame)
+            for master_track in master_tracks:
+                for section in master_track.get_sections():
+                    section.set_start_frame(start_frame)
+
+        if end_frame:
+            cls.sequence.set_playback_end(end_frame=end_frame)
+            for master_track in master_tracks:
+                for section in master_track.get_sections():
+                    section.set_end_frame(end_frame)
+
     # ------ add actor and camera -------- #
 
     @classmethod
@@ -915,7 +1093,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            cls.bindings[camera_name] = bindings
+            # cls.bindings[camera_name] = bindings
         else:
             camera = utils_actor.get_actor_by_name(camera_name)
             bindings = add_camera_to_sequence(
@@ -924,7 +1102,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            cls.bindings[camera_name] = bindings
+            # cls.bindings[camera_name] = bindings
 
     @classmethod
     def add_actor(
@@ -934,15 +1112,21 @@ class Sequence:
         transform_keys: 'Optional[TransformKeys]' = None,
         stencil_value: int = 1,
         animation_asset: 'Optional[Union[str, unreal.AnimSequence]]' = None,
+        motion_data: 'Optional[List[MotionFrame]]' = None,
     ) -> None:
         """Spawn an actor in sequence.
 
         Args:
-            actor (Union[str, unreal.Actor]): actor path (e.g. '/Game/Cube') / loaded asset (via `unreal.load_asset('/Game/Cube')`)
-            animation_asset (Union[str, unreal.AnimSequence]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
-            actor_name (str, optional): Name of actor to set in sequence. Defaults to "Actor".
-            transform_keys (TransformKeys, optional): List of transform keys. Defaults to None.
-            actor_stencil_value (int, optional): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
+            actor_name (str): The name of the actor.
+            actor (Optional[Union[str, unreal.Actor]]): actor path (e.g. '/Game/Cube') / loaded asset (via `unreal.load_asset('/Game/Cube')`)
+            transform_keys (Optional[TransformKeys]): List of transform keys. Defaults to None.
+            stencil_value (int): Stencil value of actor, used for specifying the mask color for this actor (mask id). Defaults to 1.
+            animation_asset (Optional[Union[str, unreal.AnimSequence]]): animation path (e.g. '/Game/Anim') / loaded asset (via `unreal.load_asset('/Game/Anim')`). Can be None which means no animation.
+            motion_data (Optional[List[MotionFrame]]): The motion data used for FK animation.
+
+        Raises:
+            AssertionError: If `cls.sequence` is not initialized.
+            AssertionError: If `animation_asset` and `motion_data` are both provided. Only one can be provided.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
         if animation_asset and isinstance(animation_asset, str):
@@ -956,10 +1140,11 @@ class Sequence:
                 actor_name=actor_name,
                 actor_asset=actor,
                 animation_asset=animation_asset,
+                motion_data=motion_data,
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
-            cls.bindings[actor_name] = bindings
+            # cls.bindings[actor_name] = bindings
 
         else:
             actor = utils_actor.get_actor_by_name(actor_name)
@@ -969,8 +1154,34 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
                 animation_asset=animation_asset,
+                motion_data=motion_data,
             )
-            cls.bindings[actor_name] = bindings
+            # cls.bindings[actor_name] = bindings
+
+    @classmethod
+    def add_audio(
+        cls,
+        audio_asset: Union[str, unreal.SoundWave],
+        start_frame: Optional[int] = None,
+        end_frame: Optional[int] = None,
+    ):
+        """Spawn an audio in sequence.
+
+        Args:
+            audio_asset (Union[str, unreal.SoundWave]): audio path (e.g. '/Game/audio_sample') / loaded asset (via `unreal.load_asset('/Game/audio_sample')`)
+            start_frame (Optional[int], optional): start frame of the audio. Defaults to None.
+            end_frame (Optional[int], optional): end frame of the audio. Defaults to None.
+        Raises:
+            AssertionError: If `cls.sequence` is not initialized.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        if isinstance(audio_asset, str):
+            audio_asset = unreal.load_asset(audio_asset)
+
+        bindings = add_audio_to_sequence(
+            sequence=cls.sequence, audio_asset=audio_asset, start_frame=start_frame, end_frame=end_frame
+        )
+        # cls.bindings[audio_asset.get_name()] = bindings
 
 
 if __name__ == '__main__':

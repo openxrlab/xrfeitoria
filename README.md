@@ -9,7 +9,7 @@
 <div align="center">
 
 [![Documentation](https://readthedocs.org/projects/xrfeitoria/badge/?version=latest)](https://xrfeitoria.readthedocs.io/en/latest/?badge=latest)
-[![actions](https://github.com/openxrlab/xrfeitoria/workflows/lint/badge.svg)](https://github.com/openxrlab/xrfeitoria/actions)
+[![actions](https://github.com/openxrlab/xrfeitoria/actions/workflows/lint.yml/badge.svg)](https://github.com/openxrlab/xrfeitoria/actions)
 [![PyPI](https://img.shields.io/pypi/v/xrfeitoria)](https://pypi.org/project/xrfeitoria/)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
@@ -75,23 +75,45 @@ The reference documentation is available on [readthedocs](https://xrfeitoria.rea
 There are several [tutorials](/tutorials/).
 You can read them [here](https://xrfeitoria.readthedocs.io/en/latest/src/Tutorials.html).
 
-
 ### Sample codes
 
 There are several [samples](/samples/).
 Please follow the instructions [here](/samples/README.md).
 
+### Use plugins under development
+
+Details can be found [here](https://xrfeitoria.readthedocs.io/en/latest/faq.html#how-to-use-the-plugin-of-blender-unreal-under-development).
+
+If you want to publish plugins of your own, you can use the following command:
+
+```powershell
+# install xrfeitoria first
+cd xrfeitoria
+pip install .
+
+# for instance, build plugins for Blender, UE 5.1, UE 5.2, and UE 5.3 on Windows.
+# using powershell where backtick(`) is the line continuation character.
+python -m xrfeitoria.utils.publish_plugins `
+    -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
+    -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
+    -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+```
+
+### Frequently Asked Questions
+
+Please refer to [FAQ](https://xrfeitoria.readthedocs.io/en/latest/faq.html).
 
 
 ## :rocket: Amazing Projects Using XRFeitoria
 
 | Project | Teaser | Engine |
 | :---: | :---: | :---: |
-| [Synbody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <a href=https://synbody.github.io/><img src="https://synbody.github.io/static/teaser.png"/></a> | Unreal Engine / Blender |
-| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <a href=https://wenjiawang0312.github.io/projects/zolly/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"/></a> | Blender |
-| [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <a href=https://skhu101.github.io/SHERF/><img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"/></a> | Blender |
-| [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <a href=https://city-super.github.io/matrixcity/><img src="https://city-super.github.io/matrixcity/img/teaser.jpg"/></a> | Unreal Engine |
+| [SynBody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <a href=https://synbody.github.io/><img src="https://synbody.github.io/static/teaser.png"></a> | Unreal Engine / Blender |
+| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <a href=https://wenjiawang0312.github.io/projects/zolly/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"></a> | Blender |
+| [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <a href=https://skhu101.github.io/SHERF/><img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"></a> | Blender |
+| [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <a href=https://city-super.github.io/matrixcity/><img src="https://city-super.github.io/matrixcity/img/teaser.jpg"></a> | Unreal Engine |
 | [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <a href=https://skhu101.github.io/HumanLiff/><img src="https://skhu101.github.io/HumanLiff/HumanLiff%20-%20Project%20Page_files/SHERF_teaser.png"/></a> | Blender |
+| [PrimDiffusion: Volumetric Primitives Diffusion for 3D Human Generation](https://frozenburning.github.io/projects/primdiffusion/) | <a href=https://frozenburning.github.io/projects/primdiffusion/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/PrimDiffusion.png"></a> | Blender |
 
 ## License
 

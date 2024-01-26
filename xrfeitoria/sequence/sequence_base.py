@@ -14,7 +14,7 @@ from ..utils import Validator
 
 try:
     from ..data_structure.models import SequenceTransformKey, TransformKeys, RenderPass  # isort:skip
-except ModuleNotFoundError:
+except (ImportError, ModuleNotFoundError):
     SequenceTransformKey = TransformKeys = RenderPass = None
 
 
@@ -28,6 +28,12 @@ class SequenceBase(ABC):
     _object_utils = ObjectUtilsBase
     _renderer = RendererBase
     __platform__: EngineEnum = _tls.cache.get('platform', None)
+
+    def __enter__(self) -> 'SequenceBase':
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     @classmethod
     def _new(
@@ -43,7 +49,7 @@ class SequenceBase(ABC):
 
         Args:
             seq_name (str): Name of the sequence.
-            level (str): Level to link to the sequence.
+            level (Optional[str], optional): Name of the level. Defaults to None.
             seq_fps (int, optional): Frame per second of the new sequence. Defaults to 60.
             seq_length (int, optional): Frame length of the new sequence. Defaults to 60.
             replace (bool, optional): Replace the exist same-name sequence. Defaults to False.
@@ -75,17 +81,6 @@ class SequenceBase(ABC):
         logger.info(f'<<<< [red]Closed[/red] sequence "{cls.name}" <<<<')
         cls.name = None
 
-    @classmethod
-    def save(cls) -> None:
-        """Save the sequence."""
-        cls._save_seq_in_engine()
-        logger.info(f'++++  [cyan]Saved[/cyan] sequence "{cls.name}" ++++')
-
-    @classmethod
-    def show(cls) -> None:
-        """Show the sequence in the engine."""
-        cls._show_seq_in_engine()
-
     # ------ import actor ------ #
     @classmethod
     def import_actor(
@@ -97,6 +92,19 @@ class SequenceBase(ABC):
         scale: 'Vector' = None,
         stencil_value: int = 1,
     ) -> ActorBase:
+        """Imports an actor from a file and adds it to the sequence.
+
+        Args:
+            file_path (PathLike): The path to the file containing the actor to import.
+            actor_name (Optional[str], optional): The name to give the imported actor. If not provided, a name will be generated automatically. Defaults to None.
+            location (Vector, optional): The initial location of the actor. Defaults to None.
+            rotation (Vector, optional): The initial rotation of the actor. Defaults to None.
+            scale (Vector, optional): The initial scale of the actor. Defaults to None.
+            stencil_value (int, optional): The stencil value to use for the actor. Defaults to 1.
+
+        Returns:
+            ActorBase: The imported actor.
+        """
         if actor_name is None:
             actor_name = cls._object_utils.generate_obj_name(obj_type='actor')
         # judge file path
@@ -423,6 +431,9 @@ class SequenceBase(ABC):
         )
         # return render_job
 
+    def __repr__(self) -> str:
+        return f'<Sequence "{self.name}">'
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
@@ -480,14 +491,4 @@ class SequenceBase(ABC):
     @staticmethod
     @abstractmethod
     def _close_seq_in_engine() -> None:
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def _save_seq_in_engine() -> None:
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def _show_seq_in_engine() -> None:
         pass

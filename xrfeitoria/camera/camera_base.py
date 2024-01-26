@@ -85,7 +85,7 @@ class CameraBase(ABC, ObjectBase):
 
         # dump
         K, R, T = self.get_KRT()
-        camera_param = CameraParameter(K=K, R=R, T=T)
+        camera_param = CameraParameter(K=K, R=R, T=T, world2cam=True)
         camera_param.dump(output_path.as_posix())
         logger.debug(f'Camera parameters dumped to "{output_path.as_posix()}"')
 
@@ -99,6 +99,9 @@ class CameraBase(ABC, ObjectBase):
         # direction = np.array(target) - np.array(self.location)
         # self.rotation = self._object_utils.direction_to_euler(direction)
         self._look_at_in_engine(self._name, target)
+
+    def __repr__(self) -> str:
+        return f'<Camera "{self._name}">'
 
     #################################
     ####  RPC METHODS (Private)  ####

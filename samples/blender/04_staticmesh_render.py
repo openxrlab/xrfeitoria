@@ -9,11 +9,12 @@ from pathlib import Path
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.data_structure.models import SequenceTransformKey as SeqTransKey
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path, blender_exec
-from ..utils import setup_logger, visualize_vertices
+from ..utils import visualize_vertices
 
-root = Path(__file__).parents[2].resolve()
+root = Path(__file__).resolve().parents[2]
 # output_path = '~/xrfeitoria/output/samples/blender/{file_name}'
 output_path = root / 'output' / Path(__file__).relative_to(root).with_suffix('')
 log_path = output_path / 'blender.log'
@@ -24,7 +25,7 @@ seq_2_name = 'Sequence_static_mesh_2'
 
 
 def main(debug=False, background=False):
-    logger = setup_logger(debug=debug, log_path=log_path)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=log_path)
 
     #############################
     #### use default level ######

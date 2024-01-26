@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright OpenXRLab 2023-2024. All Rights Reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "MoviePipelineOutputSetting.h"
 #include "MoviePipelineMasterConfig.h"
 #include "Misc/FileHelper.h"
-#include "HAL/PlatformFilemanager.h"
+// #include "HAL/PlatformFilemanager.h"
 
 #if WITH_EDITOR
 #include "MovieSceneExportMetadata.h"
@@ -101,8 +101,7 @@ public:
 		FSkeletalMeshOperatorOption SkeletalMeshOperatorOption = FSkeletalMeshOperatorOption();
 
 private:
-	TArray<FSequencerBoundObjects> boundObjects;
-	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	TMap<FString, UStaticMeshComponent*> StaticMeshComponents;
+	TMap<FString, USkeletalMeshComponent*> SkeletalMeshComponents;
 	bool bIsFirstFrame = true;
 };

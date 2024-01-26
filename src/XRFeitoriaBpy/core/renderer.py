@@ -86,18 +86,18 @@ class RenderPassUtils:
     @staticmethod
     def set_slot_to_jpg(node_slot: bpy.types.NodeOutputFileSlotFile):
         node_slot.use_node_format = False
-        node_slot.format.file_format = ImageFileFormatEnum.jpeg
+        node_slot.format.file_format = ImageFileFormatEnum.jpeg.value
 
     @staticmethod
     def set_slot_to_png(node_slot: bpy.types.NodeOutputFileSlotFile):
         node_slot.use_node_format = False
-        node_slot.format.file_format = ImageFileFormatEnum.png
+        node_slot.format.file_format = ImageFileFormatEnum.png.value
 
     @staticmethod
     def set_slot_to_exr(node_slot: bpy.types.NodeOutputFileSlotFile):
         """Set depth to save as float (EXR)"""
         node_slot.use_node_format = False
-        node_slot.format.file_format = ImageFileFormatEnum.exr
+        node_slot.format.file_format = ImageFileFormatEnum.exr.value
         node_slot.format.color_depth = '32'
 
     @staticmethod

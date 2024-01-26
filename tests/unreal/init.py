@@ -2,11 +2,10 @@
 >>> python -m tests.unreal.init_test
 """
 
-from loguru import logger
-
 from xrfeitoria.rpc import remote_unreal
+from xrfeitoria.utils import setup_logger
 
-from ..utils import __timer__, _init_unreal, setup_logger
+from ..utils import __timer__, _init_unreal
 
 
 @remote_unreal()
@@ -16,7 +15,7 @@ def test_unreal():
 
 
 def init_test(debug: bool = False, dev: bool = False, background: bool = False):
-    setup_logger(debug=debug)
+    logger = setup_logger(level='DEBUG' if debug else 'INFO')
     with __timer__('init unreal'):
         with _init_unreal(dev_plugin=dev, background=background) as xf_runner:
             test_unreal()

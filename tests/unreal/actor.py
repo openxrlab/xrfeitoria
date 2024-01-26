@@ -5,9 +5,10 @@ import numpy as np
 from loguru import logger
 
 from xrfeitoria.data_structure.constants import xf_obj_name
+from xrfeitoria.utils import setup_logger
 
 from ..config import assets_path
-from ..utils import __timer__, _init_unreal, setup_logger
+from ..utils import __timer__, _init_unreal
 
 bunny_obj = assets_path['bunny']
 kc_fbx = assets_path['koupen_chan']
@@ -15,7 +16,7 @@ smpl_xl_fbx = assets_path['SMPL_XL']
 
 
 def actor_test(debug: bool = False, background: bool = False):
-    setup_logger(debug=debug)
+    setup_logger(level='DEBUG' if debug else 'INFO')
     with _init_unreal(background=background) as xf_runner:
         with __timer__('import actor'):
             kc_path = xf_runner.utils.import_asset(path=kc_fbx)

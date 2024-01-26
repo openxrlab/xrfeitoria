@@ -45,7 +45,10 @@ dependencies = [
 dynamic = ['version']
 
 [project.optional-dependencies]
-all = ["xrfeitoria[doc,vis]"]
+all = ["xrfeitoria[anim,doc,vis]"]
+anim = [
+    "scipy>1,<2"
+]
 doc = [
     "autodoc_pydantic==2.0.1",
     "docutils",
@@ -60,7 +63,7 @@ doc = [
     "sphinx-tabs==3.4.1",
     "enum-tools[sphinx]",
 ]
-vis=[
+vis = [
     "matplotlib>=3.4,<4",
     "opencv-python>=4,<5",
     "flow_vis==0.1",
@@ -72,7 +75,9 @@ vis=[
 "Documentation" = "https://xrfeitoria.readthedocs.io/en/latest/"
 
 [project.scripts]
-xf-render = "xrfeitoria.cmd.render:app"
+xf-render = "xrfeitoria.cmd.blender.render:app"
+xf-install-plugin = "xrfeitoria.cmd.blender.install_plugin:app"
+xf-smplx = "xrfeitoria.cmd.blender.vis_smplx:app"
 
 [tool.black]
 line-length = 120

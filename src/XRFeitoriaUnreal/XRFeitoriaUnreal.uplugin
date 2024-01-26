@@ -1,15 +1,15 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.5.1",
+	"VersionName": "0.6.0",
 	"FriendlyName": "XRFeitoriaUnreal",
 	"Description": "OpenXRLab Synthetic Data Rendering Toolbox",
 	"Category": "Scripting",
 	"CreatedBy": "OpenXRLab",
-	"CreatedByURL": "",
+	"CreatedByURL": "https://openxrlab.org.cn",
 	"DocsURL": "https://xrfeitoria.readthedocs.io/en/latest/",
-	"MarketplaceURL": "",
-	"SupportURL": "",
+	"SupportURL": "https://xrfeitoria.readthedocs.io/en/latest/",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/ace631ac6e664dd281ab66bcae56ad55",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
@@ -17,8 +17,9 @@
 	"Modules": [
 		{
 			"Name": "XRFeitoriaUnreal",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms":["Win64", "Mac", "Linux"]
 		}
 	],
 	"Plugins": [
@@ -35,8 +36,12 @@
 			"Enabled": true
 		},
 		{
-			"Name": "SequencerScripting",
+			"Name": "PythonFoundationPackages",
 			"Enabled": true
 		},
+		{
+			"Name": "SequencerScripting",
+			"Enabled": true
+		}
 	]
 }
