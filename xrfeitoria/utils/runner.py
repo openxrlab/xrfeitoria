@@ -440,7 +440,7 @@ class RPCRunner(ABC):
             if _match:
                 dst_plugin_version = _match.groups()[0]
             else:
-                raise ValueError("Failed to extract plugin version from '__init__.py'")
+                dst_plugin_version = '0.0.0'  # cannot find version
         elif self.engine_type == EngineEnum.unreal:
             uplugin_file = self.dst_plugin_dir / f'{plugin_name_unreal}.uplugin'
             dst_plugin_version = json.loads(uplugin_file.read_text())['VersionName']
