@@ -813,22 +813,24 @@ def add_audio_to_sequence(
     start_frame: Optional[int] = None,
     end_frame: Optional[int] = None,
 ) -> Dict[str, Any]:
+    fps = get_sequence_fps(sequence)
     # ------- add audio track ------- #
-    audio_track: unreal.MovieSceneAudioTrack = sequence.add_master_track(unreal.MovieSceneAudioTrack)
+    audio_track: unreal.MovieSceneAudioTrack = sequence.add_track(unreal.MovieSceneAudioTrack)
     audio_section: unreal.MovieSceneAudioSection = audio_track.add_section()
     audio_track.set_display_name(audio_asset.get_name())
 
     # ------- set start frame ------- #
     if start_frame is None:
         start_frame = 0
-    audio_section.set_start_frame(start_frame=start_frame)
 
     # ------- set end frame ------- #
     if end_frame is None:
         duration = audio_asset.get_editor_property('duration')
-        audio_section.set_end_frame_seconds(end_time=duration)
-    else:
-        audio_section.set_end_frame(end_frame=end_frame)
+        end_frame = start_frame + int(duration * fps)
+    audio_section.set_end_frame(end_frame=end_frame)
+    audio_section.set_start_frame(start_frame=start_frame)
+
+    # ------- set audio ------- #
     audio_section.set_sound(audio_asset)
 
     return {'audio_track': {'track': audio_track, 'section': audio_section}}
