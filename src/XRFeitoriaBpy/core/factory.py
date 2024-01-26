@@ -173,7 +173,7 @@ class XRFeitoriaBlenderFactory:
         resolution_x = collection.sequence_properties.resolution_x
         resolution_y = collection.sequence_properties.resolution_y
 
-        return level, fps, frame_start, frame_end, frame_current, resolution_x, resolution_y
+        return SequenceProperties(level, fps, frame_start, frame_end, frame_current, resolution_x, resolution_y)
 
     def open_sequence(seq_name: str) -> 'bpy.types.Scene':
         """Open the given sequence.
