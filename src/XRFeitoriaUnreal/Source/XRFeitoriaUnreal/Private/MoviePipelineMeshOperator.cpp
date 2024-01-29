@@ -270,8 +270,11 @@ void UMoviePipelineMeshOperator::BeginExportImpl()
 
 FString UMoviePipelineMeshOperator::GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState)
 {
-	UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
-	// UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <2
+		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	#else
+		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	#endif
 	check(OutputSettings);
 	FString OutputDirectory = OutputSettings->OutputDirectory.Path;
 	FString FileNameFormatString = OutputSettings->FileNameFormat;
