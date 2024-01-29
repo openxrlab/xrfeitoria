@@ -4,7 +4,6 @@
 
 #include "MoviePipeline.h"
 #include "MoviePipelineOutputSetting.h"
-#include "MoviePipelineMasterConfig.h"
 #include "Misc/FileHelper.h"
 // #include "HAL/PlatformFilemanager.h"
 
@@ -13,6 +12,11 @@
 #include "MovieSceneToolHelpers.h"
 #include "MovieScene.h"
 #endif
+
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
+	#include "MoviePipelineMasterConfig.h"
+#endif
+
 
 #include "SequencerTools.h"
 #include "SequencerSettings.h"

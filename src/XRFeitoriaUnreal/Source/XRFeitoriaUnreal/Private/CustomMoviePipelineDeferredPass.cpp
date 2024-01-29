@@ -6,8 +6,8 @@
 void UCustomMoviePipelineDeferredPass::SetupImpl(const MoviePipeline::FMoviePipelineRenderPassInitSettings& InPassInitSettings)
 {
 
-	UCustomMoviePipelineOutput* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UCustomMoviePipelineOutput>();
-	//UCustomMoviePipelineOutput* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UCustomMoviePipelineOutput>();
+	UCustomMoviePipelineOutput* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UCustomMoviePipelineOutput>();
+	// UCustomMoviePipelineOutput* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UCustomMoviePipelineOutput>();
 	check(OutputSettings);
 
 	AdditionalPostProcessMaterials.Empty();

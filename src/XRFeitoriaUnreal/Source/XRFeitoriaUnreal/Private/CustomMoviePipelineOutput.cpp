@@ -129,8 +129,8 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 	if (bIsFirstFrame)
 	{
 		// Get Output Setting
-		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
-		//UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+		// UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
 		check(OutputSettings);
 		int ResolutionX = OutputSettings->OutputResolution.X;
 		int ResolutionY = OutputSettings->OutputResolution.Y;
@@ -235,12 +235,12 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 	TArray<MoviePipeline::FCompositePassInfo> CompositedPasses;
 	MoviePipeline::GetPassCompositeData(InMergedOutputFrame, CompositedPasses);
 
-	UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
-	//UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	// UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
 	check(OutputSettings);
 
-	UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineColorSetting>();
-	//UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineColorSetting>();
+	UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineColorSetting>();
+	// UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineColorSetting>();
 
 	FString OutputDirectory = OutputSettings->OutputDirectory.Path;
 
@@ -444,8 +444,8 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 
 FString UCustomMoviePipelineOutput::GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState)
 {
-	UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
-	//UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
+	// UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
 	check(OutputSettings);
 	FString OutputDirectory = OutputSettings->OutputDirectory.Path;
 	FString FileNameFormatString = OutputSettings->FileNameFormat;
