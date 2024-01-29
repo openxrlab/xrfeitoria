@@ -4,6 +4,8 @@ import warnings
 from contextlib import contextmanager
 from typing import ContextManager, List, Optional, Tuple, Union
 
+from typing_extensions import deprecated
+
 from ..data_structure.constants import default_level_blender
 from ..utils.functions import blender_functions, unreal_functions
 from .sequence_base import SequenceBase
@@ -13,6 +15,7 @@ from .sequence_unreal import SequenceUnreal
 __all__ = ['sequence_wrapper_blender', 'sequence_wrapper_unreal']
 
 
+@deprecated('Use `sequence` function instead.', category=DeprecationWarning)
 class SequenceWrapperBlender:
     """Sequence utils class."""
 
@@ -72,6 +75,7 @@ class SequenceWrapperBlender:
         cls._seq.close()
 
 
+@deprecated('Use `sequence` function instead.', category=DeprecationWarning)
 class SequenceWrapperUnreal:
     """Sequence utils class for Unreal."""
 
