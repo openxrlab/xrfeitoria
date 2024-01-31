@@ -38,7 +38,7 @@ def visualize_vertices(camera_name, actor_names: List[str], seq_output_path: Pat
     logger.info('Visualizing vertices')
     # fixed file structure
     img_path = seq_output_path / 'img' / camera_name / f'{frame_idx:04d}.png'
-    camera_param_json = seq_output_path / 'camera_params' / f'{camera_name}.json'
+    camera_param_json = seq_output_path / 'camera_params' / camera_name / f'{frame_idx:04d}.json'
 
     # load img and camera parameters
     img = np.array(Image.open(img_path.as_posix()))

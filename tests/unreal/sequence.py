@@ -25,14 +25,19 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
 
     with xf_runner.Sequence.new(level=level_path, seq_name=seq_name, seq_length=30, replace=True) as seq:
         seq.show()
-        seq.spawn_camera(location=(-5, 0, 1), rotation=(0, 0, 0), fov=90.0, camera_name='Camera')
-        seq.spawn_camera_with_keys(
+        camera = xf_runner.Camera.spawn(camera_name='Camera')
+        seq.use_camera(camera=camera, location=(0, 0, 1), rotation=(0, 0, 0), fov=90.0)
+        # seq.spawn_camera(location=(-5, 0, 1), rotation=(0, 0, 0), fov=90.0, camera_name='Camera')
+        camera2 = xf_runner.Camera.spawn(camera_name='Camera2')
+        # seq.spawn_camera_with_keys(
+        # camera_name='Camera2',
+        seq.use_camera_with_keys(
+            camera=camera2,
             transform_keys=[
                 SeqTransKey(frame=0, location=(-2, 0, 1), rotation=(0, 0, 0), interpolation='AUTO'),
                 SeqTransKey(frame=30, location=(-5, 0, 1), rotation=(0, 0, 0), interpolation='AUTO'),
             ],
             fov=90.0,
-            camera_name='Camera2',
         )
         seq.spawn_actor(
             actor_asset_path='/Engine/BasicShapes/Cube',

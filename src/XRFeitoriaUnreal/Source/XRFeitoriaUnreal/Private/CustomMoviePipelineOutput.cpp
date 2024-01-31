@@ -34,6 +34,7 @@
 #include "MovieRenderPipelineCoreModule.h"
 
 #include "XF_BlueprintFunctionLibrary.h"
+#include "MoviePipelineMeshOperator.h"
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
 	#include "MoviePipelineMasterConfig.h"
@@ -126,61 +127,10 @@ void UCustomMoviePipelineOutput::SetupForPipelineImpl(UMoviePipeline* InPipeline
 
 void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutputFrame* InMergedOutputFrame)
 {
+	// Save Actor Info (stencil value)
 	if (bIsFirstFrame)
 	{
-		// Get Output Setting
-		#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <2
-			UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
-		#else
-			UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
-		#endif
-		check(OutputSettings);
-		int ResolutionX = OutputSettings->OutputResolution.X;
-		int ResolutionY = OutputSettings->OutputResolution.Y;
-
-		// Save Camera Transform (KRT)
-		for (ACameraActor* Camera : Cameras)
-		{
-			FVector CamLocation = Camera->GetActorLocation();
-			FRotator CamRotation = Camera->GetActorRotation();
-			float FOV = Camera->GetCameraComponent()->FieldOfView;
-
-			TArray<float> CamInfo;
-			CamInfo.Add(CamLocation.X);
-			CamInfo.Add(CamLocation.Y);
-			CamInfo.Add(CamLocation.Z);
-			CamInfo.Add(CamRotation.Roll);
-			CamInfo.Add(CamRotation.Pitch);
-			CamInfo.Add(CamRotation.Yaw);
-			CamInfo.Add(FOV);
-			CamInfo.Add(ResolutionX);
-			CamInfo.Add(ResolutionY);
-
-			// Actor in level
-			FString CameraNameFromLabel = Camera->GetActorNameOrLabel();
-			// Actor spawned from sequence
-			FString CameraNameFromName = Camera->GetFName().GetPlainNameString();
-			// XXX: Hardcode way to Judge which name is correct, need to be improved
-			// Should ref to
-			// GetPipeline()->ResolveFilenameFormatArguments(FileNameFormatString, FormatOverrides, OutputData.FilePath, FinalFormatArgs, &Payload->SampleState.OutputState);
-			// using {camera_name}
-
-			bool bIsCameraInLevel = CameraNameFromName.StartsWith("CameraActor") || CameraNameFromName.StartsWith("CineCameraActor");
-			FString CameraName = bIsCameraInLevel ? CameraNameFromLabel : CameraNameFromName;
-
-			FString CameraTransformPath = GetOutputPath(
-				DirectoryCameraInfo / CameraName,
-				"dat",
-				&InMergedOutputFrame->FrameOutputState
-			);  // DirectoryCameraInfo/{camera_name}/{frame_idx}.dat
-			CameraTransformPath = FPaths::SetExtension(
-				FPaths::GetPath(CameraTransformPath),
-				FPaths::GetExtension(CameraTransformPath)
-			);  // get rid of the frame index
-			UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(CamInfo, CameraTransformPath);
-		}
-
-		// Save Actor Info (stencil value)
+		// SkeletalMesh
 		for (USkeletalMeshComponent* SkeletalMeshComponent : SkeletalMeshComponents)
 		{
 			// Actor in level
@@ -204,6 +154,7 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 			UXF_BlueprintFunctionLibrary::SaveFloatToByteFile(StencilValue, ActorInfoPath);
 		}
 
+		// StaticMesh
 		for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
 		{
 			// Actor in level
@@ -230,14 +181,7 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 		bIsFirstFrame = false;
 	}
 
-	SCOPE_CYCLE_COUNTER(STAT_ImgSeqRecieveImageData);
-
-	check(InMergedOutputFrame);
-
-	// Special case for extracting Burn Ins and Widget Renderer
-	TArray<MoviePipeline::FCompositePassInfo> CompositedPasses;
-	MoviePipeline::GetPassCompositeData(InMergedOutputFrame, CompositedPasses);
-
+	// Get Output Setting
 	#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <2
 		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
 		UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineColorSetting>();
@@ -246,6 +190,58 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 		UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineColorSetting>();
 	#endif
 	check(OutputSettings);
+
+	// Save Camera Transform (KRT)
+	int ResolutionX = OutputSettings->OutputResolution.X;
+	int ResolutionY = OutputSettings->OutputResolution.Y;
+	for (ACameraActor* Camera : Cameras)
+	{
+		FVector CamLocation = Camera->GetActorLocation();
+		FRotator CamRotation = Camera->GetActorRotation();
+		float FOV = Camera->GetCameraComponent()->FieldOfView;
+
+		TArray<float> CamInfo;
+		CamInfo.Add(CamLocation.X);
+		CamInfo.Add(CamLocation.Y);
+		CamInfo.Add(CamLocation.Z);
+		CamInfo.Add(CamRotation.Roll);
+		CamInfo.Add(CamRotation.Pitch);
+		CamInfo.Add(CamRotation.Yaw);
+		CamInfo.Add(FOV);
+		CamInfo.Add(ResolutionX);
+		CamInfo.Add(ResolutionY);
+
+		// Actor in level
+		FString CameraNameFromLabel = Camera->GetActorNameOrLabel();
+		// Actor spawned from sequence
+		FString CameraNameFromName = Camera->GetFName().GetPlainNameString();
+		// XXX: Hardcode way to Judge which name is correct, need to be improved
+		// Should ref to
+		// GetPipeline()->ResolveFilenameFormatArguments(FileNameFormatString, FormatOverrides, OutputData.FilePath, FinalFormatArgs, &Payload->SampleState.OutputState);
+		// using {camera_name}
+
+		bool bIsCameraInLevel = CameraNameFromName.StartsWith("CameraActor") || CameraNameFromName.StartsWith("CineCameraActor");
+		FString CameraName = bIsCameraInLevel ? CameraNameFromLabel : CameraNameFromName;
+
+		FString CameraTransformPath = GetOutputPath(
+			DirectoryCameraInfo / CameraName,
+			"dat",
+			&InMergedOutputFrame->FrameOutputState
+		);  // DirectoryCameraInfo/{camera_name}/{frame_idx}.dat
+		//CameraTransformPath = FPaths::SetExtension(
+		//	FPaths::GetPath(CameraTransformPath),
+		//	FPaths::GetExtension(CameraTransformPath)
+		//);  // get rid of the frame index
+		UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(CamInfo, CameraTransformPath);
+	}
+
+	SCOPE_CYCLE_COUNTER(STAT_ImgSeqRecieveImageData);
+
+	check(InMergedOutputFrame);
+
+	// Special case for extracting Burn Ins and Widget Renderer
+	TArray<MoviePipeline::FCompositePassInfo> CompositedPasses;
+	MoviePipeline::GetPassCompositeData(InMergedOutputFrame, CompositedPasses);
 
 	FString OutputDirectory = OutputSettings->OutputDirectory.Path;
 

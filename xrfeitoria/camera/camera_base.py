@@ -16,6 +16,10 @@ class CameraBase(ABC, ObjectBase):
     _object_utils = ObjectUtilsBase
 
     @classmethod
+    def from_param(cls, param):
+        ...
+
+    @classmethod
     def spawn(
         cls,
         camera_name: str = None,

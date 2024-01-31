@@ -271,7 +271,7 @@ class RendererUnreal(RendererBase):
 
             # 1. convert camera parameters from `.bat` to `.json` with xrprimer
             # glob camera files in {seq_path}/{cam_param_dir}/*
-            camera_files = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.camera_params.value}/*.dat'))
+            camera_files = sorted((seq_path / RenderOutputEnumUnreal.camera_params.value).rglob('*.dat'))
             for camera_file in camera_files:
                 convert_camera(camera_file)
 
