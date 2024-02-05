@@ -70,7 +70,10 @@ def save_current_level(asset_path: 'Optional[str]' = None) -> None:
 
 @remote_unreal()
 def import_asset(
-    path: 'Union[str, List[str]]', dst_dir_in_engine: 'Optional[str]' = None, replace: bool = True
+    path: 'Union[str, List[str]]',
+    dst_dir_in_engine: 'Optional[str]' = None,
+    replace: bool = True,
+    with_parent_dir: bool = True,
 ) -> 'Union[str, List[str]]':
     """Import assets to the default asset path.
 
@@ -79,11 +82,15 @@ def import_asset(
         dst_dir_in_engine (Optional[str], optional): destination directory in the engine.
             Defaults to None falls back to '/Game/XRFeitoriaUnreal/Assets'
         replace (bool, optional): whether to replace the existing asset. Defaults to True.
+        with_parent_dir (bool, optional): whether to create a parent directory that contains the imported asset.
+            If False, the imported asset will be in `dst_dir_in_engine` directly. Defaults to True.
 
     Returns:
         Union[str, List[str]]: a path or a list of paths to the imported assets, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL"
     """
-    paths = XRFeitoriaUnrealFactory.utils.import_asset(path, dst_dir_in_engine, replace=replace)
+    paths = XRFeitoriaUnrealFactory.utils.import_asset(
+        path, dst_dir_in_engine, replace=replace, with_parent_dir=with_parent_dir
+    )
     if len(paths) == 1:
         return paths[0]
     return paths
