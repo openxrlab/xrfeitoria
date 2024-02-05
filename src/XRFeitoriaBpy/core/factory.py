@@ -1113,6 +1113,7 @@ class XRFeitoriaBlenderFactory:
         motion_data: 'List[MotionFrame]',
         action: 'bpy.types.Action',
         scale: float = 1.0,
+        is_first_frame_as_origin: bool = True,
     ) -> None:
         """Apply motion data in dict to object.
 
@@ -1120,10 +1121,9 @@ class XRFeitoriaBlenderFactory:
             motion_data (List[Dict[str, Dict]]): Motion data in the form of dict,
                 containing rotation (quaternion) and location.
             action (bpy.types.Action): Action.
-            scale (float, optional): Scale of movement in location of animation. Defaults to 1.0.
+            scale (float, optional): Scale of the motion. Defaults to 1.0.
+            is_first_frame_as_origin (bool, optional): Whether to set the first frame as the origin. Defaults to True.
         """
-        import numpy as np
-
         num_frames = len(motion_data)
         fcurves_map = {(fc.data_path, fc.array_index): fc for fc in action.fcurves}
 
@@ -1137,9 +1137,8 @@ class XRFeitoriaBlenderFactory:
             return fcurve
 
         # Set keyframes
-        frames_iter = range(num_frames)
         loc0 = [0, 0, 0]
-        for f in frames_iter:
+        for f in range(num_frames):
             for bone_name in motion_data[0].keys():
                 # rotation_quaternion
                 data_path = f'pose.bones["{bone_name}"].rotation_quaternion'
@@ -1154,25 +1153,33 @@ class XRFeitoriaBlenderFactory:
                 if 'location' in motion:
                     data_path = f'pose.bones["{bone_name}"].location'
                     location_ = motion['location']
-                    if f < 1:
-                        loc0 = location_
-                        location_ = np.zeros(3)
-                    else:
-                        location_ = np.subtract(location_, loc0) * scale
+                    if is_first_frame_as_origin:
+                        if f < 1:
+                            loc0 = location_
+                            location_ = np.zeros(3)
+                        else:
+                            location_ = np.subtract(location_, loc0) * scale
                     for idx, val in enumerate(location_):
                         fcurve = _get_fcurve(data_path=data_path, index=idx)
                         # fcurve.keyframe_points[f].co = (f, val)
                         fcurve.keyframe_points.insert(frame=f, value=val, options={'FAST'})
 
-    def apply_motion_data_to_actor(motion_data: 'List[MotionFrame]', actor_name: str) -> None:
+    def apply_motion_data_to_actor(
+        motion_data: 'List[MotionFrame]',
+        actor_name: str,
+        is_first_frame_as_origin: bool = True,
+    ) -> None:
         """Applies motion data to a given actor.
 
         Args:
             motion_data: A list of dictionaries containing motion data (quaternion) for the actor.
             actor_name: The name of the actor to apply the motion data to.
+            is_first_frame_as_origin: Whether to set the first frame as the origin.
         """
         action = bpy.data.actions.new('Action')
-        XRFeitoriaBlenderFactory.apply_motion_data_to_action(motion_data=motion_data, action=action)
+        XRFeitoriaBlenderFactory.apply_motion_data_to_action(
+            motion_data=motion_data, action=action, is_first_frame_as_origin=is_first_frame_as_origin
+        )
         XRFeitoriaBlenderFactory.apply_action_to_actor(action, actor=bpy.data.objects[actor_name])
 
     def apply_shape_keys_to_mesh(shape_keys: 'List[Dict[str, float]]', mesh_name: str) -> None:
