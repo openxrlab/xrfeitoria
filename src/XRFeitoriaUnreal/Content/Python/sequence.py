@@ -1,3 +1,6 @@
+import time
+from queue import Queue
+from threading import Thread
 from typing import Any, Dict, List, NoReturn, Optional, Tuple, Type, Union
 
 import unreal
@@ -13,8 +16,8 @@ from constants import (
     TransformKeys,
     data_asset_suffix,
 )
-from utils import add_levels, get_levels, get_soft_object_path, get_world, new_world, save_current_level
-from utils_actor import get_actor_mesh_component
+from utils import add_levels, get_levels, get_soft_object_path, get_world, new_world, save_current_level, threaded
+from utils_actor import get_actor_mesh_component, get_all_actors_dict
 
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
 EditorAssetSub = SubSystem.EditorAssetSub
@@ -456,21 +459,6 @@ def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data:
                 )
 
 
-def get_spawnable_actor_from_binding(
-    sequence: unreal.MovieSceneSequence,
-    binding: unreal.SequencerBindingProxy,
-) -> unreal.Actor:
-    binds = unreal.Array(unreal.SequencerBindingProxy)
-    binds.append(binding)
-
-    bound_objects: List[unreal.SequencerBoundObjects] = unreal.SequencerTools.get_bound_objects(
-        get_world(), sequence, binds, sequence.get_playback_range()
-    )
-
-    actor = bound_objects[0].bound_objects[0]
-    return actor
-
-
 ################################################################################
 # high level functions
 
@@ -628,7 +616,9 @@ def add_spawnable_camera_to_sequence(
     # ---------- add camera ---------- #
     # create a camera actor & add it to the sequence
     camera_binding = sequence.add_spawnable_from_class(camera_class)
-    camera_actor: unreal.CameraActor = get_spawnable_actor_from_binding(sequence, camera_binding)
+    camera_actor: unreal.CameraActor = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(
+        get_binding_id(camera_binding)
+    )[0]
     camera_binding.set_name(camera_name)
     camera_actor.set_actor_label(camera_name)
     camera_component_binding = sequence.add_possessable(camera_actor.camera_component)
@@ -765,7 +755,7 @@ def add_spawnable_actor_to_sequence(
 
     # add actor to sequence
     actor_binding = sequence.add_spawnable_from_instance(actor_asset)
-    actor = get_spawnable_actor_from_binding(sequence, actor_binding)
+    actor: unreal.Actor = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(actor_binding))[0]
     actor_binding.set_name(actor_name)
     actor.set_actor_label(actor_name)
 
@@ -972,6 +962,7 @@ class Sequence:
     def show(cls) -> None:
         assert cls.sequence is not None, 'Sequence not initialized'
         unreal.LevelSequenceEditorBlueprintLibrary.open_level_sequence(cls.sequence)
+        unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(0)
 
     @staticmethod
     def new_data_asset(
@@ -1183,8 +1174,86 @@ class Sequence:
         )
         # cls.bindings[audio_asset.get_name()] = bindings
 
+    @classmethod
+    def get_camera_params(cls, per_frame: bool = True):
+        assert cls.sequence is not None, 'Sequence not initialized'
+
+
+# @threaded
+def async_get_all_objects_of_sequence(sequence: unreal.LevelSequence) -> List[unreal.Object]:
+    """Retrieves all the objects bound to the given LevelSequence. This function should
+    be called from a Thread, as sequence need time to load and causing spawnable actors
+    to be None.
+
+    Args:
+        sequence (unreal.LevelSequence): The LevelSequence to retrieve objects from.
+
+    Returns:
+        List[unreal.Object]: A list of all the objects bound to the LevelSequence.
+    """
+    return get_all_objects_of_sequence(sequence, _async=True)
+    # q = Queue()
+
+
+def get_all_objects_of_sequence(
+    sequence: unreal.LevelSequence, _async: bool = False, queue: Optional[Queue] = None
+) -> List[unreal.Object]:
+    """Retrieves all the objects bound to the given LevelSequence. This function should
+    be called from a Thread, as sequence need time to load and causing spawnable actors
+    to be None.
+
+    Args:
+        sequence (unreal.LevelSequence): The LevelSequence to retrieve objects from.
+
+    Returns:
+        List[unreal.Object]: A list of all the objects bound to the LevelSequence.
+    """
+    if _async:
+        time.sleep(1)
+    all_actors = []
+    for binding in sequence.get_bindings():
+        actors = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(binding))
+        all_actors.extend(actors)
+    if queue:
+        queue.put(all_actors)
+    return all_actors
+
+
+def get_camera_params(sequence: unreal.LevelSequence, per_frame: bool = True):
+    time.sleep(1)
+    actors = get_all_objects_of_sequence(sequence)
+    for actor in actors:
+        if not isinstance(actor, unreal.CameraActor):
+            continue
+        # print(actor)
+
+
+def test():
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+    Sequence.show()
+    seq = Sequence.sequence
+    # ret = async_get_all_objects_of_sequence(seq).result_queue.get()
+    # print(ret)
+
+    q = Queue()
+    t = Thread(target=get_all_objects_of_sequence, args=(seq, True, q), daemon=True)
+    t.start()
+    print(q.get())
+
+
+def test1():
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+    Sequence.show()
+    get_all_objects_of_sequence(Sequence.sequence)
+    print('+++++++++++++++++++')
+    get_all_objects_of_sequence(unreal.load_asset('/Game/XRFeitoriaUnreal/Sequences/seq_test'))
+    print('++++++++++++++++++')
+    get_all_objects_of_sequence(unreal.LevelSequenceEditorBlueprintLibrary.get_current_level_sequence())
+
 
 if __name__ == '__main__':
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+
     Sequence.new('/Game/NewMap', 'test1')
     Sequence.spawn_camera(transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)))
     Sequence.spawn_actor(
