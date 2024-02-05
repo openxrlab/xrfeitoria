@@ -1,5 +1,3 @@
-import queue
-import threading
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -53,27 +51,42 @@ class Loader:
             self.func(*self.args, **self.kwargs)
 
 
-def threaded(f, daemon=True):
-    def wrapped_f(q, *args, **kwargs):
-        """This function calls the decorated function and puts the result in a queue."""
-        ret = f(*args, **kwargs)
-        q.put(ret)
+class LoaderTimer:
+    """A decorator to load assets before running the main function.
 
-    def wrap(*args, **kwargs):
-        """This is the function returned from the decorator.
+    example_usage:
+        >>> @LoaderTimer
+        >>> def main():
+        >>>     ...
+    Caution: Function decorated by this decorator cannot return anything.
+    """
 
-        It fires off wrapped_f in a new thread and returns the thread object with the
-        result queue attached
-        """
+    def __init__(self, func):
+        self.func = func
+        self.args: Tuple = None
+        self.kwargs: Dict = None
+        self.time_to_wait = 1
+        self.time_spent = 0
 
-        q = queue.Queue()
+        self.tickhandle = unreal.register_slate_pre_tick_callback(self.timer)
+        unreal.log_warning('registered tick handle')
 
-        t = threading.Thread(target=wrapped_f, args=(q,) + args, kwargs=kwargs, daemon=daemon)
-        t.start()
-        t.result_queue = q
-        return t
+    def __call__(self, *args, **kwargs):
+        if args is None:
+            args = []
+        self.args = args
 
-    return wrap
+        if kwargs is None:
+            kwargs = {}
+        self.kwargs = kwargs
+
+    def timer(self, deltaTime):
+        if self.time_spent < self.time_to_wait:
+            self.time_spent += deltaTime
+        else:
+            unreal.log_warning('[Timer] ready!')
+            unreal.unregister_slate_pre_tick_callback(self.tickhandle)
+            self.func(*self.args, **self.kwargs)
 
 
 def timer_func(func):
