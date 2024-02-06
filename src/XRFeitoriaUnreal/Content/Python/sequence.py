@@ -10,6 +10,7 @@ from constants import (
     ENGINE_MAJOR_VERSION,
     ENGINE_MINOR_VERSION,
     MotionFrame,
+    PathLike,
     SequenceTransformKey,
     SubSystem,
     TransformKeys,
@@ -458,6 +459,21 @@ def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data:
                 )
 
 
+def get_spawnable_actor_from_binding(
+    sequence: unreal.MovieSceneSequence,
+    binding: unreal.SequencerBindingProxy,
+) -> unreal.Actor:
+    binds = unreal.Array(unreal.SequencerBindingProxy)
+    binds.append(binding)
+
+    bound_objects: List[unreal.SequencerBoundObjects] = unreal.SequencerTools.get_bound_objects(
+        get_world(), sequence, binds, sequence.get_playback_range()
+    )
+
+    actor = bound_objects[0].bound_objects[0]
+    return actor
+
+
 ################################################################################
 # high level functions
 
@@ -615,9 +631,7 @@ def add_spawnable_camera_to_sequence(
     # ---------- add camera ---------- #
     # create a camera actor & add it to the sequence
     camera_binding = sequence.add_spawnable_from_class(camera_class)
-    camera_actor: unreal.CameraActor = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(
-        get_binding_id(camera_binding)
-    )[0]
+    camera_actor: unreal.CameraActor = get_spawnable_actor_from_binding(sequence, camera_binding)
     camera_binding.set_name(camera_name)
     camera_actor.set_actor_label(camera_name)
     camera_component_binding = sequence.add_possessable(camera_actor.camera_component)
@@ -754,7 +768,7 @@ def add_spawnable_actor_to_sequence(
 
     # add actor to sequence
     actor_binding = sequence.add_spawnable_from_instance(actor_asset)
-    actor: unreal.Actor = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(actor_binding))[0]
+    actor: unreal.Actor = get_spawnable_actor_from_binding(sequence, actor_binding)
     actor_binding.set_name(actor_name)
     actor.set_actor_label(actor_name)
 
@@ -861,48 +875,6 @@ def get_camera_param(camera: unreal.CameraActor) -> Dict[str, Any]:
         'rotation': camera.get_actor_rotation().to_tuple(),
         'fov': camera.camera_component.get_editor_property('FieldOfView'),
     }
-
-
-def get_all_objects_of_seq(sequence: unreal.LevelSequence) -> List[unreal.Object]:
-    """Retrieves all the objects bound to the given LevelSequence. This function should
-    be called from a Thread, as sequence need time to load and causing spawnable actors
-    to be None.
-
-    Args:
-        sequence (unreal.LevelSequence): The LevelSequence to retrieve objects from.
-
-    Returns:
-        List[unreal.Object]: A list of all the objects bound to the LevelSequence.
-    """
-    all_actors = []
-    for binding in sequence.get_bindings():
-        actors = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(binding))
-        all_actors.extend(actors)
-    return all_actors
-
-
-@LoaderTimer
-def save_camera_params_of_seq(sequence: unreal.LevelSequence, save_dir: Path, per_frame: bool = True) -> None:
-    """Save camera parameters of a given sequence.
-
-    Args:
-        sequence (unreal.LevelSequence): The level sequence to extract camera parameters from.
-        save_dir (Path): The directory to save the camera parameters.
-        per_frame (bool, optional): Whether to save camera parameters for each frame. Defaults to True.
-    """
-    actors = get_all_objects_of_seq(sequence)
-    camera_actors = [actor for actor in actors if isinstance(actor, unreal.CameraActor)]
-    if not per_frame:
-        unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(0)
-        camera_param = {0: {camera.get_name(): get_camera_param(camera) for camera in camera_actors}}
-        with open(save_dir / 'frame-0000.json', 'w') as f:
-            json.dump(camera_param, f, indent=4)
-    else:
-        for frame in range(0, sequence.get_playback_end()):
-            unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(frame)
-            camera_param = {camera.get_name(): get_camera_param(camera) for camera in camera_actors}
-            with open(save_dir / f'frame-{frame:04d}.json', 'w') as f:
-                json.dump(camera_param, f, indent=4)
 
 
 class Sequence:
@@ -1141,7 +1113,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            # cls.bindings[camera_name] = bindings
+            cls.bindings[camera_name] = bindings
         else:
             camera = utils_actor.get_actor_by_name(camera_name)
             bindings = add_camera_to_sequence(
@@ -1150,7 +1122,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            # cls.bindings[camera_name] = bindings
+            cls.bindings[camera_name] = bindings
 
     @classmethod
     def add_actor(
@@ -1192,7 +1164,7 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
-            # cls.bindings[actor_name] = bindings
+            cls.bindings[actor_name] = bindings
 
         else:
             actor = utils_actor.get_actor_by_name(actor_name)
@@ -1204,7 +1176,7 @@ class Sequence:
                 animation_asset=animation_asset,
                 motion_data=motion_data,
             )
-            # cls.bindings[actor_name] = bindings
+            cls.bindings[actor_name] = bindings
 
     @classmethod
     def add_audio(
@@ -1229,14 +1201,14 @@ class Sequence:
         bindings = add_audio_to_sequence(
             sequence=cls.sequence, audio_asset=audio_asset, start_frame=start_frame, end_frame=end_frame
         )
-        # cls.bindings[audio_asset.get_name()] = bindings
+        cls.bindings[audio_asset.get_name()] = bindings
 
     @classmethod
-    def save_camera_params(cls, save_dir: Path, per_frame: bool = True):
+    def save_camera_params(cls, save_dir: PathLike, per_frame: bool = True):
         """Saves the camera parameters of the sequence into json files.
 
         Args:
-            save_dir (Path): The directory where the camera parameters will be saved.
+            save_dir (PathLike): The directory where the camera parameters will be saved.
             per_frame (bool, optional): Whether to save camera parameters per frame. Defaults to True.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
@@ -1244,7 +1216,31 @@ class Sequence:
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
-        save_camera_params_of_seq(cls.sequence, save_dir, per_frame)
+        unreal.log(f'[XRFeitoria] saving camera parameters of sequence to {save_dir}')
+
+        camera_actors: Dict[str, unreal.CameraActor] = {
+            name: binding['camera']['self'] for name, binding in cls.bindings.items() if 'camera' in binding.keys()
+        }
+
+        def save_camera_param(frame_idx: int) -> Dict[str, Any]:
+            """Save camera parameters of the given frame to
+            {save_dir}/{camera_name}/{frame_idx:04d}.json.
+
+            Args:
+                frame_idx (int): The frame index to save camera parameters for.
+            """
+            unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(frame_idx)
+            for name, camera in camera_actors.items():
+                save_path = save_dir / name / f'{frame_idx:04d}.json'
+                save_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(save_path, 'w') as f:
+                    json.dump(get_camera_param(camera), f, indent=4)
+
+        if not per_frame:
+            save_camera_param(frame_idx=0)
+        else:
+            for frame_idx in range(0, cls.sequence.get_playback_end()):
+                save_camera_param(frame_idx=frame_idx)
 
 
 def test():

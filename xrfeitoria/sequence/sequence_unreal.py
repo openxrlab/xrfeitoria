@@ -1,4 +1,6 @@
-from typing import Dict, List, Literal, Optional, Tuple, Union
+import json
+from pathlib import Path
+from typing import Dict, List, Literal, Optional, Tuple, TypedDict, Union
 
 from loguru import logger
 
@@ -23,6 +25,8 @@ try:
     from ..data_structure.models import TransformKeys
 except (ImportError, ModuleNotFoundError):
     pass
+
+dict_process_dir = TypedDict('dict_process_dir', {'camera_dir': str, 'vertices_dir': str, 'skeleton_dir': str})
 
 
 @remote_unreal(dec_class=True, suffix='_in_engine')
@@ -50,10 +54,37 @@ class SequenceUnreal(SequenceBase):
         cls._show_seq_in_engine()
 
     @classmethod
+    def _preprocess_before_render(
+        cls,
+        save_dir: str,
+        resolution: Tuple[int, int],
+        export_vertices: bool,
+        export_skeleton: bool,
+    ) -> None:
+        from ..camera.camera_parameter import CameraParameter
+
+        _dir_ = cls._preprocess_in_engine(
+            save_dir=save_dir, export_vertices=export_vertices, export_skeleton=export_skeleton
+        )
+
+        # convert camera parameters to xrprimer structure
+        for file in Path(_dir_['camera_dir']).glob('*/*.json'):
+            data = json.loads(file.read_text())
+            cam_param = CameraParameter.from_unreal_convention(
+                location=data['location'],
+                rotation=data['rotation'],
+                fov=data['fov'],
+                image_size=resolution,
+            )
+            cam_param.dump(file.as_posix())  # replace the original file
+
+        print(_dir_['camera_dir'])
+
+    @classmethod
     def add_to_renderer(
         cls,
         output_path: PathLike,
-        resolution: Tuple[int, int],
+        resolution: Tuple[int, int],  # (width, height)
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
@@ -69,7 +100,7 @@ class SequenceUnreal(SequenceBase):
 
         Args:
             output_path (PathLike): The path where the rendered output will be saved.
-            resolution (Tuple[int, int]): The resolution of the output.
+            resolution (Tuple[int, int]): The resolution of the output. (width, height)
             render_passes (List[RenderPass]): The list of render passes to be rendered.
             file_name_format (str, optional): The format of the output file name.
                 Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
@@ -97,6 +128,14 @@ class SequenceUnreal(SequenceBase):
         sequence_path = SequenceUnreal._get_seq_path_in_engine()
         if anti_aliasing is None:
             anti_aliasing = RenderJobUnreal.AntiAliasSetting()
+
+        cls._preprocess_before_render(
+            save_dir=f'{output_path}/{cls.name}',
+            resolution=resolution,
+            export_vertices=export_vertices,
+            export_skeleton=export_skeleton,
+        )
+
         cls._renderer.add_job(
             map_path=map_path,
             sequence_path=sequence_path,
@@ -110,6 +149,7 @@ class SequenceUnreal(SequenceBase):
             export_skeleton=export_skeleton,
             export_audio=export_audio,
         )
+
         logger.info(
             f'[cyan]Added[/cyan] sequence "{cls.name}" to [bold]`Renderer`[/bold] '
             f'(jobs to render: {len(cls._renderer.render_queue)})'
@@ -313,6 +353,22 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _get_seq_path_in_engine() -> str:
         return XRFeitoriaUnrealFactory.Sequence.sequence_path
+
+    @staticmethod
+    def _preprocess_in_engine(
+        save_dir: str,
+        export_vertices: bool = False,
+        export_skeleton: bool = False,
+    ) -> 'dict_process_dir':
+        camera_dir = f'{save_dir}/{XRFeitoriaUnrealFactory.constants.cam_param_dir}'
+        XRFeitoriaUnrealFactory.Sequence.save_camera_params(save_dir=camera_dir, per_frame=True)
+
+        # TODO: export vertices and skeleton
+        return {
+            'camera_dir': camera_dir,
+            'vertices_dir': '',
+            'skeleton_dir': '',
+        }
 
     @staticmethod
     def _new_seq_in_engine(
