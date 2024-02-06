@@ -24,7 +24,6 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
     kc_path = xf_runner.utils.import_asset(path=kc_fbx)
 
     with xf_runner.Sequence.new(level=level_path, seq_name=seq_name, seq_length=30, replace=True) as seq:
-        seq.show()
         seq.spawn_camera_with_keys(
             transform_keys=[
                 SeqTransKey(frame=0, location=(0, 3, 1), rotation=(0, 0, -90), interpolation='AUTO'),

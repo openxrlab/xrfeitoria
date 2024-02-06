@@ -100,6 +100,7 @@ class SequenceWrapperUnreal:
             SequenceUnreal: Sequence object.
         """
         cls._seq._open(seq_name=seq_name, seq_dir=seq_dir)
+        cls._seq.show()
         yield cls._seq
         cls._seq.save()
         cls._seq.close()
@@ -137,6 +138,7 @@ class SequenceWrapperUnreal:
             replace=replace,
             seq_dir=seq_dir,
         )
+        cls._seq.show()
         yield cls._seq
         cls._seq.save()
         cls._seq.close()
@@ -207,4 +209,6 @@ def sequence_wrapper_unreal(
             seq_length=seq_length,
             replace=replace,
         )
+    # Open the sequence in editor, for letting `get_bound_objects` work
+    SequenceUnreal.show()
     return SequenceUnreal()
