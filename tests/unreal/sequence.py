@@ -25,12 +25,15 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
 
     with xf_runner.Sequence.new(level=level_path, seq_name=seq_name, seq_length=30, replace=True) as seq:
         seq.show()
-        camera = xf_runner.Camera.spawn(camera_name='Camera')
-        seq.use_camera(camera=camera, location=(0, 0, 1), rotation=(0, 0, 0), fov=90.0)
-        # seq.spawn_camera(location=(-5, 0, 1), rotation=(0, 0, 0), fov=90.0, camera_name='Camera')
-        camera2 = xf_runner.Camera.spawn(camera_name='Camera2')
-        # seq.spawn_camera_with_keys(
-        # camera_name='Camera2',
+        seq.spawn_camera_with_keys(
+            transform_keys=[
+                SeqTransKey(frame=0, location=(0, 3, 1), rotation=(0, 0, -90), interpolation='AUTO'),
+                SeqTransKey(frame=30, location=(-3, 2, 2), rotation=(0, 0, -45), interpolation='AUTO'),
+            ],
+            fov=90.0,
+            camera_name='camera',
+        )
+        camera2 = xf_runner.Camera.spawn(camera_name='camera2')
         seq.use_camera_with_keys(
             camera=camera2,
             transform_keys=[
@@ -110,7 +113,7 @@ def sequence_test(debug: bool = False, background: bool = False):
 
     for frame_idx in range(0, 30, 5):
         visualize_vertices(
-            camera_name='Camera',
+            camera_name='camera',
             actor_names=['KoupenChan'],
             seq_output_path=output_path / seq_name,
             frame_idx=frame_idx,

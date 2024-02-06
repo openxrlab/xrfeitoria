@@ -1121,7 +1121,7 @@ class XRFeitoriaBlenderFactory:
             motion_data (List[Dict[str, Dict]]): Motion data in the form of dict,
                 containing rotation (quaternion) and location.
             action (bpy.types.Action): Action.
-            scale (float, optional): Scale of the motion. Defaults to 1.0.
+            scale (float, optional): Scale of movement in location of animation. Defaults to 1.0.
             is_first_frame_as_origin (bool, optional): Whether to set the first frame as the origin. Defaults to True.
         """
         num_frames = len(motion_data)

@@ -16,7 +16,7 @@ from constants import (
     TransformKeys,
     data_asset_suffix,
 )
-from utils import LoaderTimer, add_levels, get_levels, get_soft_object_path, get_world, new_world, save_current_level
+from utils import add_levels, get_levels, get_soft_object_path, get_world, new_world, save_current_level
 from utils_actor import get_actor_mesh_component
 
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
@@ -1218,9 +1218,17 @@ class Sequence:
         save_dir.mkdir(parents=True, exist_ok=True)
         unreal.log(f'[XRFeitoria] saving camera parameters of sequence to {save_dir}')
 
-        camera_actors: Dict[str, unreal.CameraActor] = {
-            name: binding['camera']['self'] for name, binding in cls.bindings.items() if 'camera' in binding.keys()
-        }
+        # camera_actors: Dict[str, unreal.CameraActor] = {
+        #     name: binding['camera']['self'] for name, binding in cls.bindings.items() if 'camera' in binding.keys()
+        # }
+
+        camera_actors = {}
+        for name, binding in cls.bindings.items():
+            if 'camera' not in binding.keys():
+                continue
+            camera_binding = binding['camera']['binding']
+            camera = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(camera_binding))[0]
+            camera_actors[name] = camera
 
         def save_camera_param(frame_idx: int) -> Dict[str, Any]:
             """Save camera parameters of the given frame to

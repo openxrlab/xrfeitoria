@@ -58,7 +58,7 @@ def visualize_vertices(camera_name, actor_names: List[str], seq_output_path: Pat
         # draw vertices on image
         img = projector.draw_points3d(verts[frame_idx], camera_param, image=img, color=colors[idx])
 
-    save_path = vis_dir / f'{frame_idx:04d}-overlap.png'
+    save_path = vis_dir / f'{camera_name}-{frame_idx:04d}-overlap.png'
     Image.fromarray(img).save(save_path.as_posix())
     logger.info(f'Original image: "{img_path.as_posix()}"')
     logger.info(f'Overlap image saved to: "{save_path.as_posix()}"')
