@@ -24,15 +24,22 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
     kc_path = xf_runner.utils.import_asset(path=kc_fbx)
 
     with xf_runner.Sequence.new(level=level_path, seq_name=seq_name, seq_length=30, replace=True) as seq:
-        seq.show()
-        seq.spawn_camera(location=(-5, 0, 1), rotation=(0, 0, 0), fov=90.0, camera_name='Camera')
         seq.spawn_camera_with_keys(
+            transform_keys=[
+                SeqTransKey(frame=0, location=(0, 3, 1), rotation=(0, 0, -90), interpolation='AUTO'),
+                SeqTransKey(frame=30, location=(-3, 2, 2), rotation=(0, 0, -45), interpolation='AUTO'),
+            ],
+            fov=90.0,
+            camera_name='camera',
+        )
+        camera2 = xf_runner.Camera.spawn(camera_name='camera2')
+        seq.use_camera_with_keys(
+            camera=camera2,
             transform_keys=[
                 SeqTransKey(frame=0, location=(-2, 0, 1), rotation=(0, 0, 0), interpolation='AUTO'),
                 SeqTransKey(frame=30, location=(-5, 0, 1), rotation=(0, 0, 0), interpolation='AUTO'),
             ],
             fov=90.0,
-            camera_name='Camera2',
         )
         seq.spawn_actor(
             actor_asset_path='/Engine/BasicShapes/Cube',
@@ -105,7 +112,7 @@ def sequence_test(debug: bool = False, background: bool = False):
 
     for frame_idx in range(0, 30, 5):
         visualize_vertices(
-            camera_name='Camera',
+            camera_name='camera',
             actor_names=['KoupenChan'],
             seq_output_path=output_path / seq_name,
             frame_idx=frame_idx,

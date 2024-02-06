@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import Any, Dict, List, NoReturn, Optional, Tuple, Type, Union
 
 import unreal
@@ -8,6 +10,7 @@ from constants import (
     ENGINE_MAJOR_VERSION,
     ENGINE_MINOR_VERSION,
     MotionFrame,
+    PathLike,
     SequenceTransformKey,
     SubSystem,
     TransformKeys,
@@ -765,7 +768,7 @@ def add_spawnable_actor_to_sequence(
 
     # add actor to sequence
     actor_binding = sequence.add_spawnable_from_instance(actor_asset)
-    actor = get_spawnable_actor_from_binding(sequence, actor_binding)
+    actor: unreal.Actor = get_spawnable_actor_from_binding(sequence, actor_binding)
     actor_binding.set_name(actor_name)
     actor.set_actor_label(actor_name)
 
@@ -856,6 +859,22 @@ def generate_sequence(
     if seq_length:
         new_sequence.set_playback_end(seq_length)
     return new_sequence
+
+
+def get_camera_param(camera: unreal.CameraActor) -> Dict[str, Any]:
+    """Get camera parameters.
+
+    Args:
+        camera (unreal.CameraActor): The camera actor.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the camera parameters.
+    """
+    return {
+        'location': camera.get_actor_location().to_tuple(),
+        'rotation': camera.get_actor_rotation().to_tuple(),
+        'fov': camera.camera_component.get_editor_property('FieldOfView'),
+    }
 
 
 class Sequence:
@@ -972,6 +991,7 @@ class Sequence:
     def show(cls) -> None:
         assert cls.sequence is not None, 'Sequence not initialized'
         unreal.LevelSequenceEditorBlueprintLibrary.open_level_sequence(cls.sequence)
+        unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(0)
 
     @staticmethod
     def new_data_asset(
@@ -1093,7 +1113,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            # cls.bindings[camera_name] = bindings
+            cls.bindings[camera_name] = bindings
         else:
             camera = utils_actor.get_actor_by_name(camera_name)
             bindings = add_camera_to_sequence(
@@ -1102,7 +1122,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            # cls.bindings[camera_name] = bindings
+            cls.bindings[camera_name] = bindings
 
     @classmethod
     def add_actor(
@@ -1144,7 +1164,7 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
-            # cls.bindings[actor_name] = bindings
+            cls.bindings[actor_name] = bindings
 
         else:
             actor = utils_actor.get_actor_by_name(actor_name)
@@ -1156,7 +1176,7 @@ class Sequence:
                 animation_asset=animation_asset,
                 motion_data=motion_data,
             )
-            # cls.bindings[actor_name] = bindings
+            cls.bindings[actor_name] = bindings
 
     @classmethod
     def add_audio(
@@ -1181,10 +1201,72 @@ class Sequence:
         bindings = add_audio_to_sequence(
             sequence=cls.sequence, audio_asset=audio_asset, start_frame=start_frame, end_frame=end_frame
         )
-        # cls.bindings[audio_asset.get_name()] = bindings
+        cls.bindings[audio_asset.get_name()] = bindings
+
+    @classmethod
+    def save_camera_params(cls, save_dir: PathLike, per_frame: bool = True):
+        """Saves the camera parameters of the sequence into json files.
+
+        Args:
+            save_dir (PathLike): The directory where the camera parameters will be saved.
+            per_frame (bool, optional): Whether to save camera parameters per frame. Defaults to True.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        cls.show()
+
+        save_dir = Path(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        unreal.log(f'[XRFeitoria] saving camera parameters of sequence to {save_dir}')
+
+        # camera_actors: Dict[str, unreal.CameraActor] = {
+        #     name: binding['camera']['self'] for name, binding in cls.bindings.items() if 'camera' in binding.keys()
+        # }
+
+        camera_actors = {}
+        for name, binding in cls.bindings.items():
+            if 'camera' not in binding.keys():
+                continue
+            camera_binding = binding['camera']['binding']
+            camera = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(camera_binding))[0]
+            camera_actors[name] = camera
+
+        def save_camera_param(frame_idx: int) -> Dict[str, Any]:
+            """Save camera parameters of the given frame to
+            {save_dir}/{camera_name}/{frame_idx:04d}.json.
+
+            Args:
+                frame_idx (int): The frame index to save camera parameters for.
+            """
+            unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(frame_idx)
+            for name, camera in camera_actors.items():
+                save_path = save_dir / name / f'{frame_idx:04d}.json'
+                save_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(save_path, 'w') as f:
+                    json.dump(get_camera_param(camera), f, indent=4)
+
+        if not per_frame:
+            save_camera_param(frame_idx=0)
+        else:
+            for frame_idx in range(0, cls.sequence.get_playback_end()):
+                save_camera_param(frame_idx=frame_idx)
+
+
+def test():
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+    Sequence.save_camera_params(save_dir='E:/tmp')
 
 
 if __name__ == '__main__':
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+
+    Sequence.new('/Game/NewMap', 'test1')
+    Sequence.spawn_camera(transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)))
+    Sequence.spawn_actor(
+        '/Game/StarterContent/Props/SM_Chair',
+        transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)),
+    )
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+
     Sequence.new('/Game/NewMap', 'test1')
     Sequence.spawn_camera(transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)))
     Sequence.spawn_actor(

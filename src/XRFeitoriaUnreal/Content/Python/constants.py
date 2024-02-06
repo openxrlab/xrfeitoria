@@ -45,6 +45,7 @@ DEFAULT_SEQUENCE_PATH = f'{DEFAULT_PATH}/Sequences'
 DEFAULT_ASSET_PATH = f'{DEFAULT_PATH}/Assets'
 DEFAULT_SEQUENCE_DATA_ASSET = f'/{PLUGIN_NAME}/DefaultSequenceData'
 MRQ_JOB_UPPER = 200
+cam_param_dir = 'camera_params'
 data_asset_suffix = '_data'
 
 

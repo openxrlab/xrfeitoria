@@ -51,6 +51,44 @@ class Loader:
             self.func(*self.args, **self.kwargs)
 
 
+class LoaderTimer:
+    """A decorator to load assets before running the main function.
+
+    example_usage:
+        >>> @LoaderTimer
+        >>> def main():
+        >>>     ...
+    Caution: Function decorated by this decorator cannot return anything.
+    """
+
+    def __init__(self, func):
+        self.func = func
+        self.args: Tuple = None
+        self.kwargs: Dict = None
+        self.time_to_wait = 1
+        self.time_spent = 0
+
+        self.tickhandle = unreal.register_slate_pre_tick_callback(self.timer)
+        unreal.log_warning('registered tick handle')
+
+    def __call__(self, *args, **kwargs):
+        if args is None:
+            args = []
+        self.args = args
+
+        if kwargs is None:
+            kwargs = {}
+        self.kwargs = kwargs
+
+    def timer(self, deltaTime):
+        if self.time_spent < self.time_to_wait:
+            self.time_spent += deltaTime
+        else:
+            unreal.log_warning('[Timer] ready!')
+            unreal.unregister_slate_pre_tick_callback(self.tickhandle)
+            self.func(*self.args, **self.kwargs)
+
+
 def timer_func(func):
     # This function shows the execution time of
     # the function object passed
@@ -69,7 +107,10 @@ def timer_func(func):
 
 
 def import_asset(
-    path: Union[str, List[str]], dst_dir_in_engine: Optional[str] = None, replace: bool = True
+    path: Union[str, List[str]],
+    dst_dir_in_engine: Optional[str] = None,
+    replace: bool = True,
+    with_parent_dir: bool = True,
 ) -> List[str]:
     """Import assets to the default asset path.
 
@@ -78,6 +119,8 @@ def import_asset(
         dst_dir_in_engine (str, optional): destination directory in the engine.
             Defaults to None falls back to DEFAULT_ASSET_PATH.
         replace (bool, optional): whether to replace the existing asset. Defaults to True.
+        with_parent_dir (bool, optional): whether to create a parent directory that contains the imported asset.
+            If False, the imported asset will be in `dst_dir_in_engine` directly. Defaults to True.
 
     Returns:
         List[str]: a list of paths to the imported assets, e.g. ["/Game/XRFeitoriaUnreal/Assets/SMPL_XL"]
@@ -90,44 +133,57 @@ def import_asset(
         paths = path.copy()
 
     asset_paths = []
-    for path in paths:
-        assert Path(path).exists(), f'File does not exist: {path}'
-        name = Path(path).stem
-        dst_dir = unreal.Paths.combine([dst_dir_in_engine, name])
-        dst_path = unreal.Paths.combine([dst_dir, name])  # check if asset exists
-        if unreal.EditorAssetLibrary.does_asset_exist(dst_path) and not replace:
-            asset_paths.append(dst_path)
-            continue
+    with unreal.ScopedSlowTask(len(paths), 'Importing assets') as slow_task:
+        slow_task.make_dialog(True)
+        for path in paths:
+            assert Path(path).exists(), f'File does not exist: {path}'
+            # update progress bar
+            slow_task.enter_progress_frame(1, f'Importing assets: {path}')
+            if slow_task.should_cancel():
+                unreal.log('Importing assets cancelled')
+                break
 
-        unreal.log(f'Importing asset: {path}')
-        if path.lower().endswith('.fbx'):
-            asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
-            import_options = unreal.FbxImportUI()
-            import_options.set_editor_property('import_animations', True)
+            # get destination directory
+            name = Path(path).stem
+            dst_dir = dst_dir_in_engine
+            if with_parent_dir:
+                dst_dir = unreal.Paths.combine([dst_dir, name])
 
-            import_task = unreal.AssetImportTask()
-            import_task.set_editor_property('automated', True)
-            import_task.set_editor_property('destination_name', '')
-            import_task.set_editor_property('destination_path', dst_dir)
-            import_task.set_editor_property('filename', path)
-            import_task.set_editor_property('replace_existing', replace)
-            import_task.set_editor_property('options', import_options)
+            # check if asset exists
+            dst_path = unreal.Paths.combine([dst_dir, name])  # check if asset exists
+            if unreal.EditorAssetLibrary.does_asset_exist(dst_path) and not replace:
+                asset_paths.append(dst_path)
+                continue
 
-            import_tasks = [import_task]
-            asset_tools.import_asset_tasks(import_tasks)
-            asset_paths.extend(
-                [path.partition('.')[0] for path in import_task.get_editor_property('imported_object_paths')]
-            )
-        else:
-            assetsTools = unreal.AssetToolsHelpers.get_asset_tools()
-            assetImportData = unreal.AutomatedAssetImportData()
-            assetImportData.destination_path = dst_dir
-            assetImportData.filenames = [path]
-            assetImportData.replace_existing = replace
-            assets: List[unreal.Object] = assetsTools.import_assets_automated(assetImportData)
-            asset_paths.extend([asset.get_path_name().partition('.')[0] for asset in assets])
-        unreal.EditorAssetLibrary.save_directory(dst_dir, False, True)  # save assets
-        unreal.log(f'Imported asset: {path}')
+            unreal.log(f'Importing asset: {path}')
+            if path.lower().endswith('.fbx'):
+                asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+                import_options = unreal.FbxImportUI()
+                import_options.set_editor_property('import_animations', True)
+
+                import_task = unreal.AssetImportTask()
+                import_task.set_editor_property('automated', True)
+                import_task.set_editor_property('destination_name', '')
+                import_task.set_editor_property('destination_path', dst_dir)
+                import_task.set_editor_property('filename', path)
+                import_task.set_editor_property('replace_existing', replace)
+                import_task.set_editor_property('options', import_options)
+
+                import_tasks = [import_task]
+                asset_tools.import_asset_tasks(import_tasks)
+                asset_paths.extend(
+                    [path.partition('.')[0] for path in import_task.get_editor_property('imported_object_paths')]
+                )
+            else:
+                assetsTools = unreal.AssetToolsHelpers.get_asset_tools()
+                assetImportData = unreal.AutomatedAssetImportData()
+                assetImportData.destination_path = dst_dir
+                assetImportData.filenames = [path]
+                assetImportData.replace_existing = replace
+                assets: List[unreal.Object] = assetsTools.import_assets_automated(assetImportData)
+                asset_paths.extend([asset.get_path_name().partition('.')[0] for asset in assets])
+            unreal.EditorAssetLibrary.save_directory(dst_dir, False, True)  # save assets
+            unreal.log(f'Imported asset: {path}')
     return asset_paths
 
 

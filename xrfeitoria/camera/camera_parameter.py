@@ -8,7 +8,7 @@ from loguru import logger
 from xrprimer.data_structure.camera import PinholeCameraParameter
 from xrprimer.transform.convention.camera import convert_camera_parameter
 
-from ..data_structure.constants import PathLike
+from ..data_structure.constants import PathLike, Vector
 
 
 class CameraParameter(PinholeCameraParameter):
@@ -141,9 +141,30 @@ class CameraParameter(PinholeCameraParameter):
         rotation = dat[3:6]
         camera_fov = dat[6]
         image_size = (dat[7], dat[8])  # (width, height)
+        return cls.from_unreal_convention(location, rotation, camera_fov, image_size)
 
+    @classmethod
+    def from_unreal_convention(
+        cls,
+        location: Vector,
+        rotation: Vector,
+        fov: float,
+        image_size: Tuple[int, int],  # (width, height)
+    ) -> 'CameraParameter':
+        """Converts camera parameters from Unreal Engine convention to CameraParameter
+        object.
+
+        Args:
+            location (Vector): The camera location in Unreal Engine convention.
+            rotation (Vector): The camera rotation in Unreal Engine convention.
+            fov (float): The camera field of view in degrees.
+            image_size (Tuple[int, int]): The size of the camera image in pixels (width, height).
+
+        Returns:
+            CameraParameter: The converted camera parameters.
+        """
         # intrinsic matrix K
-        fov = math.radians(camera_fov)
+        fov = math.radians(fov)
         focal = max(image_size) / 2 / math.tan(fov / 2)
         fx = fy = focal
         K = np.array(
