@@ -34,7 +34,6 @@
 #include "MovieRenderPipelineCoreModule.h"
 
 #include "XF_BlueprintFunctionLibrary.h"
-#include "MoviePipelineMeshOperator.h"
 
 #if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION == 0
 	#include "MoviePipelineMasterConfig.h"
@@ -42,145 +41,9 @@
 
 DECLARE_CYCLE_STAT(TEXT("ImgSeqOutput_RecieveImageData"), STAT_ImgSeqRecieveImageData, STATGROUP_MoviePipeline);
 
-void UCustomMoviePipelineOutput::SetupForPipelineImpl(UMoviePipeline* InPipeline)
-{
-	if (InPipeline)
-	{
-		InPipeline->SetFlushDiskWritesPerShot(true);
-	}
-
-	ULevelSequence* LevelSequence = GetPipeline()->GetTargetSequence();
-	UMovieSceneSequence* MovieSceneSequence = GetPipeline()->GetTargetSequence();
-	UMovieScene* MovieScene = LevelSequence->GetMovieScene();
-	TArray<FMovieSceneBinding> bindings = MovieScene->GetBindings();
-
-	TArray<FMovieSceneBindingProxy> bindingProxies;
-	for (FMovieSceneBinding binding : bindings)
-	{
-		FGuid guid = binding.GetObjectGuid();
-		bindingProxies.Add(FSequencerBindingProxy(guid, MovieSceneSequence));
-	}
-
-	boundObjects = USequencerToolsFunctionLibrary::GetBoundObjects(
-		GetPipeline()->GetWorld(),
-		LevelSequence,
-		bindingProxies,
-		FSequencerScriptingRange::FromNative(
-			MovieScene->GetPlaybackRange(),
-			MovieScene->GetDisplayRate()
-		)
-	);
-
-	for (FSequencerBoundObjects boundObject : boundObjects)
-	{
-		// loop over bound objects
-		UObject* BoundObject = boundObject.BoundObjects[0];  // only have one item
-		if (BoundObject->IsA(ACameraActor::StaticClass()))
-		{
-			ACameraActor* Camera = Cast<ACameraActor>(BoundObject);
-			Cameras.Add(Camera);
-		}
-		else if (BoundObject->IsA(ASkeletalMeshActor::StaticClass()))
-		{
-			ASkeletalMeshActor* SkeletalMeshActor = Cast<ASkeletalMeshActor>(BoundObject);
-			SkeletalMeshComponents.Add(SkeletalMeshActor->GetSkeletalMeshComponent());
-		}
-		else if (BoundObject->IsA(AStaticMeshActor::StaticClass()))
-		{
-			AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(BoundObject);
-			StaticMeshComponents.Add(StaticMeshActor->GetStaticMeshComponent());
-		}
-		else if (BoundObject->IsA(USkeletalMeshComponent::StaticClass()))
-		{
-			USkeletalMeshComponent* SkeletalMeshComponent = Cast<USkeletalMeshComponent>(BoundObject);
-			// check if it's already in the list
-			bool bFound = false;
-			for (USkeletalMeshComponent* SkeletalMeshComponentInList : SkeletalMeshComponents)
-			{
-				if (SkeletalMeshComponentInList == SkeletalMeshComponent)
-				{
-					bFound = true;
-					break;
-				}
-			}
-			if (!bFound) SkeletalMeshComponents.Add(SkeletalMeshComponent);
-		}
-		else if (BoundObject->IsA(UStaticMeshComponent::StaticClass()))
-		{
-			UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(BoundObject);
-			// check if it's already in the list
-			bool bFound = false;
-			for (UStaticMeshComponent* StaticMeshComponentInList : StaticMeshComponents)
-			{
-				if (StaticMeshComponentInList == StaticMeshComponent)
-				{
-					bFound = true;
-					break;
-				}
-			}
-			if (!bFound)
-				StaticMeshComponents.Add(StaticMeshComponent);
-		}
-	}
-}
-
 
 void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutputFrame* InMergedOutputFrame)
 {
-	// Save Actor Info (stencil value)
-	if (bIsFirstFrame)
-	{
-		// SkeletalMesh
-		for (USkeletalMeshComponent* SkeletalMeshComponent : SkeletalMeshComponents)
-		{
-			// Actor in level
-			FString MeshNameFromLabel = SkeletalMeshComponent->GetOwner()->GetActorNameOrLabel();
-			// Actor spawned from sequence
-			FString MeshNameFromName = SkeletalMeshComponent->GetOwner()->GetFName().GetPlainNameString();
-			// Judge which name is correct
-			FString MeshName = MeshNameFromName.StartsWith("SkeletalMesh") ? MeshNameFromLabel : MeshNameFromName;
-
-			int StencilValue = SkeletalMeshComponent->CustomDepthStencilValue;
-
-			FString ActorInfoPath = GetOutputPath(
-				DirectoryActorInfo / MeshName,
-				"dat",
-				&InMergedOutputFrame->FrameOutputState
-			);  // DirectoryActorInfo/{actor_name}/{frame_idx}.dat
-			ActorInfoPath = FPaths::SetExtension(
-				FPaths::GetPath(ActorInfoPath),
-				FPaths::GetExtension(ActorInfoPath)
-			);  // get rid of the frame index
-			UXF_BlueprintFunctionLibrary::SaveFloatToByteFile(StencilValue, ActorInfoPath);
-		}
-
-		// StaticMesh
-		for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
-		{
-			// Actor in level
-			FString MeshNameFromLabel = StaticMeshComponent->GetOwner()->GetActorNameOrLabel();
-			// Actor spawned from sequence
-			FString MeshNameFromName = StaticMeshComponent->GetOwner()->GetFName().GetPlainNameString();
-			// Judge which name is correct
-			FString MeshName = MeshNameFromName.StartsWith("StaticMesh") ? MeshNameFromLabel : MeshNameFromName;
-
-			int StencilValue = StaticMeshComponent->CustomDepthStencilValue;
-
-			FString ActorInfoPath = GetOutputPath(
-				DirectoryActorInfo / MeshName,
-				"dat",
-				&InMergedOutputFrame->FrameOutputState
-			);  // DirectoryActorInfo/{actor_name}/{frame_idx}.dat
-			ActorInfoPath = FPaths::SetExtension(
-				FPaths::GetPath(ActorInfoPath),
-				FPaths::GetExtension(ActorInfoPath)
-			);  // get rid of the frame index
-			UXF_BlueprintFunctionLibrary::SaveFloatToByteFile(StencilValue, ActorInfoPath);
-		}
-
-		bIsFirstFrame = false;
-	}
-
 	// Get Output Setting
 	#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <2
 		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
@@ -190,50 +53,6 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 		UMoviePipelineColorSetting* ColorSetting = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineColorSetting>();
 	#endif
 	check(OutputSettings);
-
-	// Save Camera Transform (KRT)
-	int ResolutionX = OutputSettings->OutputResolution.X;
-	int ResolutionY = OutputSettings->OutputResolution.Y;
-	for (ACameraActor* Camera : Cameras)
-	{
-		FVector CamLocation = Camera->GetActorLocation();
-		FRotator CamRotation = Camera->GetActorRotation();
-		float FOV = Camera->GetCameraComponent()->FieldOfView;
-
-		TArray<float> CamInfo;
-		CamInfo.Add(CamLocation.X);
-		CamInfo.Add(CamLocation.Y);
-		CamInfo.Add(CamLocation.Z);
-		CamInfo.Add(CamRotation.Roll);
-		CamInfo.Add(CamRotation.Pitch);
-		CamInfo.Add(CamRotation.Yaw);
-		CamInfo.Add(FOV);
-		CamInfo.Add(ResolutionX);
-		CamInfo.Add(ResolutionY);
-
-		// Actor in level
-		FString CameraNameFromLabel = Camera->GetActorNameOrLabel();
-		// Actor spawned from sequence
-		FString CameraNameFromName = Camera->GetFName().GetPlainNameString();
-		// XXX: Hardcode way to Judge which name is correct, need to be improved
-		// Should ref to
-		// GetPipeline()->ResolveFilenameFormatArguments(FileNameFormatString, FormatOverrides, OutputData.FilePath, FinalFormatArgs, &Payload->SampleState.OutputState);
-		// using {camera_name}
-
-		bool bIsCameraInLevel = CameraNameFromName.StartsWith("CameraActor") || CameraNameFromName.StartsWith("CineCameraActor");
-		FString CameraName = bIsCameraInLevel ? CameraNameFromLabel : CameraNameFromName;
-
-		FString CameraTransformPath = GetOutputPath(
-			DirectoryCameraInfo / CameraName,
-			"dat",
-			&InMergedOutputFrame->FrameOutputState
-		);  // DirectoryCameraInfo/{camera_name}/{frame_idx}.dat
-		//CameraTransformPath = FPaths::SetExtension(
-		//	FPaths::GetPath(CameraTransformPath),
-		//	FPaths::GetExtension(CameraTransformPath)
-		//);  // get rid of the frame index
-		UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(CamInfo, CameraTransformPath);
-	}
 
 	SCOPE_CYCLE_COUNTER(STAT_ImgSeqRecieveImageData);
 
@@ -441,35 +260,4 @@ void UCustomMoviePipelineOutput::OnReceiveImageDataImpl(FMoviePipelineMergerOutp
 
 		GetPipeline()->AddOutputFuture(ImageWriteQueue->Enqueue(MoveTemp(TileImageTask)), OutputData);
 	}
-}
-
-FString UCustomMoviePipelineOutput::GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState)
-{
-	#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <2
-		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelineMasterConfig()->FindSetting<UMoviePipelineOutputSetting>();
-	#else
-		UMoviePipelineOutputSetting* OutputSettings = GetPipeline()->GetPipelinePrimaryConfig()->FindSetting<UMoviePipelineOutputSetting>();
-	#endif
-	check(OutputSettings);
-	FString OutputDirectory = OutputSettings->OutputDirectory.Path;
-	FString FileNameFormatString = OutputSettings->FileNameFormat;
-
-	FString OutputPath;
-	FMoviePipelineFormatArgs Args;
-	TMap<FString, FString> FormatOverrides;
-	FormatOverrides.Add(TEXT("camera_name"), "");
-	FormatOverrides.Add(TEXT("render_pass"), PassName);
-	FormatOverrides.Add(TEXT("ext"), Ext);
-	GetPipeline()->ResolveFilenameFormatArguments(
-		OutputDirectory / FileNameFormatString, FormatOverrides, OutputPath, Args, InOutputState);
-
-	if (FPaths::IsRelative(OutputPath))
-	{
-		OutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
-	}
-
-	// Replace any double slashes with single slashes.
-	OutputPath.ReplaceInline(TEXT("//"), TEXT("/"));
-
-	return OutputPath;
 }

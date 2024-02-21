@@ -26,7 +26,15 @@ try:
 except (ImportError, ModuleNotFoundError):
     pass
 
-dict_process_dir = TypedDict('dict_process_dir', {'camera_dir': str, 'vertices_dir': str, 'skeleton_dir': str})
+dict_process_dir = TypedDict(
+    'dict_process_dir',
+    {
+        'camera_dir': str,
+        'actor_infos_dir': str,
+        'vertices_dir': str,
+        'skeleton_dir': str,
+    },
+)
 
 
 @remote_unreal(dec_class=True, suffix='_in_engine')
@@ -63,11 +71,16 @@ class SequenceUnreal(SequenceBase):
     ) -> None:
         from ..camera.camera_parameter import CameraParameter
 
-        _dir_ = cls._preprocess_in_engine(
-            save_dir=save_dir, export_vertices=export_vertices, export_skeleton=export_skeleton
-        )
+        for frame_idx in range(*cls.get_playback()):
+            _dir_ = cls._preprocess_in_engine(
+                save_dir=save_dir,
+                per_frame=False,
+                export_vertices=export_vertices,
+                export_skeleton=export_skeleton,
+                frame_idx=frame_idx,
+            )
 
-        # convert camera parameters to xrprimer structure
+        # 1. convert camera parameters to xrprimer structure
         for file in Path(_dir_['camera_dir']).glob('*/*.json'):
             data = json.loads(file.read_text())
             cam_param = CameraParameter.from_unreal_convention(
@@ -78,7 +91,10 @@ class SequenceUnreal(SequenceBase):
             )
             cam_param.dump(file.as_posix())  # replace the original file
 
-        print(_dir_['camera_dir'])
+        # TODO:
+        # 2. convert actor infos from `.dat` to `.json`
+        # 3. convert vertices from `.dat` to `.npz`
+        # 4. convert skeleton from `.dat` to `.json`
 
     @classmethod
     def add_to_renderer(
@@ -129,6 +145,12 @@ class SequenceUnreal(SequenceBase):
         if anti_aliasing is None:
             anti_aliasing = RenderJobUnreal.AntiAliasSetting()
 
+        msg = 'Preprocessing before rendering, including exporting camera parameters'
+        if export_vertices:
+            msg += ', vertices'
+        if export_skeleton:
+            msg += ', skeleton'
+        logger.info(msg)
         cls._preprocess_before_render(
             save_dir=f'{output_path}/{cls.name}',
             resolution=resolution,
@@ -145,8 +167,6 @@ class SequenceUnreal(SequenceBase):
             file_name_format=file_name_format,
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
-            export_vertices=export_vertices,
-            export_skeleton=export_skeleton,
             export_audio=export_audio,
         )
 
@@ -295,6 +315,15 @@ class SequenceUnreal(SequenceBase):
         cls._set_playback_in_engine(start_frame=start_frame, end_frame=end_frame)
 
     @classmethod
+    def get_playback(cls) -> Tuple[int, int]:
+        """Get the playback range for the sequence.
+
+        Returns:
+            Tuple[int, int]: The start and end frame of the playback range.
+        """
+        return cls._get_playback_in_engine()
+
+    @classmethod
     def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
         """Set the playback range for the sequence.
 
@@ -357,18 +386,30 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _preprocess_in_engine(
         save_dir: str,
+        per_frame: bool = False,
         export_vertices: bool = False,
         export_skeleton: bool = False,
+        frame_idx: 'Optional[int]' = None,
     ) -> 'dict_process_dir':
-        camera_dir = f'{save_dir}/{XRFeitoriaUnrealFactory.constants.cam_param_dir}'
-        XRFeitoriaUnrealFactory.Sequence.save_camera_params(save_dir=camera_dir, per_frame=True)
+        """Preprocesses the sequence in the Unreal Engine.
 
-        # TODO: export vertices and skeleton
-        return {
-            'camera_dir': camera_dir,
-            'vertices_dir': '',
-            'skeleton_dir': '',
-        }
+        Args:
+            save_dir (str): The directory to save the processed sequence.
+            per_frame (bool, optional): Whether to process the sequence per frame. Defaults to False.
+            export_vertices (bool, optional): Whether to export the vertices. Defaults to False.
+            export_skeleton (bool, optional): Whether to export the skeleton. Defaults to False.
+            frame_idx (Optional[int], optional): The index of the frame to process. Defaults to None.
+
+        Returns:
+            dict_process_dir: The directory paths of the saved data.
+        """
+        return XRFeitoriaUnrealFactory.Sequence.save_params(
+            save_dir=save_dir,
+            per_frame=per_frame,
+            export_vertices=export_vertices,
+            export_skeleton=export_skeleton,
+            frame_idx=frame_idx,
+        )
 
     @staticmethod
     def _new_seq_in_engine(
@@ -430,6 +471,10 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _set_playback_in_engine(start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None) -> None:
         XRFeitoriaUnrealFactory.Sequence.set_playback(start_frame=start_frame, end_frame=end_frame)
+
+    @staticmethod
+    def _get_playback_in_engine() -> 'Tuple[int, int]':
+        return XRFeitoriaUnrealFactory.Sequence.get_playback()
 
     @staticmethod
     def _set_camera_cut_player_in_engine(

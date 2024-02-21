@@ -1,5 +1,5 @@
 SMPL_BODY_BONES = [
-    'pelvis',
+    'pelvis',  # global orientation
     'left_hip',
     'right_hip',
     'spine1',
@@ -67,7 +67,7 @@ SMPL_FINGER_BONES = [
 ]
 
 SMPLX_JOINT_NAMES = [
-    'pelvis',
+    'pelvis',  # global orientation
     'left_hip',
     'right_hip',
     'spine1',

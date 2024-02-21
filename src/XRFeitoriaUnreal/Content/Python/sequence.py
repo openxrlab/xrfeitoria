@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, NoReturn, Optional, Tuple, Type, Union
 
+import numpy as np
 import unreal
 import utils_actor
 from constants import (
@@ -14,6 +15,7 @@ from constants import (
     SequenceTransformKey,
     SubSystem,
     TransformKeys,
+    UnrealRenderLayerEnum,
     data_asset_suffix,
 )
 from utils import add_levels, get_levels, get_soft_object_path, get_world, new_world, save_current_level
@@ -877,6 +879,25 @@ def get_camera_param(camera: unreal.CameraActor) -> Dict[str, Any]:
     }
 
 
+def get_actor_param(actor: unreal.Actor) -> Dict[str, Any]:
+    """Get actor parameters.
+
+    Args:
+        actor (unreal.Actor): The actor.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the actor parameters.
+    """
+    stencil_value = get_actor_mesh_component(actor).get_editor_property('custom_depth_stencil_value')
+    return {
+        'location': actor.get_actor_location().to_tuple(),
+        'rotation': actor.get_actor_rotation().to_tuple(),
+        'scale': actor.get_actor_scale3d().to_tuple(),
+        'mask_color': utils_actor.get_mask_color(stencil_value=stencil_value),
+        'stencil_value': stencil_value,
+    }
+
+
 class Sequence:
     map_path = None
     sequence_path = None
@@ -1088,6 +1109,16 @@ class Sequence:
                 for section in master_track.get_sections():
                     section.set_end_frame(end_frame)
 
+    @classmethod
+    def get_playback(cls) -> Tuple[int, int]:
+        """Get the playback range of the sequence.
+
+        Returns:
+            Tuple[int, int]: The start frame and end frame of the playback range.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        return cls.sequence.get_playback_start(), cls.sequence.get_playback_end()
+
     # ------ add actor and camera -------- #
 
     @classmethod
@@ -1204,39 +1235,54 @@ class Sequence:
         cls.bindings[audio_asset.get_name()] = bindings
 
     @classmethod
-    def save_camera_params(cls, save_dir: PathLike, per_frame: bool = True):
-        """Saves the camera parameters of the sequence into json files.
+    def save_params(
+        cls,
+        save_dir: PathLike,
+        per_frame: bool = True,
+        export_vertices: bool = False,
+        export_skeleton: bool = False,
+        frame_idx: Optional[int] = None,
+    ) -> Dict[str, str]:
+        """Save parameters of the sequence.
 
         Args:
-            save_dir (PathLike): The directory where the camera parameters will be saved.
-            per_frame (bool, optional): Whether to save camera parameters per frame. Defaults to True.
+            save_dir (PathLike): The directory to save the parameters.
+            per_frame (bool, optional): Whether to save parameters for each frame. Defaults to True.
+            export_vertices (bool, optional): Whether to export vertices of the mesh. Defaults to False.
+            export_skeleton (bool, optional): Whether to export skeleton of the skeletal mesh. Defaults to False.
+            frame_idx (int, optional): The frame index to save parameters for. Defaults to None. Will be used only if `per_frame` is False.
+
+        Returns:
+            Dict[str, str]: A dictionary containing the paths of the saved parameters.
         """
         assert cls.sequence is not None, 'Sequence not initialized'
         cls.show()
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
-        unreal.log(f'[XRFeitoria] saving camera parameters of sequence to {save_dir}')
 
-        # camera_actors: Dict[str, unreal.CameraActor] = {
-        #     name: binding['camera']['self'] for name, binding in cls.bindings.items() if 'camera' in binding.keys()
-        # }
-
-        camera_actors = {}
+        # get actors
+        mesh_actors: Dict[str, unreal.Actor] = {}
+        camera_actors: Dict[str, unreal.CameraActor] = {}
         for name, binding in cls.bindings.items():
-            if 'camera' not in binding.keys():
-                continue
-            camera_binding = binding['camera']['binding']
-            camera = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(camera_binding))[0]
-            camera_actors[name] = camera
+            if 'camera' in binding.keys():
+                camera_binding = binding['camera']['binding']
+                camera = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(camera_binding))[0]
+                camera_actors[name] = camera
+            if 'actor' in binding.keys():
+                actor_binding = binding['actor']['binding']
+                actor = unreal.LevelSequenceEditorBlueprintLibrary.get_bound_objects(get_binding_id(actor_binding))[0]
+                mesh_actors[name] = actor
 
-        def save_camera_param(frame_idx: int) -> Dict[str, Any]:
+        # define save functions
+        def save_camera_param(frame_idx: int, save_root: PathLike) -> Dict[str, Any]:
             """Save camera parameters of the given frame to
-            {save_dir}/{camera_name}/{frame_idx:04d}.json.
+            {save_root}/camera_params/{camera_name}/{frame_idx:04d}.json.
 
             Args:
                 frame_idx (int): The frame index to save camera parameters for.
             """
+            save_dir = Path(save_root) / UnrealRenderLayerEnum.camera_params.value
             unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(frame_idx)
             for name, camera in camera_actors.items():
                 save_path = save_dir / name / f'{frame_idx:04d}.json'
@@ -1244,11 +1290,77 @@ class Sequence:
                 with open(save_path, 'w') as f:
                     json.dump(get_camera_param(camera), f, indent=4)
 
-        if not per_frame:
-            save_camera_param(frame_idx=0)
+        def save_actor_param(
+            frame_idx: int,
+            save_root: PathLike,
+            export_vertices: bool = False,
+            export_skeleton: bool = False,
+        ) -> Dict[str, Any]:
+            """Save actor parameters of the given frame to
+            {save_root}/{params_type}/{actor_name}/{frame_idx:04d}.json. `params_type`
+            is one of ['actor_infos', 'vertices', 'skeleton'].
+
+            Args:
+                frame_idx (int): The frame index to save actor parameters for.
+                save_root (PathLike): The root directory to save the parameters.
+                export_vertices (bool, optional): Whether to export vertices of the mesh. Defaults to False.
+                export_skeleton (bool, optional): Whether to export skeleton of the skeletal mesh. Defaults to False.
+            """
+            # Init directories
+            actor_infos_dir = Path(save_root) / UnrealRenderLayerEnum.actor_infos.value
+            vertices_dir = Path(save_root) / UnrealRenderLayerEnum.vertices.value
+            skeleton_dir = Path(save_root) / UnrealRenderLayerEnum.skeleton.value
+
+            unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(frame_idx)
+            for name, actor in mesh_actors.items():
+                actor_infos_file = actor_infos_dir / name / f'{frame_idx:04d}.json'
+                actor_infos_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(actor_infos_file, 'w') as f:
+                    json.dump(get_actor_param(actor), f, indent=4)
+
+                if export_vertices:
+                    vertices_file = vertices_dir / name / f'{frame_idx:04d}.npz'
+                    vertices_file.parent.mkdir(parents=True, exist_ok=True)
+                    if isinstance(actor, unreal.SkeletalMeshActor):
+                        skl_mesh_comp = actor.skeletal_mesh_component
+                        vertices_data = (
+                            unreal.XF_BlueprintFunctionLibrary.get_skeletal_mesh_vertex_locations_by_lod_index(
+                                skl_mesh_comp, 0
+                            )
+                        )
+                    elif isinstance(actor, unreal.StaticMeshActor):
+                        static_mesh_comp = actor.static_mesh_component
+                        vertices_data = unreal.XF_BlueprintFunctionLibrary.get_static_mesh_vertex_locations(
+                            static_mesh_comp, 0
+                        )
+                    vertices_data = np.array([v.to_tuple() for v in vertices_data])
+                    np.savez_compressed(vertices_file, vertices_data)
+
+                if export_skeleton and isinstance(actor, unreal.SkeletalMeshActor):
+                    skeleton_file = skeleton_dir / name / f'{frame_idx:04d}.npz'
+                    skeleton_file.parent.mkdir(parents=True, exist_ok=True)
+                    vertices_data = unreal.XF_BlueprintFunctionLibrary.get_skeletal_mesh_bone_locations(skl_mesh_comp)
+                    # bone_locations (Array[Vector]):
+                    # bone_names (Array[Name]):
+                    # np.savez_compressed(skeleton_file, skeleton_data)
+
+        # save parameters
+        if per_frame:
+            for frame_idx in range(cls.START_FRAME, cls.sequence.get_playback_end()):
+                save_camera_param(frame_idx, save_root=save_dir)
+                save_actor_param(frame_idx, save_dir, export_vertices, export_skeleton)
         else:
-            for frame_idx in range(0, cls.sequence.get_playback_end()):
-                save_camera_param(frame_idx=frame_idx)
+            if frame_idx is None:
+                frame_idx = cls.START_FRAME
+            save_camera_param(frame_idx, save_root=save_dir)
+            save_actor_param(frame_idx, save_dir, export_vertices, export_skeleton)
+
+        return {
+            'camera_dir': (save_dir / UnrealRenderLayerEnum.camera_params.value).as_posix(),
+            'actor_infos_dir': (save_dir / UnrealRenderLayerEnum.actor_infos.value).as_posix(),
+            'vertices_dir': (save_dir / UnrealRenderLayerEnum.vertices.value).as_posix(),
+            'skeleton_dir': (save_dir / UnrealRenderLayerEnum.skeleton.value).as_posix(),
+        }
 
 
 def test():

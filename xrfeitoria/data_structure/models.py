@@ -248,8 +248,6 @@ class RenderJobUnreal(BaseModel):
     anti_aliasing: AntiAliasSetting = Field(
         default=AntiAliasSetting(), description='Anti aliasing setting of the render job.'
     )
-    export_vertices: bool = Field(default=False, description='Whether to export vertices of the render job.')
-    export_skeleton: bool = Field(default=False, description='Whether to export skeleton of the render job.')
     export_audio: bool = Field(default=False, description='Whether to export audio of the render job.')
 
     class Config:

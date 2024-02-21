@@ -45,7 +45,6 @@ DEFAULT_SEQUENCE_PATH = f'{DEFAULT_PATH}/Sequences'
 DEFAULT_ASSET_PATH = f'{DEFAULT_PATH}/Assets'
 DEFAULT_SEQUENCE_DATA_ASSET = f'/{PLUGIN_NAME}/DefaultSequenceData'
 MRQ_JOB_UPPER = 200
-cam_param_dir = 'camera_params'
 data_asset_suffix = '_data'
 
 
@@ -123,6 +122,12 @@ class UnrealRenderLayerEnum(EnumBase):
     tangent = 'tangent'
     basecolor = 'basecolor'
 
+    vertices = 'vertices'
+    skeleton = 'skeleton'
+    actor_infos = 'actor_infos'
+    camera_params = 'camera_params'
+    audio = 'Audio'
+
 
 @dataclass
 class RenderPass:
@@ -183,8 +188,6 @@ class RenderJobUnreal:
     file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}'
     console_variables: Dict[str, float] = field(default_factory=dict)
     anti_aliasing: AntiAliasSetting = AntiAliasSetting()
-    export_vertices: bool = False
-    export_skeleton: bool = False
     export_audio: bool = False
 
     def __post_init__(self):

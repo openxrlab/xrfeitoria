@@ -100,21 +100,6 @@ class CustomMoviePipeline:
         camera_setting.render_all_cameras = enable
 
     @staticmethod
-    def set_export_vertices(movie_preset: unreal.MoviePipelineMasterConfig, enable: bool = True) -> None:
-        export_setting: unreal.MoviePipelineMeshOperator = movie_preset.find_or_add_setting_by_class(
-            unreal.MoviePipelineMeshOperator
-        )
-        export_setting.static_mesh_operator_option.save_vertices_position = enable
-        export_setting.skeletal_mesh_operator_option.save_vertices_position = enable
-
-    @staticmethod
-    def set_export_skeleton(movie_preset: unreal.MoviePipelineMasterConfig, enable: bool = True) -> None:
-        export_setting: unreal.MoviePipelineMeshOperator = movie_preset.find_or_add_setting_by_class(
-            unreal.MoviePipelineMeshOperator
-        )
-        export_setting.skeletal_mesh_operator_option.save_skeleton_position = enable
-
-    @staticmethod
     def set_export_audio(movie_preset: unreal.MoviePipelineMasterConfig) -> None:
         export_setting: unreal.MoviePipelineWaveOutput = movie_preset.find_or_add_setting_by_class(
             unreal.MoviePipelineWaveOutput
@@ -277,8 +262,6 @@ class CustomMoviePipeline:
         output_path: Optional[str] = None,
         anti_alias: RenderJobUnreal.AntiAliasSetting = RenderJobUnreal.AntiAliasSetting(),
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0.0},
-        export_vertices: bool = False,
-        export_skeleton: bool = False,
         export_audio: bool = False,
     ) -> unreal.MoviePipelineMasterConfig:
         """
@@ -296,6 +279,7 @@ class CustomMoviePipeline:
             output_path (str): Path of the output, e.g. 'E:/output'
             anti_alias (dict): Anti-alias settings.
             console_variables (bool): Console variables.
+            export_audio (bool): Whether to export audio.
 
         Returns:
             unreal.MoviePipelineMasterConfig: The created movie preset.
@@ -308,8 +292,6 @@ class CustomMoviePipeline:
         cls.add_anti_alias(movie_preset, anti_alias)
         cls.add_console_command(movie_preset, console_variables)
         cls.set_render_all_cameras(movie_preset, enable=True)
-        cls.set_export_vertices(movie_preset, enable=export_vertices)
-        cls.set_export_skeleton(movie_preset, enable=export_skeleton)
         if export_audio:
             cls.set_export_audio(movie_preset)
 
@@ -396,8 +378,6 @@ class CustomMoviePipeline:
             output_path=job.output_path,
             anti_alias=job.anti_aliasing,
             console_variables=job.console_variables,
-            export_vertices=job.export_vertices,
-            export_skeleton=job.export_skeleton,
             export_audio=job.export_audio,
         )
         new_job.set_configuration(movie_preset)

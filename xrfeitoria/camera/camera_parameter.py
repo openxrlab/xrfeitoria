@@ -110,6 +110,38 @@ class CameraParameter(PinholeCameraParameter):
         """
         return self.extrinsic.tolist()
 
+    def model_dump(self) -> dict:
+        """Dump camera parameters to a dict."""
+        return {
+            'class_name': 'PinholeCameraParameter',
+            'convention': self.convention,
+            'extrinsic_r': self.extrinsic_r.tolist(),
+            'extrinsic_t': self.extrinsic_t.tolist(),
+            'height': self.height,
+            'width': self.width,
+            'intrinsic': self.intrinsic.tolist(),
+            'name': self.name,
+            'world2cam': self.world2cam,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'CameraParameter':
+        """Construct a camera parameter data structure from a dict.
+
+        Args:
+            data (dict): The camera parameter data.
+
+        Returns:
+            CameraParameter: An instance of CameraParameter class.
+        """
+        return cls(
+            K=data['intrinsic'],
+            R=data['extrinsic_r'],
+            T=data['extrinsic_t'],
+            convention=data['convention'],
+            world2cam=data['world2cam'],
+        )
+
     @classmethod
     def fromfile(cls, file: PathLike) -> 'CameraParameter':
         """Construct a camera parameter data structure from a json file.

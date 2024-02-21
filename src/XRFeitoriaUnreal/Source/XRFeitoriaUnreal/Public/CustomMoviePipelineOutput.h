@@ -128,7 +128,6 @@ public:
 	{
 		OutputFormat = EImageFormat::PNG;
 	}
-	virtual void SetupForPipelineImpl(UMoviePipeline* InPipeline);
 	virtual void OnReceiveImageDataImpl(FMoviePipelineMergerOutputFrame* InMergedOutputFrame) override;
 
 public:
@@ -143,20 +142,4 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|Additional")
 		TArray<FCustomMoviePipelineRenderPass> AdditionalRenderPasses;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|Camera")
-		FString DirectoryActorInfo = "actor_infos";
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RenderPasses|Camera")
-		FString DirectoryCameraInfo = "camera_params";
-
-private:
-	FString GetOutputPath(FString PassName, FString Ext, const FMoviePipelineFrameOutputState* InOutputState);
-
-private:
-	TArray<FSequencerBoundObjects> boundObjects;
-	TArray<ACameraActor*> Cameras;
-	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
-	bool bIsFirstFrame = true;
 };
