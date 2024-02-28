@@ -1,4 +1,5 @@
 """Utilities for animation data loading and dumping."""
+
 from pathlib import Path
 from typing import Union
 
@@ -88,7 +89,10 @@ def dump_humandata(motion: SMPLXMotion, save_filepath: PathLike, meta_filepath: 
             }
     """
     meta_info = np.load(meta_filepath, allow_pickle=True)
-    smplx = meta_info['smplx'].item()
+    if 'smplx' in meta_info.keys():
+        smplx = meta_info['smplx'].item()
+    elif 'smpl' in meta_info.keys():
+        smplx = meta_info['smpl'].item()
     motion.dump_humandata(
         filepath=save_filepath,
         betas=smplx['betas'],
