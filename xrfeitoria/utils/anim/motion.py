@@ -245,6 +245,41 @@ class Motion:
                     self.smplx_data[k] = v[indices]
         self.insert_rest_pose()
 
+    def cut_motion(self, start_frame: Optional[int] = None, end_frame: Optional[int] = None):
+        """Cut the motion sequence to a given number of frames.
+
+        Args:
+            start_frame (Optional[int], optional): The start frame to cut to. Defaults to None.
+            end_frame (Optional[int], optional): The end frame to cut to. Defaults to None.
+
+        Raises:
+            AssertionError: If the start frame is less than 0.
+            AssertionError: If the end frame is greater than the number of frames in the motion sequence.
+            AssertionError: If the start frame is greater than or equal to the end frame.
+        """
+        if start_frame is None:
+            start_frame = 0
+        if end_frame is None:
+            end_frame = self.n_frames
+
+        assert start_frame >= 0, f'start_frame={start_frame}'
+        assert end_frame <= self.n_frames, f'end_frame={end_frame} should be less than n_frames={self.n_frames}'
+        assert start_frame < end_frame, f'start_frame={start_frame} should be less than end_frame={end_frame}'
+        n_frames = end_frame - start_frame
+
+        self.transl = self.transl[start_frame:end_frame]
+        self.body_poses = self.body_poses[start_frame:end_frame]
+        self.global_orient = self.global_orient[start_frame:end_frame]
+        self.n_frames = n_frames
+        if hasattr(self, 'smpl_data'):
+            for k, v in self.smpl_data.items():
+                if k != 'betas':
+                    self.smpl_data[k] = v[start_frame:end_frame]
+        if hasattr(self, 'smplx_data'):
+            for k, v in self.smplx_data.items():
+                if k != 'betas':
+                    self.smplx_data[k] = v[start_frame:end_frame]
+
     def cut_transl(self):
         """Cut the transl to zero.
 
@@ -381,26 +416,79 @@ class SMPLMotion(Motion):
 
         # Create instance
         transl_bl = smpl_data['transl']
-        n_frames = transl_bl.shape[0]
-        body_poses_bl = np.concatenate(
-            [smpl_data[key] for key in ('global_orient', 'body_pose')],
-            axis=1,
-            dtype=np.float32,
-        ).reshape([n_frames, -1, 3])
         # - Adjust in order to make the smpl head up to +z
         if global_orient_adj is not None:
-            body_poses_bl[:, 0, :] = (global_orient_adj * spRotation.from_rotvec(body_poses_bl[:, 0, :])).as_rotvec()
+            global_orient_bl = spRotation.from_rotvec(smpl_data['global_orient'])
+            smpl_data['global_orient'] = (global_orient_adj * global_orient_bl).as_rotvec()
             if insert_rest_pose:
-                body_poses_bl[0, 0, :] = 0.0
-
+                smpl_data['global_orient'][0] = 0
         # - Convert from humandata to smplx pelvis local space in blender
         if vector_convertor is not None:
             transl_bl = vector_convertor(transl_bl)
             smpl_data['transl'] = transl_bl
 
-        instance = cls(transl=transl_bl, body_poses=body_poses_bl, fps=fps)
+        # Concatenate all the poses
+        body_pose_keys = ('global_orient', 'body_pose')
+        body_poses_bl = [smpl_data[key] for key in body_pose_keys]
+        n_frames = transl_bl.shape[0]
+        body_poses_bl = np.concatenate(body_poses_bl, axis=1, dtype=np.float32).reshape([n_frames, -1, 3])
+
+        instance = SMPLMotion(transl=transl_bl, body_poses=body_poses_bl, fps=fps)
         instance.smpl_data = smpl_data
         return instance
+
+    @classmethod
+    def from_amass_data(cls, amass_data, insert_rest_pose: bool) -> 'SMPLMotion':
+        """Create a Motion instance from AMASS data (SMPL)
+
+        Args:
+            amass_data (dict): A dictionary containing the AMASS data.
+            insert_rest_pose (bool): Whether to insert a rest pose at the beginning of the motion.
+
+        Returns:
+            SMPLMotion: A SMPLMotion instance containing the AMASS data.
+        """
+        fps = 120
+
+        betas = amass_data['betas'][:10]
+        transl = amass_data['trans']
+        global_orient = amass_data['poses'][:, :3]
+        body_pose = amass_data['poses'][:, 3:66]
+        # left_hand_pose = amass_data['poses'][:, 66 : 66 + 45]
+        # right_hand_pose = amass_data['poses'][:, 66 + 45 :]
+        # n_frames = global_orient.shape[0]
+        # expression = np.zeros([n_frames, 10], dtype=np.float32)
+
+        # motions in AMASS dataset are -y up, rotate it to +y up
+        amass2humandata_adj = spRotation.from_euler('xyz', np.deg2rad([90, 180, 0]))
+        global_orient = (amass2humandata_adj * spRotation.from_rotvec(global_orient)).as_rotvec()  # type: ignore
+        # transl_0 = transl[0, :]
+        # transl = amass2humandata_adj.apply(transl - transl_0) + transl_0
+        transl = Converter.vec_amass2humandata(transl)
+        # TODO: all axis offset
+        height_offset = transl[0, 1]
+
+        smpl_data = {
+            'betas': betas,
+            'transl': transl,
+            'global_orient': global_orient,
+            'body_pose': body_pose,
+        }
+        if insert_rest_pose:
+            for key, arr in smpl_data.items():
+                arr = arr.astype(np.float32)
+                if key != 'betas':
+                    arr = np.insert(arr, 0, 0, axis=0)
+                    if key == 'global_orient':
+                        # make 0-th frame has the same orient with humandata
+                        arr[0, :] = [np.pi, 0, 0]
+                    elif key == 'transl':
+                        arr[1:, 1] -= height_offset
+                        # TODO: handle pelvis height, get pelvis_height, and set frame-0 as T-pose
+                        # arr[0, 1] = pelvis_height
+                smpl_data[key] = arr
+
+        return cls.from_smpl_data(smpl_data, insert_rest_pose=False, fps=fps)
 
     def _get_bone_rotvec(self, bone_name, frame=0) -> np.ndarray:
         idx = self._bone2idx(bone_name)
