@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "MoviePipelineDeferredPasses.h"
 #include "Misc/StringFormatArg.h"
+#include "MoviePipelineDeferredPasses.h"
 #include "Runtime/Launch/Resources/Version.h"
 
 #if WITH_UNREALEXR

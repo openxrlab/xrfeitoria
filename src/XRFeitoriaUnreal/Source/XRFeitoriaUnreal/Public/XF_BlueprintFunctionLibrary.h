@@ -1,18 +1,20 @@
 // Copyright OpenXRLab 2023-2024. All Rights Reserved.
 
 #pragma once
-#include "Serialization/Archive.h"
-#include "Serialization/BufferArchive.h"
-#include "Serialization/ArchiveSaveCompressedProxy.h"
-#include "Engine/TextureRenderTarget2D.h"
-#include "Components/SceneCaptureComponent2D.h"
+
 #include "Components/PostProcessComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Serialization/Archive.h"
+#include "Serialization/ArchiveSaveCompressedProxy.h"
+#include "Serialization/BufferArchive.h"
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "XF_BlueprintFunctionLibrary.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogXF, Log, All);
+DEFINE_LOG_CATEGORY(LogXF);
 
 /**
  *
