@@ -20,7 +20,7 @@
 #include "Annotator.generated.h"
 
 
-UCLASS()
+UCLASS(Blueprintable)
 class XRFEITORIAUNREAL_API AAnnotator : public AActor
 {
 	GENERATED_BODY()
@@ -54,6 +54,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
 		FString DirectorySkeleton = "skeleton";
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator|Resolution")
+		int Width = 1920;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator|Resolution")
+		int Height = 1080;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
 		bool bSaveSkeletonPosition = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")

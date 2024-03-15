@@ -159,6 +159,8 @@ void AAnnotator::ExportCameraParameters(int FrameNumber)
 		CamInfo.Add(CamRotation.Pitch);
 		CamInfo.Add(CamRotation.Yaw);
 		CamInfo.Add(FOV);
+		CamInfo.Add(Width);
+		CamInfo.Add(Height);
 
 		FString CameraTransformPath = FPaths::Combine(
 			DirectorySequence,  // seq_dir

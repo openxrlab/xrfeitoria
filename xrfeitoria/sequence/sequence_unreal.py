@@ -62,41 +62,6 @@ class SequenceUnreal(SequenceBase):
         cls._show_seq_in_engine()
 
     @classmethod
-    def _preprocess_before_render(
-        cls,
-        save_dir: str,
-        resolution: Tuple[int, int],
-        export_vertices: bool,
-        export_skeleton: bool,
-    ) -> None:
-        from ..camera.camera_parameter import CameraParameter
-
-        for frame_idx in range(*cls.get_playback()):
-            _dir_ = cls._preprocess_in_engine(
-                save_dir=save_dir,
-                per_frame=False,
-                export_vertices=export_vertices,
-                export_skeleton=export_skeleton,
-                frame_idx=frame_idx,
-            )
-
-        # 1. convert camera parameters to xrprimer structure
-        for file in Path(_dir_['camera_dir']).glob('*/*.json'):
-            data = json.loads(file.read_text())
-            cam_param = CameraParameter.from_unreal_convention(
-                location=data['location'],
-                rotation=data['rotation'],
-                fov=data['fov'],
-                image_size=resolution,
-            )
-            cam_param.dump(file.as_posix())  # replace the original file
-
-        # TODO:
-        # 2. convert actor infos from `.dat` to `.json`
-        # 3. convert vertices from `.dat` to `.npz`
-        # 4. convert skeleton from `.dat` to `.json`
-
-    @classmethod
     def add_to_renderer(
         cls,
         output_path: PathLike,
@@ -349,6 +314,17 @@ class SequenceUnreal(SequenceBase):
         cls.name = seq_name
         logger.info(f'>>>> [cyan]Opened[/cyan] sequence "{cls.name}" >>>>')
 
+    @classmethod
+    def _preprocess_before_render(
+        cls,
+        save_dir: str,
+        resolution: Tuple[int, int],
+        export_vertices: bool,
+        export_skeleton: bool,
+    ) -> None:
+        # add annotator for saving camera parameters, actor infos, vertices, and skeleton
+        cls._add_annotator_in_engine(save_dir, resolution, export_vertices, export_skeleton)
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
@@ -382,34 +358,6 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _get_seq_path_in_engine() -> str:
         return XRFeitoriaUnrealFactory.Sequence.sequence_path
-
-    @staticmethod
-    def _preprocess_in_engine(
-        save_dir: str,
-        per_frame: bool = False,
-        export_vertices: bool = False,
-        export_skeleton: bool = False,
-        frame_idx: 'Optional[int]' = None,
-    ) -> 'dict_process_dir':
-        """Preprocesses the sequence in the Unreal Engine.
-
-        Args:
-            save_dir (str): The directory to save the processed sequence.
-            per_frame (bool, optional): Whether to process the sequence per frame. Defaults to False.
-            export_vertices (bool, optional): Whether to export the vertices. Defaults to False.
-            export_skeleton (bool, optional): Whether to export the skeleton. Defaults to False.
-            frame_idx (Optional[int], optional): The index of the frame to process. Defaults to None.
-
-        Returns:
-            dict_process_dir: The directory paths of the saved data.
-        """
-        return XRFeitoriaUnrealFactory.Sequence.save_params(
-            save_dir=save_dir,
-            per_frame=per_frame,
-            export_vertices=export_vertices,
-            export_skeleton=export_skeleton,
-            frame_idx=frame_idx,
-        )
 
     @staticmethod
     def _new_seq_in_engine(
@@ -626,4 +574,19 @@ class SequenceUnreal(SequenceBase):
             audio_asset=audio_asset_path,
             start_frame=start_frame,
             end_frame=end_frame,
+        )
+
+    # ------ render -------- #
+    @staticmethod
+    def _add_annotator_in_engine(
+        save_dir: str,
+        resolution: 'Tuple[int, int]',
+        export_vertices: bool,
+        export_skeleton: bool,
+    ) -> None:
+        XRFeitoriaUnrealFactory.Sequence.add_annotator(
+            save_dir=save_dir,
+            resolution=resolution,
+            export_vertices=export_vertices,
+            export_skeleton=export_skeleton,
         )

@@ -1235,6 +1235,27 @@ class Sequence:
         cls.bindings[audio_asset.get_name()] = bindings
 
     @classmethod
+    def add_annotator(
+        cls,
+        save_dir: str,
+        resolution: Tuple[int, int],
+        export_vertices: bool,
+        export_skeleton: bool,
+    ):
+        actor_binding = cls.sequence.add_spawnable_from_class(unreal.Annotator)
+        add_property_bool_track_to_binding(
+            binding=actor_binding, property_name='bSaveVerticesPosition', property_value=export_vertices
+        )
+        add_property_bool_track_to_binding(
+            binding=actor_binding, property_name='bSaveSkeletonPosition', property_value=export_skeleton
+        )
+        add_property_string_track_to_binding(
+            binding=actor_binding, property_name='DirectorySequence', property_value=save_dir
+        )
+        add_property_int_track_to_binding(binding=actor_binding, property_name='Width', property_value=resolution[0])
+        add_property_int_track_to_binding(binding=actor_binding, property_name='Height', property_value=resolution[1])
+
+    @classmethod
     def save_params(
         cls,
         save_dir: PathLike,
