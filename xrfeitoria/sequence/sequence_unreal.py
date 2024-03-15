@@ -1,5 +1,3 @@
-import json
-from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, TypedDict, Union
 
 from loguru import logger
@@ -110,12 +108,6 @@ class SequenceUnreal(SequenceBase):
         if anti_aliasing is None:
             anti_aliasing = RenderJobUnreal.AntiAliasSetting()
 
-        msg = 'Preprocessing before rendering, including exporting camera parameters'
-        if export_vertices:
-            msg += ', vertices'
-        if export_skeleton:
-            msg += ', skeleton'
-        logger.info(msg)
         cls._preprocess_before_render(
             save_dir=f'{output_path}/{cls.name}',
             resolution=resolution,
