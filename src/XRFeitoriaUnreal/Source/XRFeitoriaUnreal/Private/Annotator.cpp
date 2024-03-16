@@ -35,67 +35,51 @@ void AAnnotator::Initialize()
 		UE_LOG(LogXF, Log, TEXT("Detected LevelSequenceActor: %s"), *LevelSequenceActor->GetName());
 	}
 	ULevelSequence* LevelSequence = LevelSequenceActor->GetSequence();
+	UMovieScene* MovieScene = LevelSequence->GetMovieScene();
 
 	// Get All Bound Objects
-	TArray<UObject*> BoundObjects;
-	const TArray<FMovieSceneBinding>& ObjectBindings = LevelSequence->GetMovieScene()->GetBindings();
-	for (FMovieSceneBinding binding : ObjectBindings)
+	TMap<FString, UObject*> BoundObjects;
+	for (int idx = 0; idx < MovieScene->GetSpawnableCount(); idx++)
 	{
-		FGuid guid = binding.GetObjectGuid();
+		FMovieSceneSpawnable spawnable = MovieScene->GetSpawnable(idx);
+		FGuid guid = spawnable.GetGuid();
+		FString name = spawnable.GetName();
+
 		TArray<UObject*> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
-		BoundObjects.Append(boundObjects);
+		BoundObjects.Add(name, boundObjects[0]);
+	}
+	for (int idx = 0; idx < MovieScene->GetPossessableCount(); idx++)
+	{
+		FMovieScenePossessable possessable = MovieScene->GetPossessable(idx);
+		FGuid guid = possessable.GetGuid();
+		FString name = possessable.GetName();
+
+		TArray<UObject*> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
+		BoundObjects.Add(name, boundObjects[0]);
 	}
 	UE_LOG(LogXF, Log, TEXT("Detected %d bound objects"), BoundObjects.Num());
 
 	// Get CameraActors, StaticMeshComponents, SkeletalMeshComponents from LevelSequence
-	for (UObject* BoundObject : BoundObjects)
+	for (TPair<FString, UObject*> pair : BoundObjects)
 	{
+		FString name = pair.Key;
+		UObject* BoundObject = pair.Value;
+
 		// loop over bound objects
 		if (BoundObject->IsA(ACameraActor::StaticClass()))
 		{
 			ACameraActor* Camera = Cast<ACameraActor>(BoundObject);
-			CameraActors.Add(Camera);
+			CameraActors.Add(name, Camera);
 		}
 		else if (BoundObject->IsA(ASkeletalMeshActor::StaticClass()))
 		{
 			ASkeletalMeshActor* SkeletalMeshActor = Cast<ASkeletalMeshActor>(BoundObject);
-			SkeletalMeshComponents.Add(SkeletalMeshActor->GetSkeletalMeshComponent());
+			SkeletalMeshComponents.Add(name, SkeletalMeshActor->GetSkeletalMeshComponent());
 		}
 		else if (BoundObject->IsA(AStaticMeshActor::StaticClass()))
 		{
 			AStaticMeshActor* StaticMeshActor = Cast<AStaticMeshActor>(BoundObject);
-			StaticMeshComponents.Add(StaticMeshActor->GetStaticMeshComponent());
-		}
-		else if (BoundObject->IsA(USkeletalMeshComponent::StaticClass()))
-		{
-			USkeletalMeshComponent* SkeletalMeshComponent = Cast<USkeletalMeshComponent>(BoundObject);
-			// check if it's already in the list
-			bool bFound = false;
-			for (USkeletalMeshComponent* SkeletalMeshComponentInList : SkeletalMeshComponents)
-			{
-				if (SkeletalMeshComponentInList == SkeletalMeshComponent)
-				{
-					bFound = true;
-					break;
-				}
-			}
-			if (!bFound) SkeletalMeshComponents.Add(SkeletalMeshComponent);
-		}
-		else if (BoundObject->IsA(UStaticMeshComponent::StaticClass()))
-		{
-			UStaticMeshComponent* StaticMeshComponent = Cast<UStaticMeshComponent>(BoundObject);
-			// check if it's already in the list
-			bool bFound = false;
-			for (UStaticMeshComponent* StaticMeshComponentInList : StaticMeshComponents)
-			{
-				if (StaticMeshComponentInList == StaticMeshComponent)
-				{
-					bFound = true;
-					break;
-				}
-			}
-			if (!bFound)
-				StaticMeshComponents.Add(StaticMeshComponent);
+			StaticMeshComponents.Add(name, StaticMeshActor->GetStaticMeshComponent());
 		}
 	}
 	UE_LOG(LogXF, Log, TEXT("Detected %d CameraActors, %d StaticMeshComponents, %d SkeletalMeshComponents"),
@@ -104,9 +88,11 @@ void AAnnotator::Initialize()
 	// Save Skeleton Names (only save on the first frame)
 	if (bSaveSkeletonPosition)
 	{
-		for (USkeletalMeshComponent* SkeletalMeshComponent : SkeletalMeshComponents)
+		for (TPair<FString, USkeletalMeshComponent*> pair : SkeletalMeshComponents)
 		{
-			FString MeshName = SkeletalMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+			FString MeshName = pair.Key;
+			USkeletalMeshComponent* SkeletalMeshComponent = pair.Value;
+
 			TArray<FVector> SkeletonPositions;
 			TArray<FName> SkeletonNames;
 			bool isSuccess = UXF_BlueprintFunctionLibrary::GetSkeletalMeshBoneLocations(
@@ -136,8 +122,11 @@ void AAnnotator::Initialize()
 void AAnnotator::ExportCameraParameters(int FrameNumber)
 {
 	if (!bInitialized || CameraActors.Num() == 0) return;
-	for (ACameraActor* Camera : CameraActors)
+	for (TPair<FString, ACameraActor*> pair : CameraActors)
 	{
+		FString CameraName = pair.Key;
+		ACameraActor* Camera = pair.Value;
+
 		FVector CamLocation = Camera->GetActorLocation();
 		FRotator CamRotation = Camera->GetActorRotation();
 		float FOV = Camera->GetCameraComponent()->FieldOfView;
@@ -156,7 +145,7 @@ void AAnnotator::ExportCameraParameters(int FrameNumber)
 		FString CameraTransformPath = FPaths::Combine(
 			DirectorySequence,  // seq_dir
 			NameCameraParams,  // camera_params
-			Camera->GetFName().GetPlainNameString(),  // camera_name
+			CameraName,  // camera_name
 			FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"  // frame_idx
 		);  // {seq_dir}/{camera_params}/{camera_name}/{frame_idx}.dat
 		UXF_BlueprintFunctionLibrary::SaveFloatArrayToByteFile(CamInfo, CameraTransformPath);
@@ -165,9 +154,10 @@ void AAnnotator::ExportCameraParameters(int FrameNumber)
 
 void AAnnotator::ExportStaticMeshParameters(int FrameNumber)
 {
-	for (UStaticMeshComponent* StaticMeshComponent : StaticMeshComponents)
+	for (TPair<FString, UStaticMeshComponent*> pair : StaticMeshComponents)
 	{
-		FString MeshName = StaticMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+		FString MeshName = pair.Key;
+		UStaticMeshComponent* StaticMeshComponent = pair.Value;
 
 		// Save Actor Info (location, rotation, stencil value)
 		{
@@ -227,9 +217,10 @@ void AAnnotator::ExportStaticMeshParameters(int FrameNumber)
 
 void AAnnotator::ExportSkeletalMeshParameters(int FrameNumber)
 {
-	for (USkeletalMeshComponent* SkeletalMeshComponent : SkeletalMeshComponents)
+	for (TPair<FString, USkeletalMeshComponent*> pair : SkeletalMeshComponents)
 	{
-		FString MeshName = SkeletalMeshComponent->GetOwner()->GetFName().GetPlainNameString();
+		FString MeshName = pair.Key;
+		USkeletalMeshComponent* SkeletalMeshComponent = pair.Value;
 
 		// Save Actor Info (location, rotation, stencil value)
 		{

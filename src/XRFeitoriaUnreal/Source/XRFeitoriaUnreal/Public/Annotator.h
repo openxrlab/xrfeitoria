@@ -68,8 +68,8 @@ public:
 private:
 	ALevelSequenceActor* LevelSequenceActor;
 	ULevelSequencePlayer* LevelSequencePlayer;
-	TArray<ACameraActor*> CameraActors;
-	TArray<UStaticMeshComponent*> StaticMeshComponents;
-	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	TMap<FString, ACameraActor*> CameraActors;
+	TMap<FString, UStaticMeshComponent*> StaticMeshComponents;
+	TMap<FString, USkeletalMeshComponent*> SkeletalMeshComponents;
 	bool bInitialized = false;
 };
