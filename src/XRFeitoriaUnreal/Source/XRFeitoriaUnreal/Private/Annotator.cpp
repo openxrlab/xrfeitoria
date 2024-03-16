@@ -37,29 +37,20 @@ void AAnnotator::Initialize()
 	ULevelSequence* LevelSequence = LevelSequenceActor->GetSequence();
 
 	// Get All Bound Objects
+	TArray<UObject*> BoundObjects;
 	const TArray<FMovieSceneBinding>& ObjectBindings = LevelSequence->GetMovieScene()->GetBindings();
-	TArray<FMovieSceneBindingProxy> bindingProxies;
 	for (FMovieSceneBinding binding : ObjectBindings)
 	{
 		FGuid guid = binding.GetObjectGuid();
-		bindingProxies.Add(FSequencerBindingProxy(guid, LevelSequence));
+		TArray<UObject*> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
+		BoundObjects.Append(boundObjects);
 	}
-	TArray<FSequencerBoundObjects> boundObjects = USequencerToolsFunctionLibrary::GetBoundObjects(
-		GetWorld(),
-		LevelSequence,
-		bindingProxies,
-		FSequencerScriptingRange::FromNative(
-			LevelSequence->GetMovieScene()->GetPlaybackRange(),
-			LevelSequence->GetMovieScene()->GetDisplayRate()
-		)
-	);
-	UE_LOG(LogXF, Log, TEXT("Detected %d bound objects"), boundObjects.Num());
+	UE_LOG(LogXF, Log, TEXT("Detected %d bound objects"), BoundObjects.Num());
 
 	// Get CameraActors, StaticMeshComponents, SkeletalMeshComponents from LevelSequence
-	for (FSequencerBoundObjects boundObject : boundObjects)
+	for (UObject* BoundObject : BoundObjects)
 	{
 		// loop over bound objects
-		UObject* BoundObject = boundObject.BoundObjects[0];  // only have one item
 		if (BoundObject->IsA(ACameraActor::StaticClass()))
 		{
 			ACameraActor* Camera = Cast<ACameraActor>(BoundObject);
@@ -131,7 +122,7 @@ void AAnnotator::Initialize()
 			for (FName name : SkeletonNames) SkeletonNamesString.Add(name.ToString());
 			FString BoneNamePath = FPaths::Combine(
 				DirectorySequence,
-				DirectorySkeleton,
+				NameSkeleton,
 				MeshName + "_BoneName.txt"
 			);  // {seq_dir}/{skeleton}/{actor_name}_BoneName.txt
 			FFileHelper::SaveStringArrayToFile(SkeletonNamesString, *BoneNamePath);
@@ -164,7 +155,7 @@ void AAnnotator::ExportCameraParameters(int FrameNumber)
 
 		FString CameraTransformPath = FPaths::Combine(
 			DirectorySequence,  // seq_dir
-			DirectoryCameraParams,  // camera_params
+			NameCameraParams,  // camera_params
 			Camera->GetFName().GetPlainNameString(),  // camera_name
 			FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"  // frame_idx
 		);  // {seq_dir}/{camera_params}/{camera_name}/{frame_idx}.dat
@@ -195,7 +186,7 @@ void AAnnotator::ExportStaticMeshParameters(int FrameNumber)
 
 			FString ActorInfoPath = FPaths::Combine(
 				DirectorySequence,
-				DirectoryActorParams,
+				NameActorInfos,
 				MeshName,
 				FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"
 			);  // {seq_dir}/{actor_params}/{actor_name}/{frame_idx}.dat
@@ -225,7 +216,7 @@ void AAnnotator::ExportStaticMeshParameters(int FrameNumber)
 				VertexPositionsFloat,
 				FPaths::Combine(
 					DirectorySequence,
-					DirectoryVertices,
+					NameVertices,
 					MeshName,
 					FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"
 				)
@@ -257,7 +248,7 @@ void AAnnotator::ExportSkeletalMeshParameters(int FrameNumber)
 
 			FString ActorInfoPath = FPaths::Combine(
 				DirectorySequence,
-				DirectoryActorParams,
+				NameActorInfos,
 				MeshName,
 				FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"
 			);  // {seq_dir}/{actor_params}/{actor_name}/{frame_idx}.dat
@@ -287,7 +278,7 @@ void AAnnotator::ExportSkeletalMeshParameters(int FrameNumber)
 				VertexPositionsFloat,
 				FPaths::Combine(
 					DirectorySequence,
-					DirectoryVertices,
+					NameVertices,
 					MeshName,
 					FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"
 				)
@@ -320,7 +311,7 @@ void AAnnotator::ExportSkeletalMeshParameters(int FrameNumber)
 				SkeletonPositionsFloat,
 				FPaths::Combine(
 					DirectorySequence,
-					DirectorySkeleton,
+					NameSkeleton,
 					MeshName,
 					FString::Printf(TEXT("%04d"), FrameNumber) + ".dat"
 				)

@@ -46,13 +46,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
 		FString DirectorySequence;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
-		FString DirectoryActorParams = "actor_params";
+		FString NameActorInfos = "actor_infos";
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
-		FString DirectoryCameraParams = "camera_params";
+		FString NameCameraParams = "camera_params";
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
-		FString DirectoryVertices = "vertices";
+		FString NameVertices = "vertices";
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator")
-		FString DirectorySkeleton = "skeleton";
+		FString NameSkeleton = "skeleton";
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Interp, Category = "Annotator|Resolution")
 		int Width = 1920;

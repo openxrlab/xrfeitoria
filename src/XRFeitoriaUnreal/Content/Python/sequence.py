@@ -87,9 +87,60 @@ def find_binding_by_name(sequence: unreal.LevelSequence, name: str) -> unreal.Se
         return binding
 
     for binding in sequence.get_bindings():
+        binding: unreal.MovieSceneBindingProxy
         if binding.get_name() == name:
             return binding
     raise RuntimeError(f'Failed to find binding: {name}')
+
+
+def find_binding_by_class(
+    sequence: unreal.LevelSequence, actor_class: Type[unreal.Actor]
+) -> Optional[unreal.MovieSceneBindingProxy]:
+    """
+    Finds a Sequencer binding for the specified actor class in the given Level Sequence.
+
+    Args:
+        sequence (unreal.LevelSequence): The Level Sequence to search for the binding.
+        actor_class (Type[unreal.Actor]): The class of the actor to find or create the binding for.
+
+    Returns:
+        Optional[unreal.MovieSceneBindingProxy]: The Sequencer binding for the actor class, or None if not found.
+
+    """
+    bound_objects: List[unreal.SequencerBoundObjects] = unreal.SequencerTools.get_bound_objects(
+        get_world(), sequence, sequence.get_bindings(), sequence.get_playback_range()
+    )
+
+    for bound_object in bound_objects:
+        if bound_object.bound_objects[0].static_class() == actor_class.static_class():
+            return bound_object.binding_proxy
+    return None
+
+
+def find_or_create_binding_by_class(
+    sequence: unreal.LevelSequence, actor_class: Type[unreal.Actor], spawn_in_sequence: bool = True
+) -> unreal.MovieSceneBindingProxy:
+    """
+    Finds or creates a Sequencer binding for the specified actor class in the given Level Sequence.
+
+    Args:
+        sequence (unreal.LevelSequence): The Level Sequence to search for the binding.
+        actor_class (Type[unreal.Actor]): The class of the actor to find or create the binding for.
+        spawn_in_sequence (bool, optional): Whether to spawn the actor in the sequence if it doesn't exist.
+            If False, the actor will be spawned in the world but not in the sequence. Defaults to True.
+
+    Returns:
+        unreal.MovieSceneBindingProxy: The Sequencer binding for the actor class.
+
+    """
+    binding = find_binding_by_class(sequence, actor_class)
+    if binding is not None:
+        return binding
+
+    if spawn_in_sequence:
+        return sequence.add_spawnable_from_class(actor_class)
+    else:
+        return sequence.add_possessable(actor_class)
 
 
 def get_time(sequence: unreal.LevelSequence, frame: int) -> unreal.FrameNumber:
@@ -1242,7 +1293,10 @@ class Sequence:
         export_vertices: bool,
         export_skeleton: bool,
     ):
+        actor_binding = find_binding_by_class(cls.sequence, unreal.Annotator)
+        actor_binding.remove()
         actor_binding = cls.sequence.add_spawnable_from_class(unreal.Annotator)
+
         add_property_bool_track_to_binding(
             binding=actor_binding, property_name='bSaveVerticesPosition', property_value=export_vertices
         )
