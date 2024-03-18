@@ -20,7 +20,7 @@ def get_plugin_path() -> Tuple[Path, Path, Path]:
 
 PLUGIN_NAME = 'XRFeitoriaUnreal'
 MATERIAL_PATHS = {
-    'depth': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_depth_EXR',
+    'depth': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_depth',
     'mask': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_mask_MRQ',
     'flow': f'/{PLUGIN_NAME}/Materials/PPM_velocity',
     'diffuse': f'/{PLUGIN_NAME}/Materials/PPM_diffusecolor',
