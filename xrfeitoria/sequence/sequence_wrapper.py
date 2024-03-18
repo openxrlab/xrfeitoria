@@ -178,22 +178,23 @@ def sequence_wrapper_unreal(
     seq_length: int = 1,
     replace: bool = False,
 ) -> Union[SequenceUnreal, ContextManager[SequenceUnreal]]:
-    """Create a new sequence and close the sequence after exiting it.
+    """Create a new sequence, open it in editor, and close the sequence after exiting
+    it.
 
     Args:
         seq_name (str): The name of the sequence.
-        seq_dir (Optional[str], optional): The directory where the sequence is located. Defaults to None.
+        seq_dir (Optional[str], optional): The directory where the sequence is located. Defaults to None. Falls back to the default sequence path (/Game/XRFeitoriaUnreal/Sequences).
         level (Optional[str], optional): The level to associate the sequence with. Defaults to None.
         seq_fps (int, optional): The frames per second of the sequence. Defaults to 30.
-        seq_length (int, optional): The length of the sequence in seconds. Defaults to 1.
+        seq_length (int, optional): The length of the sequence in frames. Defaults to 1.
         replace (bool, optional): Whether to replace an existing sequence with the same name. Defaults to False.
 
     Returns:
         SequenceUnreal: The created SequenceUnreal object.
     """
 
-    default_sequence_path = SequenceUnreal._get_default_seq_path_in_engine()
-    seq_dir = seq_dir or default_sequence_path
+    default_sequence_dir = SequenceUnreal._get_default_seq_dir_in_engine()
+    seq_dir = seq_dir or default_sequence_dir
     if (
         unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}')
         and unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}_data')

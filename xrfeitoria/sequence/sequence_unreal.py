@@ -322,8 +322,8 @@ class SequenceUnreal(SequenceBase):
     #####################################
 
     @staticmethod
-    def _get_default_seq_path_in_engine() -> str:
-        return XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_PATH
+    def _get_default_seq_dir_in_engine() -> str:
+        return XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_DIR
 
     @staticmethod
     def _get_seq_info_in_engine(
@@ -332,8 +332,8 @@ class SequenceUnreal(SequenceBase):
         map_path: 'Optional[str]' = None,
     ) -> 'Tuple[str, str]':
         _suffix = XRFeitoriaUnrealFactory.constants.data_asset_suffix
-        default_sequence_path = XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_PATH
-        seq_dir = seq_dir or default_sequence_path  # default sequence path
+        default_sequence_dir = XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_DIR
+        seq_dir = seq_dir or default_sequence_dir  # default sequence directory
         if map_path is None:
             seq_data_path = f'{seq_dir}/{seq_name}{_suffix}'
             unreal_functions.check_asset_in_engine(seq_data_path, raise_error=True)

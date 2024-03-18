@@ -12,6 +12,7 @@ from .sequence_base import SequenceBase
 
 class dict_process_dir(TypedDict):
     camera_dir: str
+    actor_infos_dir: str
     vertices_dir: str
     skeleton_dir: str
 
@@ -24,10 +25,6 @@ class SequenceUnreal(SequenceBase):
     def save(cls) -> None: ...
     @classmethod
     def show(cls) -> None: ...
-    @classmethod
-    def _preprocess_before_render(
-        cls, save_dir: str, resolution: Tuple[int, int], export_vertices: bool, export_skeleton: bool
-    ) -> None: ...
     @classmethod
     def add_to_renderer(
         cls,
@@ -65,10 +62,7 @@ class SequenceUnreal(SequenceBase):
     ) -> ActorUnreal: ...
     @classmethod
     def add_audio(
-        cls,
-        audio_asset_path: str,
-        start_frame: Optional[int] = None,
-        end_frame: Optional[int] = None,
+        cls, audio_asset_path: str, start_frame: Optional[int] = None, end_frame: Optional[int] = None
     ) -> None: ...
     @classmethod
     def get_map_path(cls) -> str: ...
@@ -77,11 +71,17 @@ class SequenceUnreal(SequenceBase):
     @classmethod
     def set_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None: ...
     @classmethod
+    def get_playback(cls) -> Tuple[int, int]: ...
+    @classmethod
     def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None: ...
     @classmethod
     def _open(cls, seq_name: str, seq_dir: Optional[str] = None) -> None: ...
+    @classmethod
+    def _preprocess_before_render(
+        cls, save_dir: str, resolution: Tuple[int, int], export_vertices: bool, export_skeleton: bool
+    ) -> None: ...
     @staticmethod
-    def _get_default_seq_path_in_engine() -> str: ...
+    def _get_default_seq_dir_in_engine() -> str: ...
     @staticmethod
     def _get_seq_info_in_engine(
         seq_name: str, seq_dir: Optional[str] = None, map_path: Optional[str] = None

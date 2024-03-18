@@ -46,6 +46,7 @@ void AAnnotator::Initialize()
 		FString name = spawnable.GetName();
 
 		TArray<UObject*> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
+		if (boundObjects.Num() == 0) continue;
 		BoundObjects.Add(name, boundObjects[0]);
 	}
 	for (int idx = 0; idx < MovieScene->GetPossessableCount(); idx++)
@@ -55,6 +56,7 @@ void AAnnotator::Initialize()
 		FString name = possessable.GetName();
 
 		TArray<UObject*> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
+		if (boundObjects.Num() == 0) continue;
 		BoundObjects.Add(name, boundObjects[0]);
 	}
 	UE_LOG(LogXF, Log, TEXT("Detected %d bound objects"), BoundObjects.Num());

@@ -7,7 +7,7 @@ import unreal
 import utils_actor
 from constants import (
     DEFAULT_SEQUENCE_DATA_ASSET,
-    DEFAULT_SEQUENCE_PATH,
+    DEFAULT_SEQUENCE_DIR,
     ENGINE_MAJOR_VERSION,
     ENGINE_MINOR_VERSION,
     MotionFrame,
@@ -111,6 +111,8 @@ def find_binding_by_class(
     )
 
     for bound_object in bound_objects:
+        if len(bound_object.bound_objects) == 0:
+            continue
         if bound_object.bound_objects[0].static_class() == actor_class.static_class():
             return bound_object.binding_proxy
     return None
@@ -1027,7 +1029,7 @@ class Sequence:
             map_path = EditorLevelSub.get_current_level().get_path_name().split('.')[0]
         assert unreal.EditorAssetLibrary.does_asset_exist(map_path), f'Map `{map_path}` does not exist'
         if seq_dir is None:
-            seq_dir = DEFAULT_SEQUENCE_PATH
+            seq_dir = DEFAULT_SEQUENCE_DIR
 
         seq_path = f'{seq_dir}/{seq_name}'
         data_asset_path = f'{seq_path}{data_asset_suffix}'
@@ -1292,7 +1294,8 @@ class Sequence:
         export_skeleton: bool,
     ):
         actor_binding = find_binding_by_class(cls.sequence, unreal.Annotator)
-        actor_binding.remove()
+        if actor_binding is not None:
+            actor_binding.remove()
         actor_binding = cls.sequence.add_spawnable_from_class(unreal.Annotator)
 
         add_property_bool_track_to_binding(
