@@ -21,26 +21,26 @@ from xrfeitoria.utils.anim import dump_humandata, load_amass_motion
 
 # prepare the assets
 ####################
-root = Path('.cache/sample-amass').resolve()  # modify this to your own path
+asset_root = Path('.cache/sample-amass').resolve()  # modify this to your own path
 
 # 1. Download Amass from https://amass.is.tue.mpg.de/download.php
 # For example, download ACCAD (SMPL-X N) from https://download.is.tue.mpg.de/download.php?domain=amass&sfile=amass_per_dataset/smplx/neutral/mosh_results/ACCAD.tar.bz2
 # and use `ACCAD/s001/EricCamper04_stageii.npz` from the uncompressed folder
-amass_file = root / 'EricCamper04_stageii.npz'
+amass_file = asset_root / 'EricCamper04_stageii.npz'
 
 # 2.1 Download SMPL-XL model from https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.fbx
 # or from https://openxlab.org.cn/datasets/OpenXDLab/SynBody/tree/main/Assets
 # With downloading this, you are agreeing to CC BY-NC-SA 4.0 License (https://creativecommons.org/licenses/by-nc-sa/4.0/).
-smpl_xl_file = root / 'SMPL-XL-001.fbx'
+smpl_xl_file = asset_root / 'SMPL-XL-001.fbx'
 # 2.2 Download the meta information from https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.npz
-smpl_xl_meta_file = root / 'SMPL-XL-001.npz'
+smpl_xl_meta_file = asset_root / 'SMPL-XL-001.npz'
 
 # 3. Define the output file path
-seq_name = 'seq_amass'
-output_path = Path(__file__).resolve().parents[2] / 'output/samples/blender' / Path(__file__).stem
-output_path.mkdir(parents=True, exist_ok=True)
-saved_humandata_file = output_path / seq_name / 'output.npz'
-saved_blend_file = output_path / seq_name / 'output.blend'
+seq_name = Path(__file__).stem
+output_path = Path(__file__).resolve().parents[2] / 'output/samples/blender'
+seq_dir = output_path / seq_name
+saved_humandata_file = seq_dir / 'smplx' / 'output.npz'
+saved_blend_file = seq_dir / 'output.blend'
 
 
 @remote_blender()
@@ -57,6 +57,7 @@ def main(background: bool = False):
 
     motion = load_amass_motion(amass_file)
     motion.convert_fps(30)  # convert the motion from 120fps (amass) to 30fps
+    motion.cut_motion(end_frame=10)  # cut the motion to 10 frames, for demonstration purpose
     motion_data = motion.get_motion_data()
 
     # modify this to your blender executable path
@@ -64,7 +65,7 @@ def main(background: bool = False):
         exec_path='C:/Program Files/Blender Foundation/Blender 3.6/blender.exe', background=background
     )
 
-    with xf_runner.Sequence.new(seq_name=seq_name, seq_length=motion.n_frames) as seq:
+    with xf_runner.sequence(seq_name=seq_name, seq_length=motion.n_frames) as seq:
         # Import SMPL-XL model
         actor = xf_runner.Actor.import_from_file(smpl_xl_file)
         apply_scale(actor.name)  # SMPL-XL model is imported with scale, we need to apply scale to it
