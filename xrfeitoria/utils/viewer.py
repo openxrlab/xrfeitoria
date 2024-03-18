@@ -1,5 +1,7 @@
 """Utils for loading images and annotations."""
+
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -72,20 +74,27 @@ class ExrReader:
         img = flow_vis.flow_to_color(flow, convert_to_bgr=False)
         return img
 
-    def get_depth(self, depth_rescale: float = 1.0) -> np.ndarray:
+    def get_depth(self, inverse: bool = False, depth_rescale: float = 1.0) -> np.ndarray:
         """Get depth in `.exr` format.
 
         Args:
-            depth_rescale (float, optional): scaling the depth
-                to map it into (0, 255). Depth values great than
-                `depth_rescale` will be clipped. Defaults to 1.0.
+            inverse (bool, optional): whether to inverse the depth.
+                If True, white (255) represents the farthest, and black (0) represents the nearest.
+                if False, white (255) represents the nearest, and black (0) represents the farthest.
+                Defaults to False.
+            depth_rescale (float, optional): scaling the depth to map it into (0, 255).
+                ``depth = depth / depth_rescale``.
+                Depth values greater than `depth_rescale` will be clipped. Defaults to 1.0.
 
         Returns:
             np.ndarray: depth data of shape (H, W, 3)
         """
         depth = self.exr_mat
         img = self.float2int(depth / depth_rescale)
-        img[img == 0] = 255
+        if inverse:
+            img = 255 - img
+        else:
+            img[img == 0] = 255
         return img
 
 
@@ -119,6 +128,17 @@ class Viewer:
             sequence_dir (PathLike): path to the sequence directory
         """
         self.sequence_dir = Path(sequence_dir)
+
+    @property
+    @lru_cache
+    def camera_names(self) -> List[str]:
+        camera_folders = list(self.sequence_dir.glob(f'{self.IMG}/*'))
+        return [camera_folder.name for camera_folder in camera_folders]
+
+    @property
+    @lru_cache
+    def frame_num(self) -> int:
+        return len(list(self.sequence_dir.glob(f'{self.IMG}/{self.camera_names[0]}/*')))
 
     def get_img(self, camera_name: str, frame: int) -> np.ndarray:
         """Get rgb image of the given frame ('img/{frame:04d}.*')
@@ -189,15 +209,19 @@ class Viewer:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             return img
 
-    def get_depth(self, camera_name: str, frame: int, depth_rescale=1.0) -> np.ndarray:
+    def get_depth(self, camera_name: str, frame: int, inverse: bool = False, depth_rescale: float = 1.0) -> np.ndarray:
         """Get depth of the given frame ('depth/{frame:04d}.*')
 
         Args:
             camera_name (str): the camera name
             frame (int): the frame number
-            depth_rescale (float, optional): scaling the depth
-                to map it into (0, 255). Depth values great than
-                `depth_rescale` will be clipped. Defaults to 1.0.
+            inverse (bool, optional): whether to inverse the depth.
+                If True, white (255) represents the farthest, and black (0) represents the nearest.
+                if False, white (255) represents the nearest, and black (0) represents the farthest.
+                Defaults to False.
+            depth_rescale (float, optional): scaling the depth to map it into (0, 255).
+                ``depth = depth / depth_rescale``.
+                Depth values greater than `depth_rescale` will be clipped. Defaults to 1.0.
 
         Returns:
             np.ndarray: depth of shape (H, W, 3)
@@ -209,7 +233,7 @@ class Viewer:
         if not file_path.exists():
             raise ValueError(f'Depth of {frame}-frame not found: {file_path}')
         if file_path.suffix == '.exr':
-            return ExrReader(file_path).get_depth(depth_rescale=depth_rescale)
+            return ExrReader(file_path).get_depth(inverse=inverse, depth_rescale=depth_rescale)
         else:
             img = cv2.imread(str(file_path))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -221,9 +245,6 @@ class Viewer:
         Args:
             camera_name (str): the camera name
             frame (int): the frame number
-            depth_rescale (float, optional): scaling the depth
-                to map it into (0, 255). Depth values great than
-                `depth_rescale` will be clipped. Defaults to 1.0.
 
         Returns:
             np.ndarray: optical flow of shape (H, W, 3)
