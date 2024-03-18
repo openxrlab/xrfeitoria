@@ -1,11 +1,13 @@
-"""Convertor for different spaces"""
+"""Converter for different spaces."""
+
+from typing import Union
 
 import numpy as np
 
 from ..data_structure.constants import Vector
 
 
-def rotation_matrix(angles: Vector, order='xyz', degrees: bool = True) -> np.ndarray:
+def rotation_matrix(angles: Union[Vector, np.ndarray], order='xyz', degrees: bool = True) -> np.ndarray:
     """
     Args:
         angles (Tuple[float, float, float]): Rotation angles in degrees or radians.
@@ -185,19 +187,38 @@ class ConverterMotion:
 
 
 class ConverterUnreal:
-    UNITS_SCALE = 100  # 1 meter = 100 cm
+    UNITS_SCALE = 100.0  # 1 meter = 100 cm
+    ROTATION_OFFSET = [0, 0, -90.0]  # (x, y, z) in degrees, around z-axis (left-handed)
 
     @classmethod
     def rotation_camera_from_ue(cls, euler, degrees=True) -> np.ndarray:
-        """Convert from ue camera space to opencv camera space convention."""
-        # convert to left-handed
+        """Convert from ue camera space to opencv camera space convention.
+        Note: convert to left-handed
+
+        Args:
+            euler (np.ndarray): of shape (3,)
+            degrees (bool, optional): Whether the input angles are in degrees. Defaults to True.
+
+        Returns:
+            np.ndarray: Rotation matrix 3x3.
+        """
         x, y, z = -euler[1], -euler[2], -euler[0]
         return rotation_matrix([x, y, z], order='xyz', degrees=degrees)
 
     @classmethod
-    def rotation_from_ue(cls, euler, degrees=True) -> np.ndarray:
-        """Convert from ue camera space to opencv camera space convention."""
-        return rotation_matrix(euler, 'zxy', degrees=degrees)
+    def rotation_from_ue(cls, euler, offset=ROTATION_OFFSET, degrees=True) -> np.ndarray:
+        """Convert from ue camera space to opencv camera space convention.
+
+        Args:
+            euler (np.ndarray): of shape (3,)
+            offset (np.ndarray, optional): of shape (3,). Defaults to ROTATION_OFFSET [0, 0, -90.0].
+            degrees (bool, optional): Whether the input angles are in degrees. Defaults to True.
+
+        Returns:
+            np.ndarray: Rotation matrix 3x3.
+        """
+        _euler = np.array(euler) + np.array(offset)
+        return rotation_matrix(_euler, 'zxy', degrees=degrees)
 
     @classmethod
     def location_from_ue(cls, vector: np.ndarray) -> np.ndarray:
@@ -206,13 +227,13 @@ class ConverterUnreal:
         [right, front, up]: (x, y, z) ==> (y, -z, x)
 
         Args:
-            vector (np.ndarray): of shape (3,) or (N, 3)
+            vector (np.ndarray): of shape (3,) or (... , 3)
 
         Returns:
-            np.ndarray: of shape (3,) or (N, 3)
+            np.ndarray: of shape (3,) or (... , 3)
         """
         if vector.shape == (3,):
             ret = np.array([vector[1], -vector[2], vector[0]]) / cls.UNITS_SCALE
-        elif vector.ndim == 2 and vector.shape[1] == 3:
-            ret = np.array([vector[:, 1], -vector[:, 2], vector[:, 0]]) / cls.UNITS_SCALE
+        elif vector.ndim >= 2 and vector.shape[-1] == 3:
+            ret = np.stack([vector[..., 1], -vector[..., 2], vector[..., 0]], axis=-1) / cls.UNITS_SCALE
         return ret

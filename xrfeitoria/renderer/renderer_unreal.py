@@ -1,4 +1,3 @@
-import json
 import shutil
 import socket
 from pathlib import Path
@@ -6,8 +5,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 
-from ..data_structure.constants import PathLike, RenderOutputEnumUnreal, actor_info_type
+from ..data_structure.constants import PathLike, RenderOutputEnumUnreal
 from ..rpc import remote_unreal
+from ..utils.converter import ConverterUnreal
 from ..utils.functions import unreal_functions
 from .renderer_base import RendererBase, render_status
 
@@ -206,17 +206,15 @@ class RendererUnreal(RendererBase):
             vertices_files = sorted(folder.glob('*.dat'))
             if not vertices_files:
                 return
-            # Read all vertices files into a list
-            vertices = [
-                np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3) for vertices_file in vertices_files
-            ]
-
-            # Stack all vertices into one array with shape (frame, verts, 3)
-            vertices = np.stack(vertices)
-            # Convert convention from unreal to opencv, [x, y, z] -> [y, -z, x]
-            vertices = np.stack([vertices[:, :, 1], -vertices[:, :, 2], vertices[:, :, 0]], axis=-1)
-            vertices /= 100.0  # convert from cm to m
-
+            # Read all vertices files into an ndarray, shape: (frame, vertex, 3)
+            vertices = np.stack(
+                [
+                    np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3)
+                    for vertices_file in vertices_files
+                ]
+            )
+            # Convert from ue camera space to opencv camera space convention
+            vertices = ConverterUnreal.location_from_ue(vertices)
             # Save the vertices in a compressed `.npz` file
             np.savez_compressed(folder.with_suffix('.npz'), verts=vertices, faces=None)
             # Remove the folder
@@ -236,20 +234,29 @@ class RendererUnreal(RendererBase):
             # Read all actor info files into a list
             location = []
             rotation = []
+            stencil_value = []
             mask_color = []
             for actor_info_file in actor_info_files:
                 with open(actor_info_file, 'rb') as f:
                     dat = np.frombuffer(f.read(), np.float32).reshape(7)
-                location.append(dat[:3])
-                rotation.append(dat[3:6])
+                location.append(ConverterUnreal.location_from_ue(dat[:3]))
+                rotation.append(ConverterUnreal.rotation_from_ue(dat[3:6]))
+                stencil_value.append(int(dat[6]))
                 mask_color.append(unreal_functions.get_mask_color(int(dat[6])))
 
-            location = np.array(location) / 100.0  # convert from cm to m
-            rotation = np.array(rotation)
-            mask_color = np.array(mask_color)
+            location = np.stack(location)  # shape: (frame, 3)
+            rotation = np.stack(rotation)  # shape: (frame, 3, 3)
+            stencil_value = np.array(stencil_value)  # shape: (frame,)
+            mask_color = np.array(mask_color)  # shape: (frame, 3)
 
             # Save the actor infos in a compressed `.npz` file
-            np.savez_compressed(folder.with_suffix('.npz'), location=location, rotation=rotation, mask_color=mask_color)
+            np.savez_compressed(
+                file=folder.with_suffix('.npz'),
+                location=location,
+                rotation=rotation,
+                stencil_value=stencil_value,
+                mask_color=mask_color,
+            )
             # Remove the folder
             shutil.rmtree(folder)
 

@@ -9,7 +9,7 @@ from xrprimer.data_structure.camera import PinholeCameraParameter
 from xrprimer.transform.convention.camera import convert_camera_parameter
 
 from ..data_structure.constants import PathLike, Vector
-from ..utils.converter import rotation_matrix
+from ..utils.converter import ConverterUnreal
 
 
 class CameraParameter(PinholeCameraParameter):
@@ -209,9 +209,8 @@ class CameraParameter(PinholeCameraParameter):
         )
 
         # extrinsic matrix RT
-        x, y, z = -rotation[1], -rotation[2], -rotation[0]
-        R = rotation_matrix([x, y, z], order='xyz', degrees=True)
-        _T = np.array([location[1], -location[2], location[0]]) / 100.0  # unit: meter
+        R = ConverterUnreal.rotation_camera_from_ue(rotation, degrees=True)
+        _T = ConverterUnreal.location_from_ue(location)
         T = -R @ _T
 
         # construct camera parameter
