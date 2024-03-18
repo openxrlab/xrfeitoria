@@ -195,34 +195,19 @@ class RendererUnreal(RendererBase):
             cam_param.dump(camera_file.with_suffix('.json').as_posix())
             camera_file.unlink()
 
-        def convert_vertices(folder: Path) -> None:
-            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
-            `.npz` file with structure of: {'verts': np.ndarray, 'faces': None}
-
-            Args:
-                folder (Path): Path to the folder containing vertices files.
-            """
-            # Get all vertices files in the folder and sort them
-            vertices_files = sorted(folder.glob('*.dat'))
-            if not vertices_files:
-                return
-            # Read all vertices files into an ndarray, shape: (frame, vertex, 3)
-            vertices = np.stack(
-                [
-                    np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3)
-                    for vertices_file in vertices_files
-                ]
-            )
-            # Convert from ue camera space to opencv camera space convention
-            vertices = ConverterUnreal.location_from_ue(vertices)
-            # Save the vertices in a compressed `.npz` file
-            np.savez_compressed(folder.with_suffix('.npz'), verts=vertices, faces=None)
-            # Remove the folder
-            shutil.rmtree(folder)
-
         def convert_actor_infos(folder: Path) -> None:
             """Convert stencil value from `.dat` to `.npz`. Merge all actor info files
             into one.
+
+            actor_info files are in the format of:
+            ```
+            {
+                'location': np.ndarray,  # shape: (frame, 3)
+                'rotation': np.ndarray,  # shape: (frame, 3, 3)
+                'stencil_value': np.ndarray,  # shape: (frame,)
+                'mask_color': np.ndarray,  # shape: (frame, 3)
+            }
+            ```
 
             Args:
                 folder (Path): Path to the folder containing actor info files.
@@ -257,6 +242,31 @@ class RendererUnreal(RendererBase):
                 stencil_value=stencil_value,
                 mask_color=mask_color,
             )
+            # Remove the folder
+            shutil.rmtree(folder)
+
+        def convert_vertices(folder: Path) -> None:
+            """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
+            `.npz` file with structure of: {'verts': np.ndarray, 'faces': None}
+
+            Args:
+                folder (Path): Path to the folder containing vertices files.
+            """
+            # Get all vertices files in the folder and sort them
+            vertices_files = sorted(folder.glob('*.dat'))
+            if not vertices_files:
+                return
+            # Read all vertices files into an ndarray, shape: (frame, vertex, 3)
+            vertices = np.stack(
+                [
+                    np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3)
+                    for vertices_file in vertices_files
+                ]
+            )
+            # Convert from ue camera space to opencv camera space convention
+            vertices = ConverterUnreal.location_from_ue(vertices)
+            # Save the vertices in a compressed `.npz` file
+            np.savez_compressed(folder.with_suffix('.npz'), verts=vertices, faces=None)
             # Remove the folder
             shutil.rmtree(folder)
 

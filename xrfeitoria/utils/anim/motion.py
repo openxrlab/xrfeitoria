@@ -194,7 +194,8 @@ class Motion:
         self.insert_rest_pose()
 
     def cut_motion(self, start_frame: Optional[int] = None, end_frame: Optional[int] = None):
-        """Cut the motion sequence to a given number of frames.
+        """Cut the motion sequence to a given number of frames (to [start_frame,
+        end_frame])
 
         Args:
             start_frame (Optional[int], optional): The start frame to cut to. Defaults to None.

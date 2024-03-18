@@ -1,10 +1,12 @@
 """Utilities for animation data loading and dumping."""
 
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
+from scipy.spatial.transform import Rotation as spRotation
 
+from ...actor.actor_base import ActorBase
 from ...data_structure.constants import PathLike
 from .motion import SMPLMotion, SMPLXMotion
 
@@ -58,7 +60,12 @@ def load_humandata_motion(input_humandata_path: PathLike) -> Union[SMPLMotion, S
     return src_motion
 
 
-def dump_humandata(motion: Union[SMPLMotion, SMPLXMotion], save_filepath: PathLike, meta_filepath: PathLike) -> None:
+def dump_humandata(
+    motion: Union[SMPLMotion, SMPLXMotion],
+    save_filepath: PathLike,
+    meta_filepath: PathLike,
+    actor_name: Optional[str] = None,
+) -> None:
     """Dump human data to a file. This function must be associate with a meta file
     provided by SMPL-XL.
 
@@ -66,6 +73,7 @@ def dump_humandata(motion: Union[SMPLMotion, SMPLXMotion], save_filepath: PathLi
         motion (Union[SMPLMotion, SMPLXMotion]): The motion data to be dumped.
         save_filepath (PathLike): The file path to save the dumped data.
         meta_filepath (PathLike): The file path to the meta information, storing the parameters of the SMPL-XL model.
+        actor_name (Optional[str], optional): The name of the actor. Defaults to None.
 
     Note:
         HumanData is a structure of smpl/smplx data defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
@@ -88,7 +96,7 @@ def dump_humandata(motion: Union[SMPLMotion, SMPLXMotion], save_filepath: PathLi
                     'right_hand_pose': right_hand_pose,  # (n_frames, 45)
                     'expression': expression,  # (n_frames, 10)
                 },
-                'meta': {'gender': 'neutral'},  # optional
+                'meta': {'gender': 'neutral', 'actor_name': '(XF)actor-001'},  # optional
             }
     """
     meta_info = np.load(meta_filepath, allow_pickle=True)
@@ -96,14 +104,78 @@ def dump_humandata(motion: Union[SMPLMotion, SMPLXMotion], save_filepath: PathLi
         smpl_x = meta_info['smplx'].item()
     elif 'smpl' in meta_info.keys():
         smpl_x = meta_info['smpl'].item()
+
+    _meta_ = meta_info['meta'].item()
+    if actor_name:
+        _meta_['actor_name'] = actor_name
+
     motion.dump_humandata(
         filepath=save_filepath,
         betas=smpl_x['betas'],
-        meta=meta_info['meta'].item(),
+        meta=_meta_,
         global_orient_offset=smpl_x['global_orient'],
         transl_offset=smpl_x['transl'],
         root_location_t0=smpl_x['root_location_t0'],
         pelvis_location_t0=smpl_x['pelvis_location_t0'],
+    )
+
+
+def refine_smpl_x(
+    smpl_x_file: Path,
+    replace_smpl_x_file: bool = False,
+    offset_location: np.ndarray = np.zeros(3),
+    offset_rotation: np.ndarray = np.eye(3),
+) -> None:
+    """Refine translation and rotation of SMPL-X parameters."""
+
+    # Load SMPL-X data
+    smpl_x_file = Path(smpl_x_file)
+    data = dict(np.load(smpl_x_file, allow_pickle=True))
+    if 'smplx' in data.keys():
+        smpl_x_type = 'smplx'
+    elif 'smpl' in data.keys():
+        smpl_x_type = 'smpl'
+    else:
+        raise ValueError(f'Unknown keys in {smpl_x_file}: {data.keys()}')
+
+    # Convert offset_rotation
+    if offset_rotation.shape == (3, 3):
+        offset_rotation = spRotation.from_matrix(offset_rotation)
+    elif offset_rotation.shape == (4,):
+        offset_rotation = spRotation.from_quat(offset_rotation)
+    else:
+        raise ValueError('Please convert offset_rotation to 3x3 matrix or 4-dim quaternion.')
+
+    smpl_x_data = data[smpl_x_type].item()
+    global_orient = smpl_x_data['global_orient']
+    global_orient = spRotation.from_rotvec(global_orient)
+    global_orient = (offset_rotation * global_orient).as_rotvec()
+    transl = smpl_x_data['transl']
+    transl = offset_rotation.apply(transl - transl[0]) + transl[0]
+    transl += offset_location
+
+    smpl_x_data['global_orient'] = global_orient.astype(np.float32)
+    smpl_x_data['transl'] = transl.astype(np.float32)
+    data[smpl_x_type] = smpl_x_data
+
+    if replace_smpl_x_file:
+        np.savez(smpl_x_file, **data)
+    else:
+        np.savez(smpl_x_file.parent / f'{smpl_x_file.stem}_refined.npz', **data)
+
+
+def refine_smpl_x_from_actor_info(smpl_x_file: Path, actor_info_file: Path, replace_smpl_x_file: bool = False):
+    """Refine translation and rotation of SMPL-X parameters from actor info file."""
+    actor_info = np.load(actor_info_file, allow_pickle=True)
+    location = actor_info['location']
+    rotation = actor_info['rotation']
+    assert np.all(location == location[0]) and np.all(rotation == rotation[0])
+
+    refine_smpl_x(
+        smpl_x_file=smpl_x_file,
+        replace_smpl_x_file=replace_smpl_x_file,
+        offset_location=location[0],
+        offset_rotation=rotation[0],
     )
 
 
