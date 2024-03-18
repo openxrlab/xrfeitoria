@@ -15,7 +15,7 @@ from .sequence_unreal import SequenceUnreal
 __all__ = ['sequence_wrapper_blender', 'sequence_wrapper_unreal']
 
 
-@deprecated('Use `sequence` function instead.', category=DeprecationWarning)
+@deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
 class SequenceWrapperBlender:
     """Sequence utils class."""
 
@@ -75,7 +75,7 @@ class SequenceWrapperBlender:
         cls._seq.close()
 
 
-@deprecated('Use `sequence` function instead.', category=DeprecationWarning)
+@deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
 class SequenceWrapperUnreal:
     """Sequence utils class for Unreal."""
 
