@@ -1,10 +1,13 @@
-from typing import Optional
-
-from typing_extensions import deprecated
+from typing import TYPE_CHECKING, Optional
 
 from . import _tls
 from .data_structure.constants import EngineEnum, PathLike, default_level_blender
 from .utils import setup_logger
+
+if TYPE_CHECKING:
+    from typing_extensions import deprecated
+else:
+    deprecated = lambda *args, **kwargs: (lambda func: func)
 
 __all__ = ['init_blender', 'init_unreal']
 
