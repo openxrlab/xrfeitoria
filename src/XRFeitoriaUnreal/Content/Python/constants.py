@@ -1,7 +1,8 @@
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import unreal
 
@@ -197,3 +198,16 @@ class RenderJobUnreal:
 
 TransformKeys = Union[List[SequenceTransformKey], SequenceTransformKey]
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
+color_type = TypedDict(
+    'color',
+    {
+        'name': str,
+        'hex': str,
+        'rgb': Tuple[int, int, int],
+    },
+)
+
+
+######### Constants #########
+MASK_COLOR_FILE = PLUGIN_PYTHON_ROOT / 'data' / 'mask_colors.json'
+mask_colors: List[color_type] = json.loads(MASK_COLOR_FILE.read_text())

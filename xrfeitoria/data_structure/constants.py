@@ -10,6 +10,14 @@ Transform = Tuple[Vector, Vector, Vector]
 PathLike = Union[str, Path]
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 actor_info_type = TypedDict('actor_info', {'actor_name': str, 'mask_color': Tuple[int, int, int]})
+color_type = TypedDict(
+    'color',
+    {
+        'name': str,
+        'hex': str,
+        'rgb': Tuple[int, int, int],
+    },
+)
 
 ##### Package Constants #####
 

@@ -204,18 +204,18 @@ class RendererUnreal(RendererBase):
             """
             # Get all vertices files in the folder and sort them
             vertices_files = sorted(folder.glob('*.dat'))
+            if not vertices_files:
+                return
             # Read all vertices files into a list
             vertices = [
                 np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3) for vertices_file in vertices_files
             ]
-            if not vertices:
-                return
 
             # Stack all vertices into one array with shape (frame, verts, 3)
             vertices = np.stack(vertices)
             # Convert convention from unreal to opencv, [x, y, z] -> [y, -z, x]
             vertices = np.stack([vertices[:, :, 1], -vertices[:, :, 2], vertices[:, :, 0]], axis=-1)
-            vertices /= 100  # convert from cm to m
+            vertices /= 100.0  # convert from cm to m
 
             # Save the vertices in a compressed `.npz` file
             np.savez_compressed(folder.with_suffix('.npz'), verts=vertices, faces=None)
@@ -223,28 +223,33 @@ class RendererUnreal(RendererBase):
             shutil.rmtree(folder)
 
         def convert_actor_infos(folder: Path) -> None:
-            """Convert stencil value from `.dat` to `.json`.
+            """Convert stencil value from `.dat` to `.npz`. Merge all actor info files
+            into one.
 
             Args:
-                folder (Path): Path to the folder contains ``actor_infos``.
+                folder (Path): Path to the folder containing actor info files.
             """
-            # Get all stencil value files in the folder and sort them
+            # Get all files in the folder and sort them
             actor_info_files = sorted(folder.glob('*.dat'))
-            # Read all actor info files into a list
-            actor_infos: List[actor_info_type] = []
-            for actor_info_file in actor_info_files:
-                stencil_value = np.frombuffer(actor_info_file.read_bytes(), np.float32)
-                stencil_value = int(stencil_value)
-                mask_color = unreal_functions.get_mask_color(stencil_value)
-                actor_infos.append({'actor_name': actor_info_file.stem, 'mask_color': mask_color})
-
-            if not actor_infos:
+            if not actor_info_files:
                 return
+            # Read all actor info files into a list
+            location = []
+            rotation = []
+            mask_color = []
+            for actor_info_file in actor_info_files:
+                with open(actor_info_file, 'rb') as f:
+                    dat = np.frombuffer(f.read(), np.float32).reshape(7)
+                location.append(dat[:3])
+                rotation.append(dat[3:6])
+                mask_color.append(unreal_functions.get_mask_color(int(dat[6])))
 
-            # Save the actor infos in a `.json` file
-            with (folder.parent / f'{folder.name}.json').open('w') as f:
-                json.dump(actor_infos, f, indent=4)
+            location = np.array(location) / 100.0  # convert from cm to m
+            rotation = np.array(rotation)
+            mask_color = np.array(mask_color)
 
+            # Save the actor infos in a compressed `.npz` file
+            np.savez_compressed(folder.with_suffix('.npz'), location=location, rotation=rotation, mask_color=mask_color)
             # Remove the folder
             shutil.rmtree(folder)
 
@@ -269,7 +274,8 @@ class RendererUnreal(RendererBase):
                 convert_camera(camera_file)
 
             # 2. convert actor infos from `.dat` to `.json`
-            convert_actor_infos(folder=seq_path / RenderOutputEnumUnreal.actor_infos.value)
+            for actor_info_folder in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.actor_infos.value}/*')):
+                convert_actor_infos(actor_info_folder)
 
             # 3. convert vertices from `.dat` to `.npz`
             for actor_folder in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.vertices.value}/*')):

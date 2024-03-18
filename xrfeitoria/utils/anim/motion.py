@@ -9,6 +9,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as spRotation
 
 from ...data_structure.constants import MotionFrame, PathLike
+from ..converter import ConverterMotion
 from .constants import (
     SMPL_IDX_TO_JOINTS,
     SMPL_JOINT_NAMES,
@@ -23,59 +24,6 @@ from .transform3d import Matrix
 ConverterType = Callable[[np.ndarray], np.ndarray]
 
 __all__ = ['Motion', 'SMPLMotion', 'SMPLXMotion', 'get_humandata']
-
-
-class Converter:
-    @classmethod
-    def vec_humandata2smplx(cls, vector: np.ndarray) -> np.ndarray:
-        """From humandata transl (in **OpenCV space**) to SMPLX armature's **pelvis
-        local space** in Blender. (The pelvis local space is designed to be the same
-        with **SMPL space**.)
-
-        [right, front, up]: (-x, -z, -y) ==> (-x, z, y)
-
-        Args:
-            vector (np.ndarray): of shape (N, 3) or (3,)
-
-        Returns:
-            np.ndarray: of shape (N, 3) or (3,)
-        """
-        if vector.shape == (3,):
-            vector = np.array([vector[0], -vector[1], -vector[2]], dtype=vector.dtype)
-        elif vector.ndim == 2 and vector.shape[1] == 3:
-            vector = np.array([vector[:, 0], -vector[:, 1], -vector[:, 2]]).T
-        else:
-            raise ValueError(f'vector.shape={vector.shape}')
-        return vector
-
-    @classmethod
-    def vec_smplx2humandata(cls, vector: np.ndarray) -> np.ndarray:
-        # vice versa
-        return cls.vec_humandata2smplx(vector)
-
-    @classmethod
-    def vec_amass2humandata(cls, vector: np.ndarray) -> np.ndarray:
-        """From amass transl (pelvis's local space) to humandata transl (in **OpenCV
-        space**)
-
-        [right, front, up]: (x, y, z) ==> (-x, -z, -y)
-
-        (CAUTION: we can see amass animation actors face back
-            in blender via the smplx add-on)
-
-        Args:
-            vector (np.ndarray): of shape (N, 3) or (3,)
-
-        Returns:
-            np.ndarray: of shape (N, 3) or (3,)
-        """
-        if vector.shape == (3,):
-            vector = np.array([-vector[0], -vector[2], -vector[1]], dtype=vector.dtype)
-        elif vector.ndim == 2 and vector.shape[1] == 3:
-            vector = np.array([-vector[:, 0], -vector[:, 2], -vector[:, 1]]).T
-        else:
-            raise ValueError(f'vector.shape={vector.shape}')
-        return vector
 
 
 class Motion:
@@ -373,7 +321,7 @@ class SMPLMotion(Motion):
         fps: float = 30.0,
         insert_rest_pose: bool = False,
         global_orient_adj: Optional[spRotation] = GLOBAL_ORIENT_ADJUSTMENT,
-        vector_convertor: Optional[ConverterType] = Converter.vec_humandata2smplx,
+        vector_convertor: Optional[ConverterType] = ConverterMotion.vec_humandata2smplx,
     ) -> 'SMPLMotion':
         """Create SMPLMotion instance from smpl_data.
 
@@ -464,7 +412,7 @@ class SMPLMotion(Motion):
         global_orient = (amass2humandata_adj * spRotation.from_rotvec(global_orient)).as_rotvec()  # type: ignore
         # transl_0 = transl[0, :]
         # transl = amass2humandata_adj.apply(transl - transl_0) + transl_0
-        transl = Converter.vec_amass2humandata(transl)
+        transl = ConverterMotion.vec_amass2humandata(transl)
         # TODO: all axis offset
         height_offset = transl[0, 1]
 
@@ -607,7 +555,7 @@ class SMPLXMotion(Motion):
         insert_rest_pose: bool = False,
         flat_hand_mean: bool = False,
         global_orient_adj: Optional[spRotation] = GLOBAL_ORIENT_ADJUSTMENT,
-        vector_convertor: Optional[Callable[[np.ndarray], np.ndarray]] = Converter.vec_humandata2smplx,
+        vector_convertor: Optional[Callable[[np.ndarray], np.ndarray]] = ConverterMotion.vec_humandata2smplx,
     ) -> 'SMPLXMotion':
         """Create SMPLXMotion instance from smplx_data.
 
@@ -736,7 +684,7 @@ class SMPLXMotion(Motion):
         global_orient = (amass2humandata_adj * spRotation.from_rotvec(global_orient)).as_rotvec()  # type: ignore
         # transl_0 = transl[0, :]
         # transl = amass2humandata_adj.apply(transl - transl_0) + transl_0
-        transl = Converter.vec_amass2humandata(transl)
+        transl = ConverterMotion.vec_amass2humandata(transl)
         # TODO: all axis offset
         height_offset = transl[0, 1]
 
