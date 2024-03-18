@@ -282,6 +282,10 @@ class RendererUnreal(RendererBase):
             seq_name = job.sequence_path.split('/')[-1]
             seq_path = Path(job.output_path).resolve() / seq_name
             file_name_format = job.file_name_format  # TODO: use this to rename the files
+            if file_name_format != '{sequence_name}/{render_pass}/{camera_name}/{frame_number}':  # XXX: hard-coded
+                logger.warning(
+                    'The `file_name_format` in renderer is not the default value, which may cause some issues in post-processing. '
+                )
 
             text = f'job {idx + 1}/{len(cls.render_queue)}: seq_name="{seq_name}", post-processing...'
             spinner.update(text=text)

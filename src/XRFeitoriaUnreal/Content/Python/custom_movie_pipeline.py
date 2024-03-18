@@ -522,7 +522,7 @@ def main():
             sequence_path='/Game/Sequences/NewSequence',
             resolution=[1920, 1080],
             output_path='E:/Datasets/tmp',
-            file_name_format='{sequence_name}/{render_pass}/{frame_number}',
+            file_name_format='{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
             console_variables={'r.MotionBlurQuality': 0.0},
             anti_alias={'enable': False},
         )
