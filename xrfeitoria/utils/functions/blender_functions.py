@@ -1,6 +1,5 @@
 """Remote functions for blender."""
 
-import os
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 
@@ -141,7 +140,7 @@ def save_blend(save_path: 'PathLike' = None, pack: bool = False):
     # path.resolve() would do Network Drive Handling like:
     # X:/path/to/file.blend -> //xxx.xxx.xxx.xxx/Drive/path/to/file.blend
     # which made Blender failed to save (Windows)
-    save_path = Path(os.path.abspath(save_path))
+    save_path = Path(save_path).absolute()
     # set suffix to .blend
     if save_path.suffix != '.blend':
         save_path = save_path.with_suffix('.blend')
