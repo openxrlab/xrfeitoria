@@ -411,7 +411,7 @@ class ObjectUtilsBlender(ObjectUtilsBase):
         Returns:
             str: Name of the new object.
         """
-        objs = [obj for obj in bpy.data.objects if obj_type in obj.name and obj.name.startswith(xf_obj_name[:4])]
+        objs = [obj for obj in bpy.data.objects if obj_type in obj.name and obj.name.startswith(xf_obj_name[:3])]
         # return f'[XF]{obj_type}-{collection.name}-{(len(objs)+1):03}'
         return xf_obj_name.format(obj_type=obj_type, obj_idx=(len(objs) + 1))
 
@@ -670,7 +670,7 @@ class ObjectUtilsUnreal(ObjectUtilsBase):
         actors = [
             actor
             for actor in actors
-            if obj_type in actor.get_actor_label() and actor.get_actor_label().startswith(xf_obj_name[:4])
+            if obj_type in actor.get_actor_label() and actor.get_actor_label().startswith(xf_obj_name[:3])
         ]
         return xf_obj_name.format(obj_type=obj_type, obj_idx=(len(actors) + 1))
 

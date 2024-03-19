@@ -1,8 +1,10 @@
 """Remote functions for unreal."""
 
+import json
+from functools import lru_cache
 from typing import List, Optional, Tuple, Union
 
-from ...data_structure.constants import Vector
+from ...data_structure.constants import Vector, color_type
 from ...rpc import remote_unreal
 
 try:
@@ -11,19 +13,35 @@ try:
 except ImportError:
     pass
 
+# Constants
+mask_colors: List[color_type] = []
+
 
 @remote_unreal()
-def get_mask_color(stencil_value: int) -> 'Tuple[int, int, int]':
-    """Get mask color from stencil value.
-
-    Args:
-        stencil_value (int): stencil value
+def get_mask_color_file() -> str:
+    """Returns the path of the mask color file.
 
     Returns:
-        Tuple[int, int, int]: mask color. (r, g, b) in [0, 255]
+        str: The path of the mask color file.
     """
-    # TODO: move this to local, not remote
-    return XRFeitoriaUnrealFactory.utils_actor.get_mask_color(stencil_value)
+    return XRFeitoriaUnrealFactory.constants.MASK_COLOR_FILE.as_posix()
+
+
+@lru_cache
+def get_mask_color(stencil_value: int) -> 'Tuple[int, int, int]':
+    """Retrieves the RGB color value associated with the given stencil value.
+
+    Args:
+        stencil_value (int): The stencil value for which to retrieve the color.
+
+    Returns:
+        Tuple[int, int, int]: The RGB color value associated with the stencil value.
+    """
+    global mask_colors
+    if len(mask_colors) == 0:
+        with open(get_mask_color_file(), 'r') as f:
+            mask_colors = json.load(f)
+    return mask_colors[stencil_value]['rgb']
 
 
 @remote_unreal()
@@ -70,7 +88,10 @@ def save_current_level(asset_path: 'Optional[str]' = None) -> None:
 
 @remote_unreal()
 def import_asset(
-    path: 'Union[str, List[str]]', dst_dir_in_engine: 'Optional[str]' = None, replace: bool = True
+    path: 'Union[str, List[str]]',
+    dst_dir_in_engine: 'Optional[str]' = None,
+    replace: bool = True,
+    with_parent_dir: bool = True,
 ) -> 'Union[str, List[str]]':
     """Import assets to the default asset path.
 
@@ -79,11 +100,15 @@ def import_asset(
         dst_dir_in_engine (Optional[str], optional): destination directory in the engine.
             Defaults to None falls back to '/Game/XRFeitoriaUnreal/Assets'
         replace (bool, optional): whether to replace the existing asset. Defaults to True.
+        with_parent_dir (bool, optional): whether to create a parent directory that contains the imported asset.
+            If False, the imported asset will be in `dst_dir_in_engine` directly. Defaults to True.
 
     Returns:
         Union[str, List[str]]: a path or a list of paths to the imported assets, e.g. "/Game/XRFeitoriaUnreal/Assets/SMPL_XL"
     """
-    paths = XRFeitoriaUnrealFactory.utils.import_asset(path, dst_dir_in_engine, replace=replace)
+    paths = XRFeitoriaUnrealFactory.utils.import_asset(
+        path, dst_dir_in_engine, replace=replace, with_parent_dir=with_parent_dir
+    )
     if len(paths) == 1:
         return paths[0]
     return paths

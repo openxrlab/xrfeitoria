@@ -1,12 +1,13 @@
 // Copyright OpenXRLab 2023-2024. All Rights Reserved.
 
 #include "XRFeitoriaUnreal.h"
-#include "Engine/RendererSettings.h"
-#include "MovieRenderPipelineSettings.h"
-#include "MoviePipelineCameraSetting.h"
-#include "Settings/EditorProjectSettings.h"
-#include "CustomMoviePipelineOutput.h"
+
 #include "CustomMoviePipelineDeferredPass.h"
+#include "CustomMoviePipelineOutput.h"
+#include "Engine/RendererSettings.h"
+#include "MoviePipelineCameraSetting.h"
+#include "MovieRenderPipelineSettings.h"
+#include "Settings/EditorProjectSettings.h"
 
 #define LOCTEXT_NAMESPACE "FXRFeitoriaUnrealModule"
 

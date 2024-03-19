@@ -4,7 +4,7 @@ import unreal
 import utils_actor
 from constants import (
     DEFAULT_SEQUENCE_DATA_ASSET,
-    DEFAULT_SEQUENCE_PATH,
+    DEFAULT_SEQUENCE_DIR,
     ENGINE_MAJOR_VERSION,
     ENGINE_MINOR_VERSION,
     MotionFrame,
@@ -14,7 +14,6 @@ from constants import (
     data_asset_suffix,
 )
 from utils import add_levels, get_levels, get_soft_object_path, get_world, new_world, save_current_level
-from utils_actor import get_actor_mesh_component
 
 EditorLevelSequenceSub = SubSystem.EditorLevelSequenceSub
 EditorAssetSub = SubSystem.EditorAssetSub
@@ -82,9 +81,60 @@ def find_binding_by_name(sequence: unreal.LevelSequence, name: str) -> unreal.Se
         return binding
 
     for binding in sequence.get_bindings():
+        binding: unreal.MovieSceneBindingProxy
         if binding.get_name() == name:
             return binding
     raise RuntimeError(f'Failed to find binding: {name}')
+
+
+def find_binding_by_class(
+    sequence: unreal.LevelSequence, actor_class: Type[unreal.Actor]
+) -> Optional[unreal.MovieSceneBindingProxy]:
+    """Finds a Sequencer binding for the specified actor class in the given Level
+    Sequence.
+
+    Args:
+        sequence (unreal.LevelSequence): The Level Sequence to search for the binding.
+        actor_class (Type[unreal.Actor]): The class of the actor to find or create the binding for.
+
+    Returns:
+        Optional[unreal.MovieSceneBindingProxy]: The Sequencer binding for the actor class, or None if not found.
+    """
+    bound_objects: List[unreal.SequencerBoundObjects] = unreal.SequencerTools.get_bound_objects(
+        get_world(), sequence, sequence.get_bindings(), sequence.get_playback_range()
+    )
+
+    for bound_object in bound_objects:
+        if len(bound_object.bound_objects) == 0:
+            continue
+        if bound_object.bound_objects[0].static_class() == actor_class.static_class():
+            return bound_object.binding_proxy
+    return None
+
+
+def find_or_create_binding_by_class(
+    sequence: unreal.LevelSequence, actor_class: Type[unreal.Actor], spawn_in_sequence: bool = True
+) -> unreal.MovieSceneBindingProxy:
+    """Finds or creates a Sequencer binding for the specified actor class in the given
+    Level Sequence.
+
+    Args:
+        sequence (unreal.LevelSequence): The Level Sequence to search for the binding.
+        actor_class (Type[unreal.Actor]): The class of the actor to find or create the binding for.
+        spawn_in_sequence (bool, optional): Whether to spawn the actor in the sequence if it doesn't exist.
+            If False, the actor will be spawned in the world but not in the sequence. Defaults to True.
+
+    Returns:
+        unreal.MovieSceneBindingProxy: The Sequencer binding for the actor class.
+    """
+    binding = find_binding_by_class(sequence, actor_class)
+    if binding is not None:
+        return binding
+
+    if spawn_in_sequence:
+        return sequence.add_spawnable_from_class(actor_class)
+    else:
+        return sequence.add_possessable(actor_class)
 
 
 def get_time(sequence: unreal.LevelSequence, frame: int) -> unreal.FrameNumber:
@@ -704,7 +754,7 @@ def add_actor_to_sequence(
     actor_binding = sequence.add_possessable(actor)
 
     # mesh_component = actor.skeletal_mesh_component
-    mesh_component = get_actor_mesh_component(actor)
+    mesh_component = utils_actor.get_actor_mesh_component(actor)
     mesh_component_binding = sequence.add_possessable(mesh_component)
 
     # set stencil value
@@ -765,12 +815,12 @@ def add_spawnable_actor_to_sequence(
 
     # add actor to sequence
     actor_binding = sequence.add_spawnable_from_instance(actor_asset)
-    actor = get_spawnable_actor_from_binding(sequence, actor_binding)
+    actor: unreal.Actor = get_spawnable_actor_from_binding(sequence, actor_binding)
     actor_binding.set_name(actor_name)
     actor.set_actor_label(actor_name)
 
     # mesh_component = actor.skeletal_mesh_component
-    mesh_component = get_actor_mesh_component(actor)
+    mesh_component = utils_actor.get_actor_mesh_component(actor)
     mesh_component_binding = sequence.add_possessable(mesh_component)
 
     # set stencil value
@@ -858,6 +908,41 @@ def generate_sequence(
     return new_sequence
 
 
+def get_camera_param(camera: unreal.CameraActor) -> Dict[str, Any]:
+    """Get camera parameters.
+
+    Args:
+        camera (unreal.CameraActor): The camera actor.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the camera parameters.
+    """
+    return {
+        'location': camera.get_actor_location().to_tuple(),
+        'rotation': camera.get_actor_rotation().to_tuple(),
+        'fov': camera.camera_component.get_editor_property('FieldOfView'),
+    }
+
+
+def get_actor_param(actor: unreal.Actor) -> Dict[str, Any]:
+    """Get actor parameters.
+
+    Args:
+        actor (unreal.Actor): The actor.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the actor parameters.
+    """
+    stencil_value = utils_actor.get_actor_mesh_component(actor).get_editor_property('custom_depth_stencil_value')
+    return {
+        'location': actor.get_actor_location().to_tuple(),
+        'rotation': actor.get_actor_rotation().to_tuple(),
+        'scale': actor.get_actor_scale3d().to_tuple(),
+        'mask_color': utils_actor.get_mask_color(stencil_value=stencil_value),
+        'stencil_value': stencil_value,
+    }
+
+
 class Sequence:
     map_path = None
     sequence_path = None
@@ -938,7 +1023,7 @@ class Sequence:
             map_path = EditorLevelSub.get_current_level().get_path_name().split('.')[0]
         assert unreal.EditorAssetLibrary.does_asset_exist(map_path), f'Map `{map_path}` does not exist'
         if seq_dir is None:
-            seq_dir = DEFAULT_SEQUENCE_PATH
+            seq_dir = DEFAULT_SEQUENCE_DIR
 
         seq_path = f'{seq_dir}/{seq_name}'
         data_asset_path = f'{seq_path}{data_asset_suffix}'
@@ -972,6 +1057,7 @@ class Sequence:
     def show(cls) -> None:
         assert cls.sequence is not None, 'Sequence not initialized'
         unreal.LevelSequenceEditorBlueprintLibrary.open_level_sequence(cls.sequence)
+        unreal.LevelSequenceEditorBlueprintLibrary.set_current_time(0)
 
     @staticmethod
     def new_data_asset(
@@ -1068,6 +1154,16 @@ class Sequence:
                 for section in master_track.get_sections():
                     section.set_end_frame(end_frame)
 
+    @classmethod
+    def get_playback(cls) -> Tuple[int, int]:
+        """Get the playback range of the sequence.
+
+        Returns:
+            Tuple[int, int]: The start frame and end frame of the playback range.
+        """
+        assert cls.sequence is not None, 'Sequence not initialized'
+        return cls.sequence.get_playback_start(), cls.sequence.get_playback_end()
+
     # ------ add actor and camera -------- #
 
     @classmethod
@@ -1093,7 +1189,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            # cls.bindings[camera_name] = bindings
+            cls.bindings[camera_name] = bindings
         else:
             camera = utils_actor.get_actor_by_name(camera_name)
             bindings = add_camera_to_sequence(
@@ -1102,7 +1198,7 @@ class Sequence:
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
             )
-            # cls.bindings[camera_name] = bindings
+            cls.bindings[camera_name] = bindings
 
     @classmethod
     def add_actor(
@@ -1144,7 +1240,7 @@ class Sequence:
                 actor_transform_keys=transform_keys,
                 actor_stencil_value=stencil_value,
             )
-            # cls.bindings[actor_name] = bindings
+            cls.bindings[actor_name] = bindings
 
         else:
             actor = utils_actor.get_actor_by_name(actor_name)
@@ -1156,7 +1252,7 @@ class Sequence:
                 animation_asset=animation_asset,
                 motion_data=motion_data,
             )
-            # cls.bindings[actor_name] = bindings
+            cls.bindings[actor_name] = bindings
 
     @classmethod
     def add_audio(
@@ -1181,10 +1277,50 @@ class Sequence:
         bindings = add_audio_to_sequence(
             sequence=cls.sequence, audio_asset=audio_asset, start_frame=start_frame, end_frame=end_frame
         )
-        # cls.bindings[audio_asset.get_name()] = bindings
+        cls.bindings[audio_asset.get_name()] = bindings
+
+    @classmethod
+    def add_annotator(
+        cls,
+        save_dir: str,
+        resolution: Tuple[int, int],
+        export_vertices: bool,
+        export_skeleton: bool,
+    ):
+        actor_binding = find_binding_by_class(cls.sequence, unreal.Annotator)
+        if actor_binding is not None:
+            actor_binding.remove()
+        actor_binding = cls.sequence.add_spawnable_from_class(unreal.Annotator)
+
+        add_property_bool_track_to_binding(
+            binding=actor_binding, property_name='bSaveVerticesPosition', property_value=export_vertices
+        )
+        add_property_bool_track_to_binding(
+            binding=actor_binding, property_name='bSaveSkeletonPosition', property_value=export_skeleton
+        )
+        add_property_string_track_to_binding(
+            binding=actor_binding, property_name='DirectorySequence', property_value=save_dir
+        )
+        add_property_int_track_to_binding(binding=actor_binding, property_name='Width', property_value=resolution[0])
+        add_property_int_track_to_binding(binding=actor_binding, property_name='Height', property_value=resolution[1])
+
+
+def test():
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+    Sequence.save_camera_params(save_dir='E:/tmp')
 
 
 if __name__ == '__main__':
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+
+    Sequence.new('/Game/NewMap', 'test1')
+    Sequence.spawn_camera(transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)))
+    Sequence.spawn_actor(
+        '/Game/StarterContent/Props/SM_Chair',
+        transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)),
+    )
+    Sequence.open('/Game/Levels/SequenceTest', '/Game/XRFeitoriaUnreal/Sequences/seq_test')
+
     Sequence.new('/Game/NewMap', 'test1')
     Sequence.spawn_camera(transform_keys=SequenceTransformKey(frame=0, location=(0, 0, 0), rotation=(0, 0, 0)))
     Sequence.spawn_actor(

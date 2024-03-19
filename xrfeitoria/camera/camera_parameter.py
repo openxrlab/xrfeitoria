@@ -8,7 +8,8 @@ from loguru import logger
 from xrprimer.data_structure.camera import PinholeCameraParameter
 from xrprimer.transform.convention.camera import convert_camera_parameter
 
-from ..data_structure.constants import PathLike
+from ..data_structure.constants import PathLike, Vector
+from ..utils.converter import ConverterUnreal
 
 
 class CameraParameter(PinholeCameraParameter):
@@ -110,6 +111,38 @@ class CameraParameter(PinholeCameraParameter):
         """
         return self.extrinsic.tolist()
 
+    def model_dump(self) -> dict:
+        """Dump camera parameters to a dict."""
+        return {
+            'class_name': 'PinholeCameraParameter',
+            'convention': self.convention,
+            'extrinsic_r': self.extrinsic_r.tolist(),
+            'extrinsic_t': self.extrinsic_t.tolist(),
+            'height': self.height,
+            'width': self.width,
+            'intrinsic': self.intrinsic.tolist(),
+            'name': self.name,
+            'world2cam': self.world2cam,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'CameraParameter':
+        """Construct a camera parameter data structure from a dict.
+
+        Args:
+            data (dict): The camera parameter data.
+
+        Returns:
+            CameraParameter: An instance of CameraParameter class.
+        """
+        return cls(
+            K=data['intrinsic'],
+            R=data['extrinsic_r'],
+            T=data['extrinsic_t'],
+            convention=data['convention'],
+            world2cam=data['world2cam'],
+        )
+
     @classmethod
     def fromfile(cls, file: PathLike) -> 'CameraParameter':
         """Construct a camera parameter data structure from a json file.
@@ -141,9 +174,30 @@ class CameraParameter(PinholeCameraParameter):
         rotation = dat[3:6]
         camera_fov = dat[6]
         image_size = (dat[7], dat[8])  # (width, height)
+        return cls.from_unreal_convention(location, rotation, camera_fov, image_size)
 
+    @classmethod
+    def from_unreal_convention(
+        cls,
+        location: Vector,
+        rotation: Vector,
+        fov: float,
+        image_size: Tuple[int, int],  # (width, height)
+    ) -> 'CameraParameter':
+        """Converts camera parameters from Unreal Engine convention to CameraParameter
+        object.
+
+        Args:
+            location (Vector): The camera location in Unreal Engine convention.
+            rotation (Vector): The camera rotation in Unreal Engine convention.
+            fov (float): The camera field of view in degrees.
+            image_size (Tuple[int, int]): The size of the camera image in pixels (width, height).
+
+        Returns:
+            CameraParameter: The converted camera parameters.
+        """
         # intrinsic matrix K
-        fov = math.radians(camera_fov)
+        fov = math.radians(fov)
         focal = max(image_size) / 2 / math.tan(fov / 2)
         fx = fy = focal
         K = np.array(
@@ -155,9 +209,8 @@ class CameraParameter(PinholeCameraParameter):
         )
 
         # extrinsic matrix RT
-        x, y, z = -rotation[1], -rotation[2], -rotation[0]
-        R = rotation_matrix([x, y, z], order='xyz', degrees=True)
-        _T = np.array([location[1], -location[2], location[0]]) / 100.0  # unit: meter
+        R = ConverterUnreal.rotation_camera_from_ue(rotation, degrees=True)
+        _T = ConverterUnreal.location_from_ue(location)
         T = -R @ _T
 
         # construct camera parameter
@@ -198,129 +251,3 @@ class CameraParameter(PinholeCameraParameter):
 
     def __repr__(self) -> str:
         return f'CameraParameter(T={self.extrinsic_t}, convention="{self.convention}", world2cam={self.world2cam})'
-
-
-def rotation_matrix(angles: Tuple[float, float, float], order='xyz', degrees: bool = True) -> npt.NDArray[np.float32]:
-    """
-    Args:
-        angles (Tuple[float, float, float]): Rotation angles in degrees or radians.
-        order (str, optional): Rotation order. Defaults to 'xyz'.
-        degrees (bool, optional): Whether the input angles are in degrees. Defaults to True.
-    Returns:
-        ndarray: Rotation matrix 3x3.
-
-    Examples:
-        >>> rotation_matrix((0, 0, 0), order='xyz')
-
-    References:
-        https://programming-surgeon.com/en/euler-angle-python-en/
-    """
-    if degrees:
-        angles = np.deg2rad(angles)
-
-    theta1, theta2, theta3 = angles
-    c1 = np.cos(theta1)
-    s1 = np.sin(theta1)
-    c2 = np.cos(theta2)
-    s2 = np.sin(theta2)
-    c3 = np.cos(theta3)
-    s3 = np.sin(theta3)
-
-    if order == 'xzx':
-        matrix = np.array(
-            [
-                [c2, -c3 * s2, s2 * s3],
-                [c1 * s2, c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3],
-                [s1 * s2, c1 * s3 + c2 * c3 * s1, c1 * c3 - c2 * s1 * s3],
-            ]
-        )
-    elif order == 'xyx':
-        matrix = np.array(
-            [
-                [c2, s2 * s3, c3 * s2],
-                [s1 * s2, c1 * c3 - c2 * s1 * s3, -c1 * s3 - c2 * c3 * s1],
-                [-c1 * s2, c3 * s1 + c1 * c2 * s3, c1 * c2 * c3 - s1 * s3],
-            ]
-        )
-    elif order == 'yxy':
-        matrix = np.array(
-            [
-                [c1 * c3 - c2 * s1 * s3, s1 * s2, c1 * s3 + c2 * c3 * s1],
-                [s2 * s3, c2, -c3 * s2],
-                [-c3 * s1 - c1 * c2 * s3, c1 * s2, c1 * c2 * c3 - s1 * s3],
-            ]
-        )
-    elif order == 'yzy':
-        matrix = np.array(
-            [
-                [c1 * c2 * c3 - s1 * s3, -c1 * s2, c3 * s1 + c1 * c2 * s3],
-                [c3 * s2, c2, s2 * s3],
-                [-c1 * s3 - c2 * c3 * s1, s1 * s2, c1 * c3 - c2 * s1 * s3],
-            ]
-        )
-    elif order == 'zyz':
-        matrix = np.array(
-            [
-                [c1 * c2 * c3 - s1 * s3, -c3 * s1 - c1 * c2 * s3, c1 * s2],
-                [c1 * s3 + c2 * c3 * s1, c1 * c3 - c2 * s1 * s3, s1 * s2],
-                [-c3 * s2, s2 * s3, c2],
-            ]
-        )
-    elif order == 'zxz':
-        matrix = np.array(
-            [
-                [c1 * c3 - c2 * s1 * s3, -c1 * s3 - c2 * c3 * s1, s1 * s2],
-                [c3 * s1 + c1 * c2 * s3, c1 * c2 * c3 - s1 * s3, -c1 * s2],
-                [s2 * s3, c3 * s2, c2],
-            ]
-        )
-    elif order == 'xyz':
-        matrix = np.array(
-            [
-                [c2 * c3, -c2 * s3, s2],
-                [c1 * s3 + c3 * s1 * s2, c1 * c3 - s1 * s2 * s3, -c2 * s1],
-                [s1 * s3 - c1 * c3 * s2, c3 * s1 + c1 * s2 * s3, c1 * c2],
-            ]
-        )
-    elif order == 'xzy':
-        matrix = np.array(
-            [
-                [c2 * c3, -s2, c2 * s3],
-                [s1 * s3 + c1 * c3 * s2, c1 * c2, c1 * s2 * s3 - c3 * s1],
-                [c3 * s1 * s2 - c1 * s3, c2 * s1, c1 * c3 + s1 * s2 * s3],
-            ]
-        )
-    elif order == 'yxz':
-        matrix = np.array(
-            [
-                [c1 * c3 + s1 * s2 * s3, c3 * s1 * s2 - c1 * s3, c2 * s1],
-                [c2 * s3, c2 * c3, -s2],
-                [c1 * s2 * s3 - c3 * s1, c1 * c3 * s2 + s1 * s3, c1 * c2],
-            ]
-        )
-    elif order == 'yzx':
-        matrix = np.array(
-            [
-                [c1 * c2, s1 * s3 - c1 * c3 * s2, c3 * s1 + c1 * s2 * s3],
-                [s2, c2 * c3, -c2 * s3],
-                [-c2 * s1, c1 * s3 + c3 * s1 * s2, c1 * c3 - s1 * s2 * s3],
-            ]
-        )
-    elif order == 'zyx':
-        matrix = np.array(
-            [
-                [c1 * c2, c1 * s2 * s3 - c3 * s1, s1 * s3 + c1 * c3 * s2],
-                [c2 * s1, c1 * c3 + s1 * s2 * s3, c3 * s1 * s2 - c1 * s3],
-                [-s2, c2 * s3, c2 * c3],
-            ]
-        )
-    elif order == 'zxy':
-        matrix = np.array(
-            [
-                [c1 * c3 - s1 * s2 * s3, -c2 * s1, c1 * s3 + c3 * s1 * s2],
-                [c3 * s1 + c1 * s2 * s3, c1 * c2, s1 * s3 - c1 * c3 * s2],
-                [-c2 * s3, s2, c2 * c3],
-            ]
-        )
-
-    return matrix

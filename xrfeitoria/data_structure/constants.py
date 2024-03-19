@@ -10,6 +10,14 @@ Transform = Tuple[Vector, Vector, Vector]
 PathLike = Union[str, Path]
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 actor_info_type = TypedDict('actor_info', {'actor_name': str, 'mask_color': Tuple[int, int, int]})
+color_type = TypedDict(
+    'color',
+    {
+        'name': str,
+        'hex': str,
+        'rgb': Tuple[int, int, int],
+    },
+)
 
 ##### Package Constants #####
 
@@ -17,7 +25,7 @@ package_name = 'XRFeitoria'
 plugin_name_blender = 'XRFeitoriaBpy'
 plugin_name_unreal = 'XRFeitoriaUnreal'
 plugin_name_pattern = '{plugin_name}-{plugin_version}-{engine_version}-{platform}'
-xf_obj_name = '[XF]{obj_type}-{obj_idx:03d}'
+xf_obj_name = 'XF-{obj_type}-{obj_idx:03d}'
 
 ##### Path Constants #####
 
@@ -39,7 +47,7 @@ default_level_blender = package_name
 
 default_path_unreal = f'/Game/{plugin_name_unreal}'
 default_asset_path_unreal = f'{default_path_unreal}/Assets'
-default_sequence_path_unreal = f'{default_path_unreal}/Sequences'
+default_sequence_dir_unreal = f'{default_path_unreal}/Sequences'
 
 ##### Enum Constants #####
 

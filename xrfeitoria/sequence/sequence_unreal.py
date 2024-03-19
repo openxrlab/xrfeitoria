@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, TypedDict, Union
 
 from loguru import logger
 
@@ -23,6 +23,16 @@ try:
     from ..data_structure.models import TransformKeys
 except (ImportError, ModuleNotFoundError):
     pass
+
+dict_process_dir = TypedDict(
+    'dict_process_dir',
+    {
+        'camera_dir': str,
+        'actor_infos_dir': str,
+        'vertices_dir': str,
+        'skeleton_dir': str,
+    },
+)
 
 
 @remote_unreal(dec_class=True, suffix='_in_engine')
@@ -53,7 +63,7 @@ class SequenceUnreal(SequenceBase):
     def add_to_renderer(
         cls,
         output_path: PathLike,
-        resolution: Tuple[int, int],
+        resolution: Tuple[int, int],  # (width, height)
         render_passes: 'List[RenderPass]',
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
@@ -69,7 +79,7 @@ class SequenceUnreal(SequenceBase):
 
         Args:
             output_path (PathLike): The path where the rendered output will be saved.
-            resolution (Tuple[int, int]): The resolution of the output.
+            resolution (Tuple[int, int]): The resolution of the output. (width, height)
             render_passes (List[RenderPass]): The list of render passes to be rendered.
             file_name_format (str, optional): The format of the output file name.
                 Defaults to ``{sequence_name}/{render_pass}/{camera_name}/{frame_number}``.
@@ -97,6 +107,14 @@ class SequenceUnreal(SequenceBase):
         sequence_path = SequenceUnreal._get_seq_path_in_engine()
         if anti_aliasing is None:
             anti_aliasing = RenderJobUnreal.AntiAliasSetting()
+
+        cls._preprocess_before_render(
+            save_dir=f'{output_path}/{cls.name}',
+            resolution=resolution,
+            export_vertices=export_vertices,
+            export_skeleton=export_skeleton,
+        )
+
         cls._renderer.add_job(
             map_path=map_path,
             sequence_path=sequence_path,
@@ -106,10 +124,9 @@ class SequenceUnreal(SequenceBase):
             file_name_format=file_name_format,
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
-            export_vertices=export_vertices,
-            export_skeleton=export_skeleton,
             export_audio=export_audio,
         )
+
         logger.info(
             f'[cyan]Added[/cyan] sequence "{cls.name}" to [bold]`Renderer`[/bold] '
             f'(jobs to render: {len(cls._renderer.render_queue)})'
@@ -255,6 +272,15 @@ class SequenceUnreal(SequenceBase):
         cls._set_playback_in_engine(start_frame=start_frame, end_frame=end_frame)
 
     @classmethod
+    def get_playback(cls) -> Tuple[int, int]:
+        """Get the playback range for the sequence.
+
+        Returns:
+            Tuple[int, int]: The start and end frame of the playback range.
+        """
+        return cls._get_playback_in_engine()
+
+    @classmethod
     def set_camera_cut_playback(cls, start_frame: Optional[int] = None, end_frame: Optional[int] = None) -> None:
         """Set the playback range for the sequence.
 
@@ -280,13 +306,24 @@ class SequenceUnreal(SequenceBase):
         cls.name = seq_name
         logger.info(f'>>>> [cyan]Opened[/cyan] sequence "{cls.name}" >>>>')
 
+    @classmethod
+    def _preprocess_before_render(
+        cls,
+        save_dir: str,
+        resolution: Tuple[int, int],
+        export_vertices: bool,
+        export_skeleton: bool,
+    ) -> None:
+        # add annotator for saving camera parameters, actor infos, vertices, and skeleton
+        cls._add_annotator_in_engine(save_dir, resolution, export_vertices, export_skeleton)
+
     #####################################
     ###### RPC METHODS (Private) ########
     #####################################
 
     @staticmethod
-    def _get_default_seq_path_in_engine() -> str:
-        return XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_PATH
+    def _get_default_seq_dir_in_engine() -> str:
+        return XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_DIR
 
     @staticmethod
     def _get_seq_info_in_engine(
@@ -295,8 +332,8 @@ class SequenceUnreal(SequenceBase):
         map_path: 'Optional[str]' = None,
     ) -> 'Tuple[str, str]':
         _suffix = XRFeitoriaUnrealFactory.constants.data_asset_suffix
-        default_sequence_path = XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_PATH
-        seq_dir = seq_dir or default_sequence_path  # default sequence path
+        default_sequence_dir = XRFeitoriaUnrealFactory.constants.DEFAULT_SEQUENCE_DIR
+        seq_dir = seq_dir or default_sequence_dir  # default sequence directory
         if map_path is None:
             seq_data_path = f'{seq_dir}/{seq_name}{_suffix}'
             unreal_functions.check_asset_in_engine(seq_data_path, raise_error=True)
@@ -374,6 +411,10 @@ class SequenceUnreal(SequenceBase):
     @staticmethod
     def _set_playback_in_engine(start_frame: 'Optional[int]' = None, end_frame: 'Optional[int]' = None) -> None:
         XRFeitoriaUnrealFactory.Sequence.set_playback(start_frame=start_frame, end_frame=end_frame)
+
+    @staticmethod
+    def _get_playback_in_engine() -> 'Tuple[int, int]':
+        return XRFeitoriaUnrealFactory.Sequence.get_playback()
 
     @staticmethod
     def _set_camera_cut_player_in_engine(
@@ -525,4 +566,19 @@ class SequenceUnreal(SequenceBase):
             audio_asset=audio_asset_path,
             start_frame=start_frame,
             end_frame=end_frame,
+        )
+
+    # ------ render -------- #
+    @staticmethod
+    def _add_annotator_in_engine(
+        save_dir: str,
+        resolution: 'Tuple[int, int]',
+        export_vertices: bool,
+        export_skeleton: bool,
+    ) -> None:
+        XRFeitoriaUnrealFactory.Sequence.add_annotator(
+            save_dir=save_dir,
+            resolution=resolution,
+            export_vertices=export_vertices,
+            export_skeleton=export_skeleton,
         )

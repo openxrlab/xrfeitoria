@@ -3,27 +3,27 @@
 #include "XF_BlueprintFunctionLibrary.h"
 
 
+#include "Camera/CameraActor.h"
+#include "EditorFramework/AssetImportData.h"
+#include "Engine/ObjectLibrary.h"
+#include "GameFramework/Actor.h"
+#include "GenericPlatform/GenericPlatformFile.h"
 #include "iostream"
-#include <fstream>
-#include <assert.h>
-#include "Misc/Paths.h"
+#include "Math/Rotator.h"
+#include "Math/Vector.h"
 #include "Misc/FileHelper.h"
 #include "Misc/MessageDialog.h"
-#include "Engine/ObjectLibrary.h"
-#include "EditorFramework/AssetImportData.h"
-#include "GenericPlatform/GenericPlatformFile.h"
-#include "Rendering/SkeletalMeshRenderData.h"
+#include "Misc/Paths.h"
 #include "Rendering/MultiSizeIndexContainer.h"
 #include "Rendering/SkeletalMeshLODRenderData.h"
-#include "GameFramework/Actor.h"
-#include "Math/Vector.h"
-#include "Math/Rotator.h"
-#include "Camera/CameraActor.h"
+#include "Rendering/SkeletalMeshRenderData.h"
+#include <assert.h>
+#include <fstream>
 
-#include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/KismetStringLibrary.h"
-#include "DrawDebugHelpers.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "DrawDebugHelpers.h"
+#include "Kismet/KismetStringLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "PhysicsAssetUtils.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 
@@ -37,9 +37,6 @@
 #include "StaticMeshDescription.h"
 
 #endif
-
-
-DEFINE_LOG_CATEGORY(LogXF);
 
 
 bool UXF_BlueprintFunctionLibrary::FileExists(FString Path)

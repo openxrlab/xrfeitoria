@@ -1,21 +1,8 @@
-import json
-from pathlib import Path
-from typing import Dict, List, Tuple, TypedDict, Union
+from typing import Dict, List, Tuple, Union
 
 import unreal
-from constants import SubSystem
+from constants import SubSystem, mask_colors
 from utils import get_world
-
-root = Path(__file__).parent.resolve()
-color_type = TypedDict(
-    'color',
-    {
-        'name': str,
-        'hex': str,
-        'rgb': Tuple[int, int, int],
-    },
-)
-mask_colors: List[color_type] = json.loads((root / 'data' / 'mask_colors.json').read_text())
 
 
 def get_stencil_value(actor: unreal.Actor) -> int:

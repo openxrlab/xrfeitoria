@@ -67,14 +67,21 @@ def import_file(file_path: 'PathLike') -> None:
 
 
 @remote_blender()
-def apply_motion_data_to_actor(motion_data: 'List[MotionFrame]', actor_name: str) -> None:
+def apply_motion_data_to_actor(
+    motion_data: 'List[MotionFrame]',
+    actor_name: str,
+    is_first_frame_as_origin: bool = True,
+) -> None:
     """Applies motion data to a given actor in Blender.
 
     Args:
         motion_data (List[MotionFrame]): A list of dictionaries containing motion data for the actor.
         actor_name (str): The name of the actor to apply the motion data to.
+        is_first_frame_as_origin (bool, optional): Whether to set the first frame as the origin. Defaults to True.
     """
-    XRFeitoriaBlenderFactory.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor_name)
+    XRFeitoriaBlenderFactory.apply_motion_data_to_actor(
+        motion_data=motion_data, actor_name=actor_name, is_first_frame_as_origin=is_first_frame_as_origin
+    )
 
 
 @remote_blender()
@@ -130,8 +137,11 @@ def save_blend(save_path: 'PathLike' = None, pack: bool = False):
     if save_path is None:
         save_path = bpy.data.filepath
 
+    # path.resolve() would do Network Drive Handling like:
+    # X:/path/to/file.blend -> //xxx.xxx.xxx.xxx/Drive/path/to/file.blend
+    # which made Blender failed to save (Windows)
+    save_path = Path(save_path).absolute()
     # set suffix to .blend
-    save_path = Path(save_path).resolve()
     if save_path.suffix != '.blend':
         save_path = save_path.with_suffix('.blend')
 

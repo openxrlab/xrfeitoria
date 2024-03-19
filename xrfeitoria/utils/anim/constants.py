@@ -1,5 +1,5 @@
-SMPL_BODY_BONES = [
-    'pelvis',
+SMPL_JOINT_NAMES = [
+    'pelvis',  # global orientation
     'left_hip',
     'right_hip',
     'spine1',
@@ -28,10 +28,11 @@ SMPL_BODY_BONES = [
     'jaw',
     # 'left_eyeball',
     # 'right_eyeball',
-    'left_eye_smplhf',
-    'right_eye_smplhf',
+    #
+    # 'left_eye_smplhf',
+    # 'right_eye_smplhf',
 ]
-SMPL_FINGER_BONES = [
+SMPL_FINGER_JOINTS = [
     # left hand
     'left_index1',
     'left_index2',
@@ -67,7 +68,7 @@ SMPL_FINGER_BONES = [
 ]
 
 SMPLX_JOINT_NAMES = [
-    'pelvis',
+    'pelvis',  # global orientation
     'left_hip',
     'right_hip',
     'spine1',

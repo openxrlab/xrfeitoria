@@ -36,6 +36,7 @@ public class XRFeitoriaUnreal : ModuleRules
 				"UEOpenExrRTTI", // Needed for EXR metadata
 				"ImageWrapper",
 				"CinematicCamera", // For metadata
+				"MovieRenderPipelineCore",
 				"MovieRenderPipelineSettings", // For settings
 				"MovieRenderPipelineRenderPasses",
 				"MovieRenderPipelineEditor",

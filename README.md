@@ -40,7 +40,7 @@ pip install xrfeitoria
 - `Python >= 3.8`
 - (optional) `Unreal Engine >= 5.1`
     - [x] Windows
-    - [ ] Linux
+    - [x] Linux
     - [ ] MacOS
 - (optional) `Blender >= 3.0`
     - [x] Windows

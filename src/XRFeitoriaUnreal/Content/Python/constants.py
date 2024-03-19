@@ -1,7 +1,8 @@
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import unreal
 
@@ -19,7 +20,7 @@ def get_plugin_path() -> Tuple[Path, Path, Path]:
 
 PLUGIN_NAME = 'XRFeitoriaUnreal'
 MATERIAL_PATHS = {
-    'depth': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_depth_EXR',
+    'depth': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_depth',
     'mask': f'/{PLUGIN_NAME}/Materials/MRQ/PPM_mask_MRQ',
     'flow': f'/{PLUGIN_NAME}/Materials/PPM_velocity',
     'diffuse': f'/{PLUGIN_NAME}/Materials/PPM_diffusecolor',
@@ -41,7 +42,7 @@ PROJECT_ROOT, PLUGIN_ROOT, PLUGIN_PYTHON_ROOT = get_plugin_path()
 ENGINE_MAJOR_VERSION = int(unreal.SystemLibrary.get_engine_version().split('.')[0])
 ENGINE_MINOR_VERSION = int(unreal.SystemLibrary.get_engine_version().split('.')[1])
 DEFAULT_PATH = f'/Game/{PLUGIN_NAME}'
-DEFAULT_SEQUENCE_PATH = f'{DEFAULT_PATH}/Sequences'
+DEFAULT_SEQUENCE_DIR = f'{DEFAULT_PATH}/Sequences'
 DEFAULT_ASSET_PATH = f'{DEFAULT_PATH}/Assets'
 DEFAULT_SEQUENCE_DATA_ASSET = f'/{PLUGIN_NAME}/DefaultSequenceData'
 MRQ_JOB_UPPER = 200
@@ -122,6 +123,12 @@ class UnrealRenderLayerEnum(EnumBase):
     tangent = 'tangent'
     basecolor = 'basecolor'
 
+    vertices = 'vertices'
+    skeleton = 'skeleton'
+    actor_infos = 'actor_infos'
+    camera_params = 'camera_params'
+    audio = 'Audio'
+
 
 @dataclass
 class RenderPass:
@@ -182,8 +189,6 @@ class RenderJobUnreal:
     file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}'
     console_variables: Dict[str, float] = field(default_factory=dict)
     anti_aliasing: AntiAliasSetting = AntiAliasSetting()
-    export_vertices: bool = False
-    export_skeleton: bool = False
     export_audio: bool = False
 
     def __post_init__(self):
@@ -193,3 +198,16 @@ class RenderJobUnreal:
 
 TransformKeys = Union[List[SequenceTransformKey], SequenceTransformKey]
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
+color_type = TypedDict(
+    'color',
+    {
+        'name': str,
+        'hex': str,
+        'rgb': Tuple[int, int, int],
+    },
+)
+
+
+######### Constants #########
+MASK_COLOR_FILE = PLUGIN_PYTHON_ROOT / 'data' / 'mask_colors.json'
+mask_colors: List[color_type] = json.loads(MASK_COLOR_FILE.read_text())

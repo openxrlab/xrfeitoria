@@ -1,8 +1,13 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from . import _tls
 from .data_structure.constants import EngineEnum, PathLike, default_level_blender
 from .utils import setup_logger
+
+if TYPE_CHECKING:
+    from typing_extensions import deprecated
+else:
+    deprecated = lambda *args, **kwargs: (lambda func: func)
 
 __all__ = ['init_blender', 'init_unreal']
 
@@ -51,7 +56,7 @@ class XRFeitoriaBlender:
         from .actor.actor_blender import ActorBlender, ShapeBlenderWrapper  # isort:skip
         from .material.material_blender import MaterialBlender  # isort:skip
         from .renderer.renderer_blender import RendererBlender  # isort:skip
-        from .sequence.sequence_wrapper import SequenceWrapperBlender, sequence_wrapper_blender  # isort:skip
+        from .sequence.sequence_wrapper import sequence_wrapper_blender  # isort:skip
         from .utils.runner import BlenderRPCRunner  # isort:skip
         from .utils.functions import blender_functions  # isort:skip
 
@@ -63,8 +68,8 @@ class XRFeitoriaBlender:
         self.Shape = ShapeBlenderWrapper
         self.Renderer = RendererBlender
         self.render = self.Renderer.render_jobs
+        # self.Sequence = SequenceWrapperBlender
         self.sequence = sequence_wrapper_blender
-        self.Sequence = SequenceWrapperBlender
         self.utils = blender_functions
         self._rpc_runner = BlenderRPCRunner(
             engine_exec=engine_exec,
@@ -75,6 +80,13 @@ class XRFeitoriaBlender:
             background=background,
             new_process=new_process,
         )
+
+    @property
+    @deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
+    def Sequence(self):
+        from .sequence.sequence_wrapper import SequenceWrapperBlender
+
+        return SequenceWrapperBlender
 
 
 class XRFeitoriaUnreal:
@@ -119,7 +131,7 @@ class XRFeitoriaUnreal:
         from .camera.camera_unreal import CameraUnreal  # isort:skip
         from .actor.actor_unreal import ActorUnreal, ShapeUnrealWrapper  # isort:skip
         from .renderer.renderer_unreal import RendererUnreal  # isort:skip
-        from .sequence.sequence_wrapper import SequenceWrapperUnreal, sequence_wrapper_unreal  # isort:skip
+        from .sequence.sequence_wrapper import sequence_wrapper_unreal  # isort:skip
         from .utils.runner import UnrealRPCRunner  # isort:skip
         from .utils.functions import unreal_functions  # isort:skip
 
@@ -130,8 +142,8 @@ class XRFeitoriaUnreal:
         self.Shape = ShapeUnrealWrapper
         self.Renderer = RendererUnreal
         self.render = self.Renderer.render_jobs
+        # self.Sequence = SequenceWrapperUnreal
         self.sequence = sequence_wrapper_unreal
-        self.Sequence = SequenceWrapperUnreal
         self.utils = unreal_functions
         self._rpc_runner = UnrealRPCRunner(
             engine_exec=engine_exec,
@@ -142,6 +154,13 @@ class XRFeitoriaUnreal:
             background=background,
             new_process=new_process,
         )
+
+    @property
+    @deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
+    def Sequence(self):
+        from .sequence.sequence_wrapper import SequenceWrapperUnreal
+
+        return SequenceWrapperUnreal
 
 
 class init_blender(XRFeitoriaBlender):

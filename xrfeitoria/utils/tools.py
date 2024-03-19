@@ -7,6 +7,7 @@ from typing import Iterable, Literal, Optional, Sequence, Tuple, Union
 
 import loguru
 from loguru import logger
+from rich import get_console
 from rich.console import Console
 from rich.progress import (
     BarColumn,
@@ -92,13 +93,13 @@ class LoggerWrapper:
 
         logger.remove()  # remove default logger
         # logger.add(sink=lambda msg: rprint(msg, end=''), level=level, format=cls.logger_format)
-        c = Console(
-            width=sys.maxsize,  # disable wrapping
-            log_time=False,
-            log_path=False,
-            log_time_format='',
-        )
-        logger.add(sink=lambda msg: c.print(msg, end=''), level=level, format=cls.logger_format)
+        # c = Console(
+        #     width=sys.maxsize,  # disable wrapping
+        #     log_time=False,
+        #     log_path=False,
+        #     log_time_format='',
+        # )
+        logger.add(sink=lambda msg: get_console().print(msg, end=''), level=level, format=cls.logger_format)
         if log_path:
             # add file logger
             log_path = Path(log_path).resolve()

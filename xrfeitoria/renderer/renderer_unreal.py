@@ -1,4 +1,3 @@
-import json
 import shutil
 import socket
 from pathlib import Path
@@ -6,8 +5,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
 
-from ..data_structure.constants import PathLike, RenderOutputEnumUnreal, actor_info_type
+from ..data_structure.constants import PathLike, RenderOutputEnumUnreal
 from ..rpc import remote_unreal
+from ..utils.converter import ConverterUnreal
 from ..utils.functions import unreal_functions
 from .renderer_base import RendererBase, render_status
 
@@ -41,8 +41,6 @@ class RendererUnreal(RendererBase):
         file_name_format: str = '{sequence_name}/{render_pass}/{camera_name}/{frame_number}',
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
         anti_aliasing: 'Optional[RenderJob.AntiAliasSetting]' = None,
-        export_vertices: bool = False,
-        export_skeleton: bool = False,
         export_audio: bool = False,
     ) -> None:
         """Add a rendering job to the renderer queue.
@@ -57,8 +55,6 @@ class RendererUnreal(RendererBase):
             console_variables (Dict[str, float], optional): Console variables to set. Defaults to ``{'r.MotionBlurQuality': 0}``.
                 Ref to :ref:`FAQ-console-variables` for details.
             anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
-            export_vertices (bool, optional): Whether to export vertices. Defaults to False.
-            export_skeleton (bool, optional): Whether to export skeleton. Defaults to False.
             export_audio (bool, optional): Whether to export audio. Defaults to False.
 
         Note:
@@ -84,8 +80,6 @@ class RendererUnreal(RendererBase):
             file_name_format=file_name_format,
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
-            export_vertices=export_vertices,
-            export_skeleton=export_skeleton,
             export_audio=export_audio,
         )
         cls._add_job_in_engine(job.model_dump(mode='json'))
@@ -201,6 +195,56 @@ class RendererUnreal(RendererBase):
             cam_param.dump(camera_file.with_suffix('.json').as_posix())
             camera_file.unlink()
 
+        def convert_actor_infos(folder: Path) -> None:
+            """Convert stencil value from `.dat` to `.npz`. Merge all actor info files
+            into one.
+
+            actor_info files are in the format of:
+            ```
+            {
+                'location': np.ndarray,  # shape: (frame, 3)
+                'rotation': np.ndarray,  # shape: (frame, 3, 3)
+                'stencil_value': np.ndarray,  # shape: (frame,)
+                'mask_color': np.ndarray,  # shape: (frame, 3)
+            }
+            ```
+
+            Args:
+                folder (Path): Path to the folder containing actor info files.
+            """
+            # Get all files in the folder and sort them
+            actor_info_files = sorted(folder.glob('*.dat'))
+            if not actor_info_files:
+                return
+            # Read all actor info files into a list
+            location = []
+            rotation = []
+            stencil_value = []
+            mask_color = []
+            for actor_info_file in actor_info_files:
+                with open(actor_info_file, 'rb') as f:
+                    dat = np.frombuffer(f.read(), np.float32).reshape(7)
+                location.append(ConverterUnreal.location_from_ue(dat[:3]))
+                rotation.append(ConverterUnreal.rotation_from_ue(dat[3:6]))
+                stencil_value.append(int(dat[6]))
+                mask_color.append(unreal_functions.get_mask_color(int(dat[6])))
+
+            location = np.stack(location)  # shape: (frame, 3)
+            rotation = np.stack(rotation)  # shape: (frame, 3, 3)
+            stencil_value = np.array(stencil_value)  # shape: (frame,)
+            mask_color = np.array(mask_color)  # shape: (frame, 3)
+
+            # Save the actor infos in a compressed `.npz` file
+            np.savez_compressed(
+                file=folder.with_suffix('.npz'),
+                location=location,
+                rotation=rotation,
+                stencil_value=stencil_value,
+                mask_color=mask_color,
+            )
+            # Remove the folder
+            shutil.rmtree(folder)
+
         def convert_vertices(folder: Path) -> None:
             """Convert vertices from `.dat` to `.npz`. Merge all vertices files into one
             `.npz` file with structure of: {'verts': np.ndarray, 'faces': None}
@@ -210,47 +254,19 @@ class RendererUnreal(RendererBase):
             """
             # Get all vertices files in the folder and sort them
             vertices_files = sorted(folder.glob('*.dat'))
-            # Read all vertices files into a list
-            vertices = [
-                np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3) for vertices_file in vertices_files
-            ]
-            if not vertices:
+            if not vertices_files:
                 return
-
-            # Stack all vertices into one array with shape (frame, verts, 3)
-            vertices = np.stack(vertices)
-            # Convert convention from unreal to opencv, [x, y, z] -> [y, -z, x]
-            vertices = np.stack([vertices[:, :, 1], -vertices[:, :, 2], vertices[:, :, 0]], axis=-1)
-            vertices /= 100  # convert from cm to m
-
+            # Read all vertices files into an ndarray, shape: (frame, vertex, 3)
+            vertices = np.stack(
+                [
+                    np.frombuffer(vertices_file.read_bytes(), np.float32).reshape(-1, 3)
+                    for vertices_file in vertices_files
+                ]
+            )
+            # Convert from ue camera space to opencv camera space convention
+            vertices = ConverterUnreal.location_from_ue(vertices)
             # Save the vertices in a compressed `.npz` file
             np.savez_compressed(folder.with_suffix('.npz'), verts=vertices, faces=None)
-            # Remove the folder
-            shutil.rmtree(folder)
-
-        def convert_actor_infos(folder: Path) -> None:
-            """Convert stencil value from `.dat` to `.json`.
-
-            Args:
-                folder (Path): Path to the folder contains ``actor_infos``.
-            """
-            # Get all stencil value files in the folder and sort them
-            actor_info_files = sorted(folder.glob('*.dat'))
-            # Read all actor info files into a list
-            actor_infos: List[actor_info_type] = []
-            for actor_info_file in actor_info_files:
-                stencil_value = np.frombuffer(actor_info_file.read_bytes(), np.float32)
-                stencil_value = int(stencil_value)
-                mask_color = unreal_functions.get_mask_color(stencil_value)
-                actor_infos.append({'actor_name': actor_info_file.stem, 'mask_color': mask_color})
-
-            if not actor_infos:
-                return
-
-            # Save the actor infos in a `.json` file
-            with (folder.parent / f'{folder.name}.json').open('w') as f:
-                json.dump(actor_infos, f, indent=4)
-
             # Remove the folder
             shutil.rmtree(folder)
 
@@ -265,32 +281,30 @@ class RendererUnreal(RendererBase):
         for idx, job in enumerate(cls.render_queue):
             seq_name = job.sequence_path.split('/')[-1]
             seq_path = Path(job.output_path).resolve() / seq_name
+            file_name_format = job.file_name_format  # TODO: use this to rename the files
+            if file_name_format != '{sequence_name}/{render_pass}/{camera_name}/{frame_number}':  # XXX: hard-coded
+                logger.warning(
+                    'The `file_name_format` in renderer is not the default value, which may cause some issues in post-processing. '
+                )
 
             text = f'job {idx + 1}/{len(cls.render_queue)}: seq_name="{seq_name}", post-processing...'
             spinner.update(text=text)
 
             # 1. convert camera parameters from `.bat` to `.json` with xrprimer
-            # glob camera files in {seq_path}/{cam_param_dir}/*
-            camera_files = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.camera_params.value}/*.dat'))
-            for camera_file in camera_files:
+            for camera_file in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.camera_params.value}/*/*.dat')):
                 convert_camera(camera_file)
 
             # 2. convert actor infos from `.dat` to `.json`
-            convert_actor_infos(folder=seq_path / RenderOutputEnumUnreal.actor_infos.value)
+            for actor_info_folder in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.actor_infos.value}/*')):
+                convert_actor_infos(actor_info_folder)
 
             # 3. convert vertices from `.dat` to `.npz`
-            if job.export_vertices:
-                # glob actors in {seq_path}/vertices/*
-                actor_folders = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.vertices.value}/*'))
-                for actor_folder in actor_folders:
-                    convert_vertices(actor_folder)
+            for actor_folder in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.vertices.value}/*')):
+                convert_vertices(actor_folder)
 
             # 4. convert skeleton from `.dat` to `.json`
-            if job.export_skeleton:
-                # glob actors in {seq_path}/skeleton/*
-                actor_folders = sorted(seq_path.glob(f'{RenderOutputEnumUnreal.skeleton.value}/*'))
-                for actor_folder in actor_folders:
-                    convert_vertices(actor_folder)
+            for actor_folder in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.skeleton.value}/*')):
+                convert_vertices(actor_folder)
 
     @staticmethod
     def _add_job_in_engine(job: 'Dict[str, Any]') -> None:

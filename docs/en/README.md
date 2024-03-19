@@ -30,6 +30,12 @@ docs/en/make.bat html
 docs/en/make html
 ```
 
+### Build `.pyi` files
+
+```bash
+# for instance
+stubgen xrfeitoria/sequence/sequence_base.py --include-private
+```
 
 ### ~~Draw UML~~
 

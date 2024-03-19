@@ -4,6 +4,8 @@ import warnings
 from contextlib import contextmanager
 from typing import ContextManager, List, Optional, Tuple, Union
 
+from typing_extensions import deprecated
+
 from ..data_structure.constants import default_level_blender
 from ..utils.functions import blender_functions, unreal_functions
 from .sequence_base import SequenceBase
@@ -13,6 +15,7 @@ from .sequence_unreal import SequenceUnreal
 __all__ = ['sequence_wrapper_blender', 'sequence_wrapper_unreal']
 
 
+@deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
 class SequenceWrapperBlender:
     """Sequence utils class."""
 
@@ -72,6 +75,7 @@ class SequenceWrapperBlender:
         cls._seq.close()
 
 
+@deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
 class SequenceWrapperUnreal:
     """Sequence utils class for Unreal."""
 
@@ -96,6 +100,7 @@ class SequenceWrapperUnreal:
             SequenceUnreal: Sequence object.
         """
         cls._seq._open(seq_name=seq_name, seq_dir=seq_dir)
+        cls._seq.show()
         yield cls._seq
         cls._seq.save()
         cls._seq.close()
@@ -133,6 +138,7 @@ class SequenceWrapperUnreal:
             replace=replace,
             seq_dir=seq_dir,
         )
+        cls._seq.show()
         yield cls._seq
         cls._seq.save()
         cls._seq.close()
@@ -172,22 +178,23 @@ def sequence_wrapper_unreal(
     seq_length: int = 1,
     replace: bool = False,
 ) -> Union[SequenceUnreal, ContextManager[SequenceUnreal]]:
-    """Create a new sequence and close the sequence after exiting it.
+    """Create a new sequence, open it in editor, and close the sequence after exiting
+    it.
 
     Args:
         seq_name (str): The name of the sequence.
-        seq_dir (Optional[str], optional): The directory where the sequence is located. Defaults to None.
+        seq_dir (Optional[str], optional): The directory where the sequence is located. Defaults to None. Falls back to the default sequence path (/Game/XRFeitoriaUnreal/Sequences).
         level (Optional[str], optional): The level to associate the sequence with. Defaults to None.
         seq_fps (int, optional): The frames per second of the sequence. Defaults to 30.
-        seq_length (int, optional): The length of the sequence in seconds. Defaults to 1.
+        seq_length (int, optional): The length of the sequence in frames. Defaults to 1.
         replace (bool, optional): Whether to replace an existing sequence with the same name. Defaults to False.
 
     Returns:
         SequenceUnreal: The created SequenceUnreal object.
     """
 
-    default_sequence_path = SequenceUnreal._get_default_seq_path_in_engine()
-    seq_dir = seq_dir or default_sequence_path
+    default_sequence_dir = SequenceUnreal._get_default_seq_dir_in_engine()
+    seq_dir = seq_dir or default_sequence_dir
     if (
         unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}')
         and unreal_functions.check_asset_in_engine(f'{seq_dir}/{seq_name}_data')
@@ -203,4 +210,6 @@ def sequence_wrapper_unreal(
             seq_length=seq_length,
             replace=replace,
         )
+    # Open the sequence in editor, for letting `get_bound_objects` work
+    SequenceUnreal.show()
     return SequenceUnreal()
