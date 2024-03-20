@@ -91,7 +91,7 @@ def main(background: bool = False):
 
     # refine smplx parameters
     refine_smpl_x_from_actor_info(
-        smpl_x_file=saved_humandata_file,
+        smpl_x_filepath=saved_humandata_file,
         actor_info_file=seq_dir / 'actor_infos' / f'{actor_name}.npz',
         replace_smpl_x_file=True,
     )

@@ -121,7 +121,8 @@ def dump_humandata(
 
 
 def refine_smpl_x(
-    smpl_x_file: Path,
+    smpl_x_filepath: Path,
+    meta_filepath: Path,
     replace_smpl_x_file: bool = False,
     offset_location: np.ndarray = np.zeros(3),
     offset_rotation: np.ndarray = np.eye(3),
@@ -129,14 +130,19 @@ def refine_smpl_x(
     """Refine translation and rotation of SMPL-X parameters."""
 
     # Load SMPL-X data
-    smpl_x_file = Path(smpl_x_file)
-    data = dict(np.load(smpl_x_file, allow_pickle=True))
+    smpl_x_filepath = Path(smpl_x_filepath)
+    data = dict(np.load(smpl_x_filepath, allow_pickle=True))
     if 'smplx' in data.keys():
         smpl_x_type = 'smplx'
     elif 'smpl' in data.keys():
         smpl_x_type = 'smpl'
     else:
-        raise ValueError(f'Unknown keys in {smpl_x_file}: {data.keys()}')
+        raise ValueError(f'Unknown keys in {smpl_x_filepath}: {data.keys()}')
+
+    meta_info = np.load(meta_filepath, allow_pickle=True)
+    smpl_x_meta = meta_info[smpl_x_type].item()
+    root_location_t0 = smpl_x_meta['root_location_t0']
+    pelvis_location_t0 = smpl_x_meta['pelvis_location_t0']
 
     # Convert offset_rotation
     if offset_rotation.shape == (3, 3):
@@ -147,24 +153,30 @@ def refine_smpl_x(
         raise ValueError('Please convert offset_rotation to 3x3 matrix or 4-dim quaternion.')
 
     smpl_x_data = data[smpl_x_type].item()
+    transl = smpl_x_data['transl']
+    pivot_offset = transl[0] - (root_location_t0 - pelvis_location_t0)
+    transl = offset_rotation.apply(transl - pivot_offset) + pivot_offset
+    transl += offset_location
+    smpl_x_data['transl'] = transl.astype(np.float32)
+
     global_orient = smpl_x_data['global_orient']
     global_orient = spRotation.from_rotvec(global_orient)
     global_orient = (offset_rotation * global_orient).as_rotvec()
-    transl = smpl_x_data['transl']
-    transl = offset_rotation.apply(transl - transl[0]) + transl[0]
-    transl += offset_location
-
     smpl_x_data['global_orient'] = global_orient.astype(np.float32)
-    smpl_x_data['transl'] = transl.astype(np.float32)
     data[smpl_x_type] = smpl_x_data
 
     if replace_smpl_x_file:
-        np.savez(smpl_x_file, **data)
+        np.savez(smpl_x_filepath, **data)
     else:
-        np.savez(smpl_x_file.parent / f'{smpl_x_file.stem}_refined.npz', **data)
+        np.savez(smpl_x_filepath.parent / f'{smpl_x_filepath.stem}_refined.npz', **data)
 
 
-def refine_smpl_x_from_actor_info(smpl_x_file: Path, actor_info_file: Path, replace_smpl_x_file: bool = False):
+def refine_smpl_x_from_actor_info(
+    smpl_x_filepath: Path,
+    meta_filepath: Path,
+    actor_info_file: Path,
+    replace_smpl_x_file: bool = False,
+):
     """Refine translation and rotation of SMPL-X parameters from actor info file."""
     actor_info = np.load(actor_info_file, allow_pickle=True)
     location = actor_info['location']
@@ -172,7 +184,8 @@ def refine_smpl_x_from_actor_info(smpl_x_file: Path, actor_info_file: Path, repl
     assert np.all(location == location[0]) and np.all(rotation == rotation[0])
 
     refine_smpl_x(
-        smpl_x_file=smpl_x_file,
+        smpl_x_filepath=smpl_x_filepath,
+        meta_filepath=meta_filepath,
         replace_smpl_x_file=replace_smpl_x_file,
         offset_location=location[0],
         offset_rotation=rotation[0],
