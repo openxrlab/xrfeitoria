@@ -148,6 +148,8 @@ class ConverterMotion:
         Returns:
             np.ndarray: of shape (N, 3) or (3,)
         """
+        if isinstance(vector, list):
+            vector = np.array(vector)
         if vector.shape == (3,):
             ret = np.array([vector[0], -vector[1], -vector[2]], dtype=vector.dtype)
         elif vector.ndim == 2 and vector.shape[1] == 3:
@@ -177,6 +179,8 @@ class ConverterMotion:
         Returns:
             np.ndarray: of shape (N, 3) or (3,)
         """
+        if isinstance(vector, list):
+            vector = np.array(vector)
         if vector.shape == (3,):
             vector = np.array([-vector[0], -vector[2], -vector[1]], dtype=vector.dtype)
         elif vector.ndim == 2 and vector.shape[1] == 3:
@@ -232,8 +236,50 @@ class ConverterUnreal:
         Returns:
             np.ndarray: of shape (3,) or (... , 3)
         """
+        if isinstance(vector, list):
+            vector = np.array(vector)
         if vector.shape == (3,):
             ret = np.array([vector[1], -vector[2], vector[0]]) / cls.UNITS_SCALE
         elif vector.ndim >= 2 and vector.shape[-1] == 3:
             ret = np.stack([vector[..., 1], -vector[..., 2], vector[..., 0]], axis=-1) / cls.UNITS_SCALE
+        return ret
+
+
+class ConverterBlender:
+    R_BlenderView_to_OpenCVView = np.diag([1, -1, -1])
+
+    @classmethod
+    def rotation_from_blender(cls, euler, degrees=True) -> np.ndarray:
+        """Convert from blender space to opencv camera space convention.
+
+        Args:
+            euler (np.ndarray): of shape (3,)
+            degrees (bool, optional): Whether the input angles are in degrees. Defaults to True.
+
+        Returns:
+            np.ndarray: Rotation matrix 3x3.
+        """
+        euler = [-euler[0], euler[1], -euler[2]]
+        mat = rotation_matrix(euler, order='xzy', degrees=degrees).T
+        mat = cls.R_BlenderView_to_OpenCVView @ mat @ cls.R_BlenderView_to_OpenCVView.T
+        return mat
+
+    @classmethod
+    def location_from_blender(cls, vector: np.ndarray) -> np.ndarray:
+        """Convert from blender space to opencv camera space convention.
+
+        [right, front, up]: (x, y, z) ==> (x, -z, y)
+
+        Args:
+            vector (np.ndarray): of shape (3,) or (... , 3)
+
+        Returns:
+            np.ndarray: of shape (3,) or (... , 3)
+        """
+        if isinstance(vector, (list, tuple)):
+            vector = np.array(vector)
+        if vector.shape == (3,):
+            ret = np.array([vector[0], -vector[2], vector[1]])
+        elif vector.ndim >= 2 and vector.shape[-1] == 3:
+            ret = np.stack([vector[..., 0], -vector[..., 2], vector[..., 1]], axis=-1)
         return ret

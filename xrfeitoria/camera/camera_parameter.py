@@ -9,7 +9,7 @@ from xrprimer.data_structure.camera import PinholeCameraParameter
 from xrprimer.transform.convention.camera import convert_camera_parameter
 
 from ..data_structure.constants import PathLike, Vector
-from ..utils.converter import ConverterUnreal
+from ..utils import ConverterUnreal
 
 
 class CameraParameter(PinholeCameraParameter):
