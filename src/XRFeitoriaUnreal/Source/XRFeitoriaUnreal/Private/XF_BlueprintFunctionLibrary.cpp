@@ -1075,3 +1075,34 @@ void UXF_BlueprintFunctionLibrary::SaveTextToFile(const FString StringToWrite, F
 		       TEXT("FileManipulation: Failed to write FString to file."));
 	}
 }
+
+void UXF_BlueprintFunctionLibrary::ConvertCoordinateSystem(FTransform& Transform, const EAxis SrcXInDstAxis, const EAxis SrcYInDstAxis, const EAxis SrcZInDstAxis)
+{
+	// Unreal Engine:
+	//   Front : X
+	//   Right : Y
+	//   Up    : Z
+	//
+	// OpenCV:
+	//   Front : Z
+	//   Right : X
+	//   Up    : Yn
+
+	FMatrix M12 = FMatrix::Identity;
+
+	M12.SetColumn(0, UnitVectorFromAxisEnum(SrcXInDstAxis));
+	M12.SetColumn(1, UnitVectorFromAxisEnum(SrcYInDstAxis));
+	M12.SetColumn(2, UnitVectorFromAxisEnum(SrcZInDstAxis));
+
+	Transform.SetFromMatrix(M12.GetTransposed() * Transform.ToMatrixWithScale() * M12);
+}
+
+void UXF_BlueprintFunctionLibrary::ConvertUnrealToOpenCV(FTransform& Transform)
+{
+	ConvertCoordinateSystem(Transform, EAxis::Y, EAxis::Zn, EAxis::X);
+}
+
+void UXF_BlueprintFunctionLibrary::ConvertOpenCVToUnreal(FTransform& Transform)
+{
+	ConvertCoordinateSystem(Transform, EAxis::Z, EAxis::X, EAxis::Yn);
+}

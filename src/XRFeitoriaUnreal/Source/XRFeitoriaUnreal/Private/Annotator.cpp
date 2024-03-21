@@ -226,8 +226,11 @@ void AAnnotator::ExportSkeletalMeshParameters(int FrameNumber)
 
 		// Save Actor Info (location, rotation, stencil value)
 		{
-			FVector ActorLocation = SkeletalMeshComponent->GetOwner()->GetActorLocation();
-			FRotator ActorRotation = SkeletalMeshComponent->GetOwner()->GetActorRotation();
+			FTransform ActorTransform = SkeletalMeshComponent->GetOwner()->GetActorTransform();
+			UXF_BlueprintFunctionLibrary::ConvertUnrealToOpenCV(ActorTransform);
+			UE_LOG(LogTemp, Warning, TEXT("ActorTransform: %s"), *ActorTransform.ToString());
+			FVector ActorLocation = ActorTransform.GetLocation();
+			FRotator ActorRotation = ActorTransform.Rotator();
 			int StencilValue = SkeletalMeshComponent->CustomDepthStencilValue;
 
 			TArray<float> ActorInfo;
