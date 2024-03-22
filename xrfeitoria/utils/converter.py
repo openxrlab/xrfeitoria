@@ -195,7 +195,7 @@ class ConverterMotion:
         Returns:
             np.ndarray: of shape (N, 3) or (3,)
         """
-        if isinstance(vector, list):
+        if isinstance(vector, (list, tuple)):
             vector = np.array(vector)
         if vector.shape == (3,):
             ret = np.array([vector[0], -vector[1], -vector[2]], dtype=vector.dtype)
@@ -226,7 +226,7 @@ class ConverterMotion:
         Returns:
             np.ndarray: of shape (N, 3) or (3,)
         """
-        if isinstance(vector, list):
+        if isinstance(vector, (list, tuple)):
             vector = np.array(vector)
         if vector.shape == (3,):
             vector = np.array([-vector[0], -vector[2], -vector[1]], dtype=vector.dtype)
