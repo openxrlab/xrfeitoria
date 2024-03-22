@@ -223,11 +223,11 @@ class RendererUnreal(RendererBase):
             mask_color = []
             for actor_info_file in actor_info_files:
                 with open(actor_info_file, 'rb') as f:
-                    dat = np.frombuffer(f.read(), np.float32).reshape(7)
+                    dat = np.frombuffer(f.read(), np.float32).reshape(8)
                 location.append(ConverterUnreal.location_from_ue(dat[:3]))
-                rotation.append(ConverterUnreal.rotation_from_ue(dat[3:6]))
-                stencil_value.append(int(dat[6]))
-                mask_color.append(unreal_functions.get_mask_color(int(dat[6])))
+                rotation.append(ConverterUnreal.quat_from_ue(dat[3:7]))
+                stencil_value.append(int(dat[7]))
+                mask_color.append(unreal_functions.get_mask_color(int(dat[7])))
 
             location = np.stack(location)  # shape: (frame, 3)
             rotation = np.stack(rotation)  # shape: (frame, 3, 3)

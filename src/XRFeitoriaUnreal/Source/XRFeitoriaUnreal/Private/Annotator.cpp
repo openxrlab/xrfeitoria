@@ -164,16 +164,17 @@ void AAnnotator::ExportStaticMeshParameters(int FrameNumber)
 		// Save Actor Info (location, rotation, stencil value)
 		{
 			FVector ActorLocation = StaticMeshComponent->GetOwner()->GetActorLocation();
-			FRotator ActorRotation = StaticMeshComponent->GetOwner()->GetActorRotation();
+			FQuat ActorRotation = StaticMeshComponent->GetOwner()->GetActorQuat();
 			int StencilValue = StaticMeshComponent->CustomDepthStencilValue;
 
 			TArray<float> ActorInfo;
 			ActorInfo.Add(ActorLocation.X);
 			ActorInfo.Add(ActorLocation.Y);
 			ActorInfo.Add(ActorLocation.Z);
-			ActorInfo.Add(ActorRotation.Roll);
-			ActorInfo.Add(ActorRotation.Pitch);
-			ActorInfo.Add(ActorRotation.Yaw);
+			ActorInfo.Add(ActorRotation.X);
+			ActorInfo.Add(ActorRotation.Y);
+			ActorInfo.Add(ActorRotation.Z);
+			ActorInfo.Add(ActorRotation.W);
 			ActorInfo.Add(StencilValue);
 
 			FString ActorInfoPath = FPaths::Combine(
@@ -227,16 +228,17 @@ void AAnnotator::ExportSkeletalMeshParameters(int FrameNumber)
 		// Save Actor Info (location, rotation, stencil value)
 		{
 			FVector ActorLocation = SkeletalMeshComponent->GetOwner()->GetActorLocation();
-			FRotator ActorRotation = SkeletalMeshComponent->GetOwner()->GetActorRotation();
+			FQuat ActorRotation = SkeletalMeshComponent->GetOwner()->GetActorQuat();
 			int StencilValue = SkeletalMeshComponent->CustomDepthStencilValue;
 
 			TArray<float> ActorInfo;
 			ActorInfo.Add(ActorLocation.X);
 			ActorInfo.Add(ActorLocation.Y);
 			ActorInfo.Add(ActorLocation.Z);
-			ActorInfo.Add(ActorRotation.Roll);
-			ActorInfo.Add(ActorRotation.Pitch);
-			ActorInfo.Add(ActorRotation.Yaw);
+			ActorInfo.Add(ActorRotation.X);
+			ActorInfo.Add(ActorRotation.Y);
+			ActorInfo.Add(ActorRotation.Z);
+			ActorInfo.Add(ActorRotation.W);
 			ActorInfo.Add(StencilValue);
 
 			FString ActorInfoPath = FPaths::Combine(

@@ -60,7 +60,7 @@ def main(background: bool = False):
     motion = load_amass_motion(amass_file)
     motion.convert_fps(30)  # convert the motion from 120fps (amass) to 30fps
     # motion.cut_transl(end_frame=n_frames)  # cut the motion to the length of n_frames
-    motion.sample_motion(end_frame=n_frames)  # sample the motion to the length of n_frames
+    motion.sample_motion(n_frames)  # sample the motion to the length of n_frames
     motion_data = motion.get_motion_data()
 
     # modify this to your blender executable path
