@@ -277,6 +277,8 @@ class ConverterUnreal:
 
         rot_unreal = quat_to_rot_matrix(quat, order='xyzw').T
         rot_unreal = cls.unreal2opencv @ rot_unreal @ cls.unreal2opencv.T
+        # TODO: make sure it's a issue of unreal or between unreal and smplx
+        # XXX: rotate 90 degree around y-axis
         rot = euler_to_rot_matrix([0, 90.0, 0.0], 'xyz', degrees=True) @ rot_unreal
         return rot.T
 
