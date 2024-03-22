@@ -191,7 +191,8 @@ class ConverterMotion:
 
 
 class ConverterUnreal:
-    units_scale = 100.0  # 1 meter = 100 cm
+    UNITS_SCALE = 100.0  # 1 meter = 100 cm
+    ROTATION_OFFSET = [0, 0, -90.0]  # (x, y, z) in degrees, around z-axis (left-handed)
 
     @classmethod
     def rotation_camera_from_ue(cls, euler, degrees=True) -> np.ndarray:
@@ -209,7 +210,7 @@ class ConverterUnreal:
         return rotation_matrix([x, y, z], order='xyz', degrees=degrees)
 
     @classmethod
-    def rotation_from_ue(cls, euler, degrees=True) -> np.ndarray:
+    def rotation_from_ue(cls, euler, offset=ROTATION_OFFSET, degrees=True) -> np.ndarray:
         """Convert from ue camera space to opencv camera space convention.
 
         Args:
@@ -220,12 +221,8 @@ class ConverterUnreal:
         Returns:
             np.ndarray: Rotation matrix 3x3.
         """
-        from scipy.spatial.transform import Rotation
-
-        rot = Rotation.from_euler('xyz', euler, degrees=True).as_rotvec()
-        rot[2] *= -1
-        rot = Rotation.from_euler('xyz', [0, 90.0, 0.0], degrees=degrees) * Rotation.from_rotvec(rot)
-        return rot.as_matrix().T
+        _euler = np.array(euler) + np.array(offset)
+        return rotation_matrix(_euler, 'zxy', degrees=degrees)
 
     @classmethod
     def location_from_ue(cls, vector: np.ndarray) -> np.ndarray:
@@ -242,9 +239,9 @@ class ConverterUnreal:
         if isinstance(vector, list):
             vector = np.array(vector)
         if vector.shape == (3,):
-            ret = np.array([vector[1], -vector[2], vector[0]]) / cls.units_scale
+            ret = np.array([vector[1], -vector[2], vector[0]]) / cls.UNITS_SCALE
         elif vector.ndim >= 2 and vector.shape[-1] == 3:
-            ret = np.stack([vector[..., 1], -vector[..., 2], vector[..., 0]], axis=-1) / cls.units_scale
+            ret = np.stack([vector[..., 1], -vector[..., 2], vector[..., 0]], axis=-1) / cls.UNITS_SCALE
         return ret
 
 
