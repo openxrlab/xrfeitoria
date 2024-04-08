@@ -10,7 +10,6 @@
 #include "EngineUtils.h"
 #include "XF_BlueprintFunctionLibrary.h"
 
-
 // Sets default values
 AAnnotator::AAnnotator()
 {
@@ -19,21 +18,19 @@ AAnnotator::AAnnotator()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-bool AAnnotator::IsSequenceValid(UMovieScene *MovieScene)
+bool AAnnotator::IsSequenceValid(ALevelSequenceActor *ALevelSequenceActor)
 {
+	ULevelSequencePlayer *SequencePlayer = ALevelSequenceActor->GetSequencePlayer();
+	UMovieScene *MovieScene = SequencePlayer->GetSequence()->GetMovieScene();
 	for (int idx = 0; idx < MovieScene->GetSpawnableCount(); idx++)
 	{
 		FMovieSceneSpawnable spawnable = MovieScene->GetSpawnable(idx);
 		FGuid guid = spawnable.GetGuid();
 		FString name = spawnable.GetName();
 
-		TArray<UObject *> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
-		if (boundObjects.Num() == 0)
-			continue;
-		if (boundObjects[0]->IsA(AAnnotator::StaticClass()))
-		{
-			return true;
-		}
+		TArray<UObject *> boundObjects = SequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
+		if (boundObjects.Num() == 0) continue;
+		if (boundObjects[0]->IsA(AAnnotator::StaticClass())) return true;
 	}
 	for (int idx = 0; idx < MovieScene->GetPossessableCount(); idx++)
 	{
@@ -41,30 +38,23 @@ bool AAnnotator::IsSequenceValid(UMovieScene *MovieScene)
 		FGuid guid = possessable.GetGuid();
 		FString name = possessable.GetName();
 
-		TArray<UObject *> boundObjects = LevelSequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
-		if (boundObjects.Num() == 0)
-			continue;
-		if (boundObjects[0]->IsA(AAnnotator::StaticClass()))
-		{
-			return true;
-		}
+		TArray<UObject *> boundObjects = SequencePlayer->GetBoundObjects(FMovieSceneObjectBindingID(guid));
+		if (boundObjects.Num() == 0) continue;
+		if (boundObjects[0]->IsA(AAnnotator::StaticClass())) return true;
 	}
 	return false;
 }
 
 void AAnnotator::Initialize()
 {
-	if (bInitialized)
-		return;
+	if (bInitialized) return;
 
 	// Get Playing LevelSequenceActor
 	bool bValid = false;
 	for (TActorIterator<ALevelSequenceActor> ActorItr(GetWorld()); ActorItr; ++ActorItr)
 	{
 		ALevelSequenceActor *ALevelSequenceActor = *ActorItr;
-		bool _bValid = ALevelSequenceActor && ALevelSequenceActor->GetSequencePlayer() &&
-					   IsSequenceValid(ALevelSequenceActor->GetSequencePlayer()->GetSequence()->GetMovieScene());
-		if (!_bValid)
+		if (!(ALevelSequenceActor && ALevelSequenceActor->GetSequencePlayer() && IsSequenceValid(ALevelSequenceActor)))
 		{
 			UE_LOG(LogXF, Log, TEXT("Invalid LevelSequenceActor: %s"), *ALevelSequenceActor->GetName());
 			continue;
@@ -72,8 +62,9 @@ void AAnnotator::Initialize()
 
 		LevelSequenceActor = ALevelSequenceActor;
 		LevelSequencePlayer = ALevelSequenceActor->GetSequencePlayer();
-
 		UE_LOG(LogXF, Log, TEXT("Detected LevelSequenceActor: %s"), *LevelSequenceActor->GetName());
+		bValid = true;
+		break;
 	}
 	if (!bValid) return;
 
@@ -168,8 +159,7 @@ void AAnnotator::Initialize()
 
 void AAnnotator::ExportCameraParameters(int FrameNumber)
 {
-	if (!bInitialized || CameraActors.Num() == 0)
-		return;
+	if (!bInitialized || CameraActors.Num() == 0) return;
 	for (TPair<FString, ACameraActor *> pair : CameraActors)
 	{
 		FString CameraName = pair.Key;
