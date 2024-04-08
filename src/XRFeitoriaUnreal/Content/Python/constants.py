@@ -30,7 +30,7 @@ MATERIAL_PATHS = {
     'specular': f'/{PLUGIN_NAME}/Materials/PPM_specular',
     'tangent': f'/{PLUGIN_NAME}/Materials/PPM_tangent',
     'basecolor': f'/{PLUGIN_NAME}/Materials/PPM_basecolor',
-    'lineart': f'/{PLUGIN_NAME}/Materials/PPM_lineart',
+    'lineart': f'/{PLUGIN_NAME}/Materials/PPM_lineart_default',
 }
 SHAPE_PATHS = {
     'cube': '/Engine/BasicShapes/Cube',
