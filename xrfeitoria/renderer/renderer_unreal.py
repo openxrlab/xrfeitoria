@@ -291,6 +291,7 @@ class RendererUnreal(RendererBase):
             spinner.update(text=text)
 
             # 1. convert camera parameters from `.bat` to `.json` with xrprimer
+            # TODO: remove warmup-frames?
             for camera_file in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.camera_params.value}/*/*.dat')):
                 convert_camera(camera_file)
 
