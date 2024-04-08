@@ -30,6 +30,7 @@ public:
 	AAnnotator();
 	// Initialize the Annotator
 	void Initialize();
+	bool IsSequenceValid(UMovieScene* MovieScene);
 	void ExportCameraParameters(int FrameNumber);
 	void ExportStaticMeshParameters(int FrameNumber);
 	void ExportSkeletalMeshParameters(int FrameNumber);
