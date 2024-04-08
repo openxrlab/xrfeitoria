@@ -134,6 +134,7 @@ class RenderOutputEnumUnreal(EnumBase):
     specular = 'specular'
     tangent = 'tangent'
     basecolor = 'basecolor'
+    lineart = 'lineart'
 
     vertices = 'vertices'
     skeleton = 'skeleton'

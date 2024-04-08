@@ -30,6 +30,7 @@ MATERIAL_PATHS = {
     'specular': f'/{PLUGIN_NAME}/Materials/PPM_specular',
     'tangent': f'/{PLUGIN_NAME}/Materials/PPM_tangent',
     'basecolor': f'/{PLUGIN_NAME}/Materials/PPM_basecolor',
+    'lineart': f'/{PLUGIN_NAME}/Materials/PPM_lineart',
 }
 SHAPE_PATHS = {
     'cube': '/Engine/BasicShapes/Cube',
@@ -122,6 +123,7 @@ class UnrealRenderLayerEnum(EnumBase):
     specular = 'specular'
     tangent = 'tangent'
     basecolor = 'basecolor'
+    lineart = 'lineart'
 
     vertices = 'vertices'
     skeleton = 'skeleton'
