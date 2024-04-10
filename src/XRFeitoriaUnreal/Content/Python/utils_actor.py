@@ -67,14 +67,15 @@ def get_skeleton_names(actor_asset_path: str) -> List[str]:
     try:
         assert isinstance(actor, unreal.SkeletalMeshActor), f'{actor.get_name()} is not a SkeletalMeshActor'
         skeletal_mesh = actor.skeletal_mesh_component.skeletal_mesh
-        bone_names = skeletal_mesh.skeleton.get_reference_pose().get_bone_names()
-        bone_names = [str(bone_name) for bone_name in bone_names]
+        bone_names = [str(bone_name) for bone_name in skeletal_mesh.skeleton.get_reference_pose().get_bone_names()]
+        curve_names = [morph.get_name() for morph in skeletal_mesh.morph_targets]
+        skeleton_names = bone_names + curve_names
     except Exception as e:
         unreal.log_warning(f'Error: {e}')
-        bone_names = []
+        skeleton_names = []
     finally:
         destroy_actor(actor)
-    return bone_names
+    return skeleton_names
 
 
 def get_z_by_raycast(x: float, y: float, debug: bool = False):
