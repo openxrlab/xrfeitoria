@@ -44,6 +44,21 @@ def get_mask_color(stencil_value: int) -> 'Tuple[int, int, int]':
     return mask_colors[stencil_value]['rgb']
 
 
+@lru_cache
+@remote_unreal()
+def get_skeleton_names(actor_asset_path: str) -> 'List[str]':
+    """Retrieves the names of the bones in the skeleton of a SkeletalMeshActor (also can
+    be child class of it).
+
+    Args:
+        actor_asset_path (str): The asset path of the SkeletalMeshActor.
+
+    Returns:
+        List[str]: The names of the bones in the skeleton.
+    """
+    return XRFeitoriaUnrealFactory.utils_actor.get_skeleton_names(actor_asset_path)
+
+
 @remote_unreal()
 def check_asset_in_engine(path: str, raise_error: bool = False) -> bool:
     """Check if an asset exists in the engine.

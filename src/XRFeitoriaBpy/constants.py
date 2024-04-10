@@ -8,6 +8,7 @@ default_level_blender = 'XRFeitoria'
 
 Tuple3 = Tuple[float, float, float]
 PathLike = Union[str, Path]
+# MotionFrame = {'bone_name': {'location': [x, y, z], 'rotation': [w, x, y, z]}}
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 
 
