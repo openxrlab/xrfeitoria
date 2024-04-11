@@ -459,7 +459,7 @@ def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data:
         )
     )
     rig_section: unreal.MovieSceneControlRigParameterSection = rig_track.get_section_to_key()
-    # Note: assert bone_name is now achieved in function `xf_runner.SequenceUnreal._spawn_actor_in_engine`
+    # Note: assert bone_name is now achieved in function `xf_runner.SequenceUnreal.spawn_actor_with_keys` and `xf_runner.SequenceUnreal.spawn_actor`
     # param_names = list(rig_section.get_parameter_names())
     # for bone_name, bone_data in motion_data[0].items():
     #     if 'curve' in bone_data.keys():
