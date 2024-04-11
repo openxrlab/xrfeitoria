@@ -50,6 +50,31 @@ def get_actor_mesh_component(
     return mesh_component
 
 
+def get_skeleton_names(actor_asset_path: str) -> List[str]:
+    """Retrieves the names of the bones in the skeleton of a SkeletalMeshActor (also can
+    be child class of it).
+
+    Args:
+        actor_asset_path (str): The asset path of the SkeletalMeshActor.
+
+    Returns:
+        List[str]: A set of bone names in the skeleton.
+    """
+    actor = spawn_actor_from_object(unreal.load_asset(actor_asset_path))
+    try:
+        assert isinstance(actor, unreal.SkeletalMeshActor), f'{actor.get_name()} is not a SkeletalMeshActor'
+        skeletal_mesh = actor.skeletal_mesh_component.skeletal_mesh
+        bone_names = [str(bone_name) for bone_name in skeletal_mesh.skeleton.get_reference_pose().get_bone_names()]
+        curve_names = [morph.get_name() for morph in skeletal_mesh.morph_targets]
+        skeleton_names = bone_names + curve_names
+    except Exception as e:
+        unreal.log_warning(f'Error: {e}')
+        skeleton_names = []
+    finally:
+        destroy_actor(actor)
+    return skeleton_names
+
+
 def get_z_by_raycast(x: float, y: float, debug: bool = False):
     z_infinity_positive = 100000
     z_infinity_negative = -100000

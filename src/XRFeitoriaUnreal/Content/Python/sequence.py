@@ -459,13 +459,14 @@ def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data:
         )
     )
     rig_section: unreal.MovieSceneControlRigParameterSection = rig_track.get_section_to_key()
-    param_names = list(rig_section.get_parameter_names())
-    for bone_name, bone_data in motion_data[0].items():
-        if 'curve' in bone_data.keys():
-            bone_name = f'{bone_name}_CURVE_CONTROL'
-        else:
-            bone_name = f'{bone_name}_CONTROL'
-        assert bone_name in param_names, RuntimeError(f'bone name: {bone_name} not in param names: {param_names}')
+    # Note: assert bone_name is now achieved in function `xf_runner.SequenceUnreal.spawn_actor_with_keys` and `xf_runner.SequenceUnreal.spawn_actor`
+    # param_names = list(rig_section.get_parameter_names())
+    # for bone_name, bone_data in motion_data[0].items():
+    #     if 'curve' in bone_data.keys():
+    #         bone_name = f'{bone_name}_CURVE_CONTROL'
+    #     else:
+    #         bone_name = f'{bone_name}_CONTROL'
+    #     assert bone_name in param_names, RuntimeError(f'bone name: {bone_name} not in param names: {param_names}')
 
     if ENGINE_MAJOR_VERSION == 5 and ENGINE_MINOR_VERSION < 2:
         msg = 'FKRigExecuteMode is not supported in < UE5.2, may cause unexpected result using FK motion.'
@@ -473,7 +474,7 @@ def add_fk_motion_to_binding(binding: unreal.SequencerBindingProxy, motion_data:
     else:
         rig_proxies = unreal.ControlRigSequencerLibrary.get_control_rigs(binding.sequence)
         for rig_proxy in rig_proxies:
-            ### TODO: judge if the track belongs to this actor
+            # TODO: judge if the track belongs to this actor
             unreal.ControlRigSequencerLibrary.set_control_rig_apply_mode(
                 rig_proxy.control_rig, unreal.ControlRigFKRigExecuteMode.ADDITIVE
             )
@@ -974,6 +975,7 @@ class Sequence:
     def close(cls) -> None:
         if cls.sequence is not None:
             unreal.LevelSequenceEditorBlueprintLibrary.close_level_sequence()
+            unreal.EditorAssetLibrary.save_asset(cls.sequence_path)  # XXX: save the sequence asset
             del cls.sequence
         cls.map_path = None
         cls.sequence_path = None

@@ -167,6 +167,8 @@ class SequenceUnreal(SequenceBase):
         )
         if actor_name is None:
             actor_name = cls._object_utils.generate_obj_name(obj_type='actor')
+        if motion_data is not None:
+            motion_data = cls.check_motion_data(actor_asset_path, motion_data)
         cls._spawn_actor_in_engine(
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys.model_dump(),
@@ -206,10 +208,10 @@ class SequenceUnreal(SequenceBase):
         if not isinstance(transform_keys, list):
             transform_keys = [transform_keys]
         transform_keys = [i.model_dump() for i in transform_keys]
-
         if actor_name is None:
             actor_name = cls._object_utils.generate_obj_name(obj_type='actor')
-
+        if motion_data is not None:
+            motion_data = cls.check_motion_data(actor_asset_path, motion_data)
         cls._spawn_actor_in_engine(
             actor_asset_path=actor_asset_path,
             transform_keys=transform_keys,
@@ -292,6 +294,36 @@ class SequenceUnreal(SequenceBase):
             None
         """
         cls._set_camera_cut_player_in_engine(start_frame=start_frame, end_frame=end_frame)
+
+    @staticmethod
+    def check_motion_data(actor_asset_path: str, motion_data: List[MotionFrame]) -> List[MotionFrame]:
+        """Check the motion data for a given actor against the skeleton in the engine.
+        Checks if the bone names in the motion data are a subset of the bone names in
+        the skeleton of the actor. If not, the extra bone names in the motion data are
+        ignored.
+
+        Args:
+            actor_asset_path (str): The asset path of the actor in the engine.
+            motion_data (List[MotionFrame]): The motion data to be checked.
+
+        Returns:
+            List[MotionFrame]: The checked motion data.
+        """
+        _motion_data_ = motion_data.copy()
+        bone_names_in_motion_data = {bone_name for frame in _motion_data_ for bone_name in frame.keys()}
+        bone_names_in_engine = set(unreal_functions.get_skeleton_names(actor_asset_path))
+        if not bone_names_in_motion_data.issubset(bone_names_in_engine):
+            logger.warning(
+                f'Bone names in "motion data" are not subset of bone names in the "skeleton of the actor in the engine".\n'
+                f'bone_names_in_motion_data = {bone_names_in_motion_data}\n'
+                f'bone_names_in_engine = {bone_names_in_engine}\n'
+                f'The extra bone names in motion data: {bone_names_in_motion_data - bone_names_in_engine} will be ignored.'
+            )
+            for frame in _motion_data_:
+                for bone_name in list(frame.keys()):
+                    if bone_name not in bone_names_in_engine:
+                        frame.pop(bone_name)
+        return _motion_data_
 
     @classmethod
     def _open(cls, seq_name: str, seq_dir: 'Optional[str]' = None) -> None:

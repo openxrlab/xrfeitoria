@@ -7,7 +7,7 @@ from loguru import logger
 
 from ..data_structure.constants import PathLike, RenderOutputEnumUnreal
 from ..rpc import remote_unreal
-from ..utils.converter import ConverterUnreal
+from ..utils import ConverterUnreal
 from ..utils.functions import unreal_functions
 from .renderer_base import RendererBase, render_status
 
@@ -223,11 +223,11 @@ class RendererUnreal(RendererBase):
             mask_color = []
             for actor_info_file in actor_info_files:
                 with open(actor_info_file, 'rb') as f:
-                    dat = np.frombuffer(f.read(), np.float32).reshape(7)
+                    dat = np.frombuffer(f.read(), np.float32).reshape(8)
                 location.append(ConverterUnreal.location_from_ue(dat[:3]))
-                rotation.append(ConverterUnreal.rotation_from_ue(dat[3:6]))
-                stencil_value.append(int(dat[6]))
-                mask_color.append(unreal_functions.get_mask_color(int(dat[6])))
+                rotation.append(ConverterUnreal.quat_from_ue(dat[3:7]))
+                stencil_value.append(int(dat[7]))
+                mask_color.append(unreal_functions.get_mask_color(int(dat[7])))
 
             location = np.stack(location)  # shape: (frame, 3)
             rotation = np.stack(rotation)  # shape: (frame, 3, 3)
@@ -291,6 +291,7 @@ class RendererUnreal(RendererBase):
             spinner.update(text=text)
 
             # 1. convert camera parameters from `.bat` to `.json` with xrprimer
+            # TODO: remove warmup-frames?
             for camera_file in sorted(seq_path.glob(f'{RenderOutputEnumUnreal.camera_params.value}/*/*.dat')):
                 convert_camera(camera_file)
 

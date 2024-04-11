@@ -940,3 +940,63 @@ def get_humandata(
         'meta': meta,
     }
     return humandata
+
+
+def transform_smpl_x(global_orient, transl, pelvis, extrinsic) -> Tuple[np.ndarray, np.ndarray]:
+    """Transform body model parameters using extrinsic matrix including location and
+    rotation.
+
+    Args:
+        global_orient (np.ndarray): Array of shape (N, 3) representing the global orientation.
+            Only global_orient and transl need to be updated in the rigid transformation.
+        transl (np.ndarray): Array of shape (N, 3) representing the translation.
+        pelvis (np.ndarray): Array of shape (N, 3) representing the 3D joint location of the pelvis.
+            This is necessary to eliminate the offset from the SMPL canonical space origin to the pelvis,
+            because the global orient is conducted around the pelvis, not the canonical space origin.
+        extrinsic (np.ndarray): Array of shape (4, 4) representing the transformation matrix which includes the location and rotation.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Tuple containing the transformed global orientation and translation arrays.
+            - global_orient (np.ndarray): Array of shape (N, 3) representing the transformed global orientation.
+            - transl (np.ndarray): Array of shape (N, 3) representing the transformed translation.
+    """
+    N = len(global_orient)
+    assert global_orient.shape == (N, 3)
+    assert transl.shape == (N, 3)
+    assert pelvis.shape == (N, 3)
+
+    # take out the small offset from smpl origin to pelvis
+    transl_offset = pelvis - transl
+    T_p2w = np.eye(4).reshape(1, 4, 4).repeat(N, axis=0)
+    T_p2w[:, :3, 3] = transl_offset
+
+    # camera extrinsic: transformation from world frame to camera frame
+    T_w2c = extrinsic
+
+    # smpl transformation: from vertex frame to world frame
+    T_v2p = np.eye(4).reshape(1, 4, 4).repeat(N, axis=0)
+    global_orient_mat = spRotation.from_rotvec(global_orient).as_matrix()
+    T_v2p[:, :3, :3] = global_orient_mat
+    T_v2p[:, :3, 3] = transl
+
+    # compute combined transformation from vertex to world
+    T_v2w = T_p2w @ T_v2p
+
+    # compute transformation from vertex to camera
+    T_v2c = T_w2c @ T_v2w
+
+    # decompose vertex to camera transformation
+    # np: new pelvis frame
+    # T_v2c = T_np2c x T_v2np
+    T_np2c = T_p2w
+    T_v2np = np.linalg.inv(T_np2c) @ T_v2c
+
+    # decompose into new global orient and new transl
+    new_global_orient_mat = T_v2np[:, :3, :3]
+    new_global_orient = spRotation.from_matrix(new_global_orient_mat).as_rotvec()
+    new_transl = T_v2np[:, :3, 3]
+
+    assert new_global_orient.shape == (N, 3)
+    assert new_transl.shape == (N, 3)
+
+    return new_global_orient, new_transl

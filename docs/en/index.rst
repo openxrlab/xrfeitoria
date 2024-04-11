@@ -50,6 +50,8 @@ Requirements
 - ``Python >= 3.8``
 - (optional) ``Unreal Engine >= 5.1``
     |check_| Windows
+
+    |check_| Linux
 - (optional) ``Blender >= 3.0``
     |check_| Windows
 

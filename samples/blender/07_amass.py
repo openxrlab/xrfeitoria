@@ -16,8 +16,8 @@ from pathlib import Path
 import xrfeitoria as xf
 from xrfeitoria.data_structure.models import RenderPass
 from xrfeitoria.rpc import remote_blender
-from xrfeitoria.utils import setup_logger
-from xrfeitoria.utils.anim import dump_humandata, load_amass_motion
+from xrfeitoria.utils import ConverterBlender, setup_logger
+from xrfeitoria.utils.anim import dump_humandata, load_amass_motion, refine_smpl_x
 
 # prepare the assets
 ####################
@@ -42,6 +42,8 @@ seq_dir = output_path / seq_name
 saved_humandata_file = seq_dir / 'smplx' / 'output.npz'
 saved_blend_file = seq_dir / 'output.blend'
 
+n_frames = 10  # number of frames to render
+
 
 @remote_blender()
 def apply_scale(actor_name: str):
@@ -57,17 +59,22 @@ def main(background: bool = False):
 
     motion = load_amass_motion(amass_file)
     motion.convert_fps(30)  # convert the motion from 120fps (amass) to 30fps
-    motion.cut_motion(end_frame=10)  # cut the motion to 10 frames, for demonstration purpose
+    # motion.cut_transl(end_frame=n_frames)  # cut the motion to the length of n_frames
+    motion.sample_motion(n_frames)  # sample the motion to the length of n_frames
     motion_data = motion.get_motion_data()
 
     # modify this to your blender executable path
     xf_runner = xf.init_blender(
-        exec_path='C:/Program Files/Blender Foundation/Blender 3.6/blender.exe', background=background
+        exec_path='C:/Program Files/Blender Foundation/Blender 3.6/blender.exe',
+        background=background,
     )
 
-    with xf_runner.sequence(seq_name=seq_name, seq_length=motion.n_frames) as seq:
+    location = (0.2, 0.3, 0.5)
+    rotation = (20, 30, 40)
+
+    with xf_runner.sequence(seq_name=seq_name, seq_length=n_frames) as seq:
         # Import SMPL-XL model
-        actor = xf_runner.Actor.import_from_file(smpl_xl_file)
+        actor = xf_runner.Actor.import_from_file(smpl_xl_file, location=location, rotation=rotation)
         apply_scale(actor.name)  # SMPL-XL model is imported with scale, we need to apply scale to it
 
         # Apply motion data to the actor
@@ -75,15 +82,23 @@ def main(background: bool = False):
         xf_runner.utils.apply_motion_data_to_actor(motion_data=motion_data, actor_name=actor.name)
         # Save the motion data as annotation in humandata format defined in https://github.com/open-mmlab/mmhuman3d/blob/main/docs/human_data.md
         dump_humandata(motion, save_filepath=saved_humandata_file, meta_filepath=smpl_xl_meta_file)
+        refine_smpl_x(
+            smpl_x_filepath=saved_humandata_file,
+            meta_filepath=smpl_xl_meta_file,
+            offset_location=ConverterBlender.location_from_blender(location),
+            offset_rotation=ConverterBlender.rotation_from_blender(rotation),
+            replace_smpl_x_file=True,
+        )
 
-        # Modify the frame range to the length of the motion
-        frame_start, frame_end = xf_runner.utils.get_keys_range()
-        xf_runner.utils.set_frame_range(frame_start, frame_end)
         # env
         xf_runner.utils.set_env_color(color=(1, 1, 1, 1))
 
         #
         camera = xf_runner.Camera.spawn(location=(0, -2.5, 0.6), rotation=(90, 0, 0))
+
+        #
+        logger.info('Exporting vertices')
+        xf_runner.utils.export_vertices(export_path=seq_dir / 'vertices')
 
         seq.add_to_renderer(
             output_path=output_path,

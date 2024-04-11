@@ -30,6 +30,7 @@ MATERIAL_PATHS = {
     'specular': f'/{PLUGIN_NAME}/Materials/PPM_specular',
     'tangent': f'/{PLUGIN_NAME}/Materials/PPM_tangent',
     'basecolor': f'/{PLUGIN_NAME}/Materials/PPM_basecolor',
+    'lineart': f'/{PLUGIN_NAME}/Materials/PPM_lineart_default',
 }
 SHAPE_PATHS = {
     'cube': '/Engine/BasicShapes/Cube',
@@ -122,6 +123,7 @@ class UnrealRenderLayerEnum(EnumBase):
     specular = 'specular'
     tangent = 'tangent'
     basecolor = 'basecolor'
+    lineart = 'lineart'
 
     vertices = 'vertices'
     skeleton = 'skeleton'
@@ -197,6 +199,8 @@ class RenderJobUnreal:
 
 
 TransformKeys = Union[List[SequenceTransformKey], SequenceTransformKey]
+# MotionFrame = {'bone_name': {'location': [x, y, z], 'rotation': [w, x, y, z]}}
+# MotionFrame = {'morph_target_name': {'curve': float}}
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 color_type = TypedDict(
     'color',
