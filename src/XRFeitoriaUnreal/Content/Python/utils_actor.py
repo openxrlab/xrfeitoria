@@ -59,9 +59,6 @@ def get_skeleton_names(actor_asset_path: str) -> List[str]:
 
     Returns:
         List[str]: A set of bone names in the skeleton.
-
-    Raises:
-        AssertionError: If the spawned actor is not a SkeletalMeshActor.
     """
     actor = spawn_actor_from_object(unreal.load_asset(actor_asset_path))
     try:
