@@ -82,10 +82,7 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
     seq.add_to_renderer(
         output_path=output_path,
         resolution=(1920, 1080),
-        render_passes=[
-            RenderPass('img', 'png'),
-            RenderPass('mask', 'exr'),
-        ],
+        render_passes=[RenderPass('img', 'png'), RenderPass('flow', 'exr'), RenderPass('lineart', 'png')],
         export_vertices=True,
         export_skeleton=True,
     )

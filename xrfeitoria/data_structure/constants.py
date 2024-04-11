@@ -9,6 +9,7 @@ Matrix = Tuple[Vector, Vector, Vector]
 Transform = Tuple[Vector, Vector, Vector]
 PathLike = Union[str, Path]
 # MotionFrame = {'bone_name': {'location': [x, y, z], 'rotation': [w, x, y, z]}}
+# MotionFrame = {'morph_target_name': {'curve': float}}
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 actor_info_type = TypedDict('actor_info', {'actor_name': str, 'mask_color': Tuple[int, int, int]})
 color_type = TypedDict(

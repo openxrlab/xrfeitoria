@@ -200,6 +200,7 @@ class RenderJobUnreal:
 
 TransformKeys = Union[List[SequenceTransformKey], SequenceTransformKey]
 # MotionFrame = {'bone_name': {'location': [x, y, z], 'rotation': [w, x, y, z]}}
+# MotionFrame = {'morph_target_name': {'curve': float}}
 MotionFrame = Dict[str, Dict[str, Union[float, List[float]]]]
 color_type = TypedDict(
     'color',
