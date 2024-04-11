@@ -6,6 +6,9 @@ jobs:
   build-n-publish:
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     if: startsWith(github.event.ref, 'refs/tags')
     steps:
       - uses: actions/checkout@v2
