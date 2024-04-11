@@ -975,6 +975,7 @@ class Sequence:
     def close(cls) -> None:
         if cls.sequence is not None:
             unreal.LevelSequenceEditorBlueprintLibrary.close_level_sequence()
+            unreal.EditorAssetLibrary.save_asset(cls.sequence_path)  # XXX: save the sequence asset
             del cls.sequence
         cls.map_path = None
         cls.sequence_path = None
