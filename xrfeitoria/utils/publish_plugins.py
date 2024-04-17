@@ -2,6 +2,7 @@
 
 >>> python -m xrfeitoria.utils.publish_plugins --help
 """
+
 import os
 import platform
 import re
@@ -131,8 +132,9 @@ def build_unreal(unreal_exec_list: List[Path]):
     uplugin_path = dir_plugin / f'{plugin_name_unreal}.uplugin'
     update_uplugin_version(uplugin_path)
     logger.info('Compiling plugin for Unreal Engine...')
+    suffix = 'bat' if platform.system() == 'Windows' else 'sh'
     for unreal_exec in unreal_exec_list:
-        uat_path = unreal_exec.parents[2] / 'Build/BatchFiles/RunUAT.bat'
+        uat_path = unreal_exec.parents[2] / f'Build/BatchFiles/RunUAT.{suffix}'
         unreal_infos = UnrealRPCRunner._get_engine_info(unreal_exec)
         engine_version = ''.join(unreal_infos)  # e.g. Unreal5.1
         plugin_name = plugin_name_pattern.format(
