@@ -3,28 +3,27 @@ version: 2.1
 jobs:
   build-plugins:
     docker:
-      - image: circleci/python:3.8
+      - image: ghcr.io/epicgames/unreal-engine:dev-5.3.2
+        auth:
+          username: $GHCR_USERNAME
+          password: $GHCR_TOKEN
 
     steps:
       # Checkout the code as the first step.
       - checkout
-      - run:
-          name: "Echo"
-          command: echo "Hello, World!"
-
       # Install dependencies
-      # - run:
-      #     name: "Pip Install"
-      #     command: |
-      #       python3 -m pip install --upgrade pip
-      #       cd $CIRCLE_WORKING_DIRECTORY
-      #       pip install .
-      # # Build the plugins
-      # - run:
-      #     name: "Build Plugins"
-      #     command: |
-      #       cd $CIRCLE_WORKING_DIRECTORY
-      #       python3 -m xrfeitoria.utils.publish_plugins -u /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
+      - run:
+          name: "Pip Install"
+          command: |
+            python3 -m pip install --upgrade pip
+            cd $(eval echo $CIRCLE_WORKING_DIRECTORY)
+            pip install .
+      # Build the plugins
+      - run:
+          name: "Build Plugins"
+          command: |
+            cd $(eval echo $CIRCLE_WORKING_DIRECTORY)
+            python3 -m xrfeitoria.utils.publish_plugins -u /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
 
 workflows:
   build-plugins-workflow: # Name of the workflow
