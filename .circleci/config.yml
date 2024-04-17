@@ -4,9 +4,6 @@ jobs:
   build-plugins:
     docker:
       - image: circleci/python:3.8
-        auth:
-          username: $GHCR_USERNAME
-          password: $GHCR_TOKEN
 
     steps:
       # Checkout the code as the first step.
