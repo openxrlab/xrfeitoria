@@ -11,7 +11,11 @@ jobs:
     docker:
       # Specify the version you desire here
       # See: https://circleci.com/developer/images/image/cimg/base
-      - image: adamrehn/ue4-full:5.3.2-ltsc2022-vs2022
+      - image: ghcr.io/epicgames/unreal-engine:dev-5.3.2
+        auth:
+          username: $GHCR_USERNAME
+          password: $GHCR_TOKEN
+          
 
     # Add steps to the job
     # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
