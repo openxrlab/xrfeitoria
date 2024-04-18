@@ -2,12 +2,18 @@ version: 2.1
 
 jobs:
   build-plugins:
+    parameters:
+      image:
+        type: string
+        default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
+      unreal_executable:
+        type: string
+        default: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
     docker:
-      - image: ghcr.io/epicgames/unreal-engine:dev-5.3.2
+      - image: << parameters.image >>
         auth:
           username: $GHCR_USERNAME
           password: $GHCR_TOKEN
-
     steps:
       # Checkout the code as the first step.
       - checkout
@@ -23,9 +29,25 @@ jobs:
           name: "Build Plugins"
           command: |
             cd $(eval echo $CIRCLE_WORKING_DIRECTORY)
-            python3 -m xrfeitoria.utils.publish_plugins -u /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
+            python3 -m xrfeitoria.utils.publish_plugins -u << parameters.unreal_executable >>
 
 workflows:
   build-plugins-workflow: # Name of the workflow
     jobs:
-      - build-plugins
+      - build-plugins:
+          matrix:
+            parameters:
+              image:
+                # Linux image
+                - ghcr.io/epicgames/unreal-engine:dev-5.3
+                - ghcr.io/epicgames/unreal-engine:dev-5.2
+                - ghcr.io/epicgames/unreal-engine:dev-5.1
+                # Windows image
+                - ghcr.io/epicgames/unreal-engine:runtime-windows
+              unreal_executable:
+                # Linux image
+                - "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+                - "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+                - "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+                # Windows image
+                - "C:/UnrealEngine/Engine/Binaries/Win64/UE4Editor-Cmd.exe"
