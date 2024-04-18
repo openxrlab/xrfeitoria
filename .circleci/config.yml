@@ -5,7 +5,10 @@ jobs:
     machine: true
     resource_class: haiyimei/windows-server
     steps:
-      - run: echo "Hi I'm on Runners!"
+      - run: 
+          name: "Check Runner Info"
+          shell: powershell.exe
+          command: echo "Hi I'm on Runners!"
 
   build-plugins-windows:
     parameters:
@@ -60,12 +63,16 @@ workflows:
     jobs:
       - runner-test
       - build-plugins-windows:
+          name: "Build Plugins for UE 5.3 on Windows"
           image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
           requires:
             - runner-test
       - build-plugins-linux:
+          name: "Build Plugins for UE 5.3 on Linux"
           image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
       - build-plugins-linux:
+          name: "Build Plugins for UE 5.2 on Linux"
           image: "ghcr.io/epicgames/unreal-engine:dev-5.2"
       - build-plugins-linux:
+          name: "Build Plugins for UE 5.1 on Linux"
           image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
