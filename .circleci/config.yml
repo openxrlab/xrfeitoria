@@ -18,6 +18,12 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "Install Python 3.10"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python3.10 python3-pip
+            python3 --version
+      - run:
           name: "Build Plugins"
           command: |
             python3 -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
@@ -35,7 +41,7 @@ jobs:
       - checkout
       - run: systeminfo
       - run:
-          name: "Check docker"
+          name: "Build Plugins"
           shell: powershell.exe
           command: |
             docker info
