@@ -20,8 +20,8 @@ jobs:
       - run:
           name: "Install Python 3.10"
           command: |
-            sudo apt-get update
-            sudo apt-get install -y python3.10 python3-pip
+            apt-get update
+            apt-get install -y python3.10 python3-pip
             python3 --version
       - run:
           name: "Build Plugins"
@@ -45,7 +45,7 @@ jobs:
           shell: powershell.exe
           command: |
             docker info
-            docker run -it << parameters.image >> -v ~/project:C:/project -w C:/project python3 -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
+            docker run -it << parameters.image >> -v ~/project:C:/project -w C:/project "python3 -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
 
 workflows:
   build-plugins-workflow: # Name of the workflow
