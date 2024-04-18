@@ -44,11 +44,15 @@ jobs:
       - checkout
       - run: systeminfo
       - run:
-          name: "Build Plugins"
+          name: "Check Docker Info"
           shell: powershell.exe
           command: |
             docker info
-            docker run -v E:/repos/xrfeitoria-mei:C:/project -w C:/project --entrypoint powershell -it meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022 "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+      - run:
+          name: "Build Plugins"
+          shell: powershell.exe
+          command: |
+            docker run -v ~/project:C:/project -w C:/project --entrypoint powershell -it meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022 "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 
 workflows:
   build-plugins-workflow: # Name of the workflow
