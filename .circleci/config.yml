@@ -17,7 +17,6 @@ jobs:
     working_directory: ~/project
     steps:
       - checkout
-      - run: systeminfo
       - run:
           name: "Check Docker Info"
           shell: powershell.exe
@@ -65,6 +64,8 @@ workflows:
     jobs:
       - build-plugins-windows:
           image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
+          requires:
+            - runner-test
       - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
       - build-plugins-linux:
