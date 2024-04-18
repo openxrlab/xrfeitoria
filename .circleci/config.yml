@@ -1,48 +1,54 @@
 version: 2.1
 
+orbs:
+  win: circleci/windows@5.0
+
 jobs:
-  build-plugins:
+  build-plugins-linux:
     parameters:
       image:
         type: string
         default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
-      unreal_executable:
-        type: string
-        default: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
     docker:
       - image: << parameters.image >>
         auth:
           username: $GHCR_USERNAME
           password: $GHCR_TOKEN
+    working_directory: ~/project
     steps:
-      # Checkout the code as the first step.
       - checkout
-      # Install dependencies
-      - run:
-          name: "Pip Install"
-          command: |
-            python3 -m pip install --upgrade pip
-            cd $(eval echo $CIRCLE_WORKING_DIRECTORY)
-            python3 -m pip install .
-      # Build the plugins
       - run:
           name: "Build Plugins"
           command: |
-            cd $(eval echo $CIRCLE_WORKING_DIRECTORY)
-            python3 -m xrfeitoria.utils.publish_plugins -u << parameters.unreal_executable >>
+            python3 -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+
+  build-plugins-windows:
+    parameters:
+      image:
+        type: string
+        default: "meihaiyi/ue4-full:5.3.2-ltsc2022-vs2022-py310"
+    executor:
+      name: win/default
+      shell: powershell.exe
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run: systeminfo
+      - run:
+          name: "Check docker"
+          shell: powershell.exe
+          command: |
+            docker info
+            docker run -it << parameters.image >> -v ~/project:C:/project -w C:/project python3 -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
 
 workflows:
   build-plugins-workflow: # Name of the workflow
     jobs:
-      - build-plugins:
+      - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
-          unreal_executable: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-      - build-plugins:
+      - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.2"
-          unreal_executable: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-      - build-plugins:
+      - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
-          unreal_executable: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-      - build-plugins:
-          image: "ghcr.io/epicgames/unreal-engine:runtime-windows"
-          unreal_executable: "C:/UnrealEngine/Engine/Binaries/Win64/UE4Editor-Cmd.exe"
+      - build-plugins-windows:
+          image: "meihaiyi/ue4-full:5.3.2-ltsc2022-vs2022-py310"
