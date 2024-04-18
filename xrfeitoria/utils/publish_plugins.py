@@ -63,6 +63,7 @@ def _make_archive(
 
     if dst_path.exists():
         dst_path.unlink()
+    dst_path.parent.mkdir(exist_ok=True, parents=True)
 
     with zipfile.ZipFile(dst_path, 'w', compression=zipfile.ZIP_DEFLATED) as zipf:
         for file in src_folder.rglob('*'):

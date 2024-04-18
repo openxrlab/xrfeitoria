@@ -18,21 +18,24 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "Install Python 3.10"
+          name: Install Miniconda and Python 3.10
           command: |
-            apt-get update
-            apt-get install -y python3.10 python3-pip
-            python3 --version
+            curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            bash Miniconda.sh -b -p $HOME/miniconda
+            echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
+            source $BASH_ENV
+            conda install -y python=3.10
       - run:
           name: "Build Plugins"
           command: |
-            python3 -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+            python -m pip install .
+            python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
 
   build-plugins-windows:
     parameters:
       image:
         type: string
-        default: "meihaiyi/ue4-full:5.3.2-ltsc2022-vs2022-py310"
+        default: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
     executor:
       name: win/default
       shell: powershell.exe
@@ -45,7 +48,7 @@ jobs:
           shell: powershell.exe
           command: |
             docker info
-            docker run -it << parameters.image >> -v ~/project:C:/project -w C:/project "python3 -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+            docker run -v E:/repos/xrfeitoria-mei:C:/project -w C:/project --entrypoint powershell -it meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022 "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 
 workflows:
   build-plugins-workflow: # Name of the workflow
@@ -57,4 +60,4 @@ workflows:
       - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
       - build-plugins-windows:
-          image: "meihaiyi/ue4-full:5.3.2-ltsc2022-vs2022-py310"
+          image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"

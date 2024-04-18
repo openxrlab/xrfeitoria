@@ -1,0 +1,33 @@
+name: Unreal Engine Build
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Cook, Stage & Package UE Project
+        uses: OrchidIsle/UE5-Build-Project@latest
+        with:
+          RUNUAT_PATH: 'C:/Unreal Engine/UE5.3_Source/Engine/Build/BatchFiles/RunUAT.bat'
+          UPROJECT_PATH: ${{ github.workspace }}/YourGameFolder/MyGame.uproject
+          BUILD_CONFIG: Development
+          PLATFORM: Win64
+          COOK: true
+          STAGE: true
+          PACKAGE: false
+          PAK: false
+          SERVER: false
+          ARCHIVE: false
+          ARCHIVE_PATH: 'C:/Archives/MyGame'
+          EDITOR: true
+          ENCRYPT_INI: true
+          RELEASE: '1.0.0'
+          PATCH: '0.9.0'
+          MAPS: 'Map1,Map2'
