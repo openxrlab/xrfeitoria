@@ -1,6 +1,34 @@
 version: 2.1
 
 jobs:
+  runner-test:
+    machine: true
+    resource_class: haiyimei/windows-server
+    steps:
+      - run: echo "Hi I'm on Runners!"
+
+  build-plugins-windows:
+    parameters:
+      image:
+        type: string
+        default: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
+    machine: true
+    resource_class: haiyimei/windows-server
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run: systeminfo
+      - run:
+          name: "Check Docker Info"
+          shell: powershell.exe
+          command: |
+            docker info
+      - run:
+          name: "Build Plugins"
+          shell: powershell.exe
+          command: |
+            docker run -v ~/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+
   build-plugins-linux:
     parameters:
       image:
@@ -28,36 +56,18 @@ jobs:
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
 
-  build-plugins-windows:
-    parameters:
-      image:
-        type: string
-        default: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
-    machine: true
-    resource_class: haiyimei/windows-server
-    working_directory: ~/project
-    steps:
-      - checkout
-      - run: systeminfo
-      - run:
-          name: "Check Docker Info"
-          shell: powershell.exe
-          command: |
-            docker info
-      - run:
-          name: "Build Plugins"
-          shell: powershell.exe
-          command: |
-            docker run -v ~/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-
 workflows:
+  testing:
+    jobs:
+      - runner-test
+
   build-plugins-workflow: # Name of the workflow
     jobs:
+      - build-plugins-windows:
+          image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
       - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
       - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.2"
       - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
-      - build-plugins-windows:
-          image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"

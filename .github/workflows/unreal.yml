@@ -37,7 +37,7 @@ jobs:
           {
             exit 1
           }
-    - run: mkdir -p TestInworldFPS 
+    - run: mkdir -p TestInworldFPS
     - uses: actions/checkout@v2
       with:
         ref: 'TestInworldFPS'
