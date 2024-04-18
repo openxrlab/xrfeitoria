@@ -56,16 +56,13 @@ jobs:
             python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
 
 workflows:
-  testing:
-    jobs:
-      - runner-test
-
   build-plugins-workflow: # Name of the workflow
     jobs:
+      - runner-test
       - build-plugins-windows:
           image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
           requires:
-            - testing
+            - runner-test
       - build-plugins-linux:
           image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
       - build-plugins-linux:
