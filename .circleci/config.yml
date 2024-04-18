@@ -17,7 +17,7 @@ jobs:
         default: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
     machine: true
     resource_class: haiyimei/windows-server
-    working_directory: ~/project
+    working_directory: $HOME/project
     steps:
       - checkout
       - run:
@@ -29,7 +29,7 @@ jobs:
           name: "Build Plugins"
           shell: powershell.exe
           command: |
-            docker run -v ~/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+            docker run -v $HOME/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
 
   build-plugins-linux:
     parameters:
