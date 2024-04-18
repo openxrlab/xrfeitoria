@@ -1,33 +1,99 @@
-name: Unreal Engine Build
+name: Build Win UE.5.0
+
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: windows-latest
-
+  build-win-50:
+    runs-on: [ self-hosted, Windows, X64, w10-1344 ]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Cook, Stage & Package UE Project
-        uses: OrchidIsle/UE5-Build-Project@latest
-        with:
-          RUNUAT_PATH: 'C:/Unreal Engine/UE5.3_Source/Engine/Build/BatchFiles/RunUAT.bat'
-          UPROJECT_PATH: ${{ github.workspace }}/YourGameFolder/MyGame.uproject
-          BUILD_CONFIG: Development
-          PLATFORM: Win64
-          COOK: true
-          STAGE: true
-          PACKAGE: false
-          PAK: false
-          SERVER: false
-          ARCHIVE: false
-          ARCHIVE_PATH: 'C:/Archives/MyGame'
-          EDITOR: true
-          ENCRYPT_INI: true
-          RELEASE: '1.0.0'
-          PATCH: '0.9.0'
-          MAPS: 'Map1,Map2'
+    - uses: actions/checkout@v2
+    - name: git-update-dependecies
+      run: git submodule update --init --recursive | Write-Host
+    - name: Find NDK SHA
+      run: |
+        $INWORLD_NDK_SHA=(git submodule status).Trim().Split()[0]
+        echo $INWORLD_NDK_SHA
+        Add-Content -Path ${env:GITHUB_ENV} -Value "INWORLD_NDK_SHA=$INWORLD_NDK_SHA"
+    - uses: actions/cache/restore@v3
+      id: ndk-cache-win64
+      with:
+        path: InworldAI\inworld-ndk\build\Package
+        key: ${{ runner.OS }}-ndk-cache-Win64-${{ env.INWORLD_NDK_SHA }}
+        fail-on-cache-miss: true
+        enableCrossOsArchive: true
+    - name: check-cache-success
+      shell: pwsh
+      if: steps.ndk-cache-win64.outputs.cache-hit != 'true'
+      run: |
+        echo "cache restore failed"
+        exit 1
+    - name: Copy NDK
+      run: |
+          $pythonPath = (Get-Command python.exe).Source
+          $process = Start-Process -FilePath $pythonPath -Wait -NoNewWindow -PassThru -ArgumentList build-scripts\ndk-util.py,--copy
+          if($process.ExitCode -ne 0)
+          {
+            exit 1
+          }
+    - run: mkdir -p TestInworldFPS 
+    - uses: actions/checkout@v2
+      with:
+        ref: 'TestInworldFPS'
+        path: 'TestInworldFPS'
+    - name: Copy Plugins & Remove Assets
+      shell: pwsh
+      run: |
+          Remove-Item "InworldAI\Content\*" -Recurse -ErrorAction SilentlyContinue
+          Remove-Item "TestInworldFPS\TestInworldFPS\Plugins\InworldAI" -Recurse -ErrorAction SilentlyContinue
+          Remove-Item "TestInworldFPS\TestInworldFPS\Plugins\InworldMetahuman" -Recurse -ErrorAction SilentlyContinue
+          Remove-Item "TestInworldFPS\TestInworldFPS\Plugins\InworldInnequin" -Recurse -ErrorAction SilentlyContinue
+          Copy-Item -Path "InworldAI"  -Destination "TestInworldFPS\TestInworldFPS\Plugins\InworldAI" -Recurse
+          Copy-Item -Path "InworldMetahuman"  -Destination "TestInworldFPS\TestInworldFPS\Plugins\InworldMetahuman" -Recurse
+          Copy-Item -Path "InworldInnequin"  -Destination "TestInworldFPS\TestInworldFPS\Plugins\InworldInnequin" -Recurse
+    - name: BuildEditor-Win-50
+      shell: pwsh
+      run: |
+          [string]$UEPath = "C:\Program Files\Epic Games\UE_5.0"
+          [string]$ProjectPath = "$pwd"
+          Start-Process -FilePath "$UEPath\Engine\Build\BatchFiles\RunUAT.bat" -ArgumentList BuildEditor,-Project="$ProjectPath\TestInworldFPS\TestInworldFPS\TestInworldFPS.uproject",-platform=Win64,-notools,-configuration=Development+Shipping," > BuildEditorLog.txt" -Wait -NoNewWindow -PassThru
+          cat BuildEditorLog.txt
+          if (Select-String -Path BuildEditorLog.txt -Pattern "BUILD SUCCESSFUL" -SimpleMatch -Quiet)
+          {
+            exit 0
+          }
+          else
+          {
+            exit 1
+          }
+    - name: BuildGame-Win-50
+      shell: pwsh
+      run: |
+          [string]$UEPath = "C:\Program Files\Epic Games\UE_5.0"
+          [string]$ProjectPath = "$pwd"
+          Start-Process -FilePath "$UEPath\Engine\Build\BatchFiles\RunUAT.bat" -ArgumentList BuildGame,-Project="$ProjectPath\TestInworldFPS\TestInworldFPS\TestInworldFPS.uproject",-platform=Win64,-notools,-configuration=Development+Shipping," > BuildGameLog.txt" -Wait -NoNewWindow -PassThru
+          cat BuildGameLog.txt
+          if (Select-String -Path BuildGameLog.txt -Pattern "BUILD SUCCESSFUL" -SimpleMatch -Quiet)
+          {
+            exit 0
+          }
+          else
+          {
+            exit 1
+          }
+    - name: BuildPlugin-Win-50
+      shell: pwsh
+      run: |
+          [string]$UEPath = "C:\Program Files\Epic Games\UE_5.0"
+          [string]$ProjectPath = "$pwd"
+          Start-Process -FilePath "$UEPath\Engine\Build\BatchFiles\RunUAT.bat" -ArgumentList BuildPlugin,-plugin="$ProjectPath\TestInworldFPS\TestInworldFPS\Plugins\InworldAI\InworldAI.uplugin",-TargetPlatforms=Win64,-package="$ProjectPath\PluginBuild"," > BuildPluginLog.txt" -Wait -NoNewWindow -PassThru
+          cat BuildPluginLog.txt
+          if (Select-String -Path BuildPluginLog.txt -Pattern "BUILD SUCCESSFUL" -SimpleMatch -Quiet)
+          {
+            exit 0
+          }
+          else
+          {
+            exit 1
+          }
