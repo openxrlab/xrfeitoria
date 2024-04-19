@@ -5,7 +5,7 @@ jobs:
     machine: true
     resource_class: haiyimei/windows-server
     steps:
-      - run: 
+      - run:
           name: "Check Runner Info"
           shell: powershell.exe
           command: echo "Hi I'm on Runners!"
@@ -14,7 +14,10 @@ jobs:
     parameters:
       image:
         type: string
-        default: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
+        default: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022-py310"
+      unreal_executable:
+        type: string
+        default: "C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
     machine: true
     resource_class: haiyimei/windows-server
     working_directory: $HOME/project
@@ -23,19 +26,21 @@ jobs:
       - run:
           name: "Check Docker Info"
           shell: powershell.exe
-          command: |
-            docker info
+          command: docker info
       - run:
           name: "Build Plugins"
           shell: powershell.exe
           command: |
-            docker run -v $HOME/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "choco install python310 -y --allow-downgrade; C:/Python310/python.exe -m pip install .; C:/Python310/python.exe -m xrfeitoria.utils.publish_plugins -u C:/UnrealEngine/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+            docker run -v $HOME/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "python -m pip install .; python -m xrfeitoria.utils.publish_plugins -u << parameters.unreal_executable >>"
 
   build-plugins-linux:
     parameters:
       image:
         type: string
         default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
+      unreal_executable:
+        type: string
+        default: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
     docker:
       - image: << parameters.image >>
         auth:
@@ -63,16 +68,16 @@ workflows:
     jobs:
       - runner-test
       - build-plugins-windows:
-          name: "Build Plugins for UE 5.3 on Windows"
-          image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022"
+          name: "Windows UE 5.3 - Build Plugins"
+          image: "meihaiyi/ue4-minimal:5.3.2-ltsc2022-vs2022-py310"
           requires:
             - runner-test
       - build-plugins-linux:
-          name: "Build Plugins for UE 5.3 on Linux"
+          name: "Linux UE 5.3 - Build Plugins"
           image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
       - build-plugins-linux:
-          name: "Build Plugins for UE 5.2 on Linux"
+          name: "Linux UE 5.2 - Build Plugins"
           image: "ghcr.io/epicgames/unreal-engine:dev-5.2"
       - build-plugins-linux:
-          name: "Build Plugins for UE 5.1 on Linux"
+          name: "Linux UE 5.1 - Build Plugins"
           image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
