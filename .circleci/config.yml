@@ -33,7 +33,7 @@ jobs:
           command: |
             docker run -v $HOME/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "python -m pip install .; python -m xrfeitoria.utils.publish_plugins -u << parameters.unreal_executable >>"
       - store_artifacts:
-          path: src/dist/*.zip
+          path: src/dist/
           destination: Plugins
 
   build-plugins-linux:
@@ -66,7 +66,7 @@ jobs:
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
       - store_artifacts:
-          path: src/dist/*.zip
+          path: src/dist/
           destination: Plugins
 
 workflows:
