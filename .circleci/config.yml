@@ -49,7 +49,7 @@ jobs:
         auth:
           username: $GHCR_USERNAME
           password: $GHCR_TOKEN
-    working_directory: $HOME/project
+    working_directory: ~/project
     steps:
       - checkout
       - run:
