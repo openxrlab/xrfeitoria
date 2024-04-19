@@ -32,6 +32,9 @@ jobs:
           shell: powershell.exe
           command: |
             docker run -v $HOME/project:C:/project -w C:/project --entrypoint powershell << parameters.image >> "python -m pip install .; python -m xrfeitoria.utils.publish_plugins -u << parameters.unreal_executable >>"
+      - store_artifacts:
+          path: $HOME/project/src/dist/*.zip
+          destination: Plugins
 
   build-plugins-linux:
     parameters:
@@ -46,7 +49,7 @@ jobs:
         auth:
           username: $GHCR_USERNAME
           password: $GHCR_TOKEN
-    working_directory: ~/project
+    working_directory: $HOME/project
     steps:
       - checkout
       - run:
@@ -62,6 +65,9 @@ jobs:
           command: |
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+      - store_artifacts:
+          path: $HOME/project/src/dist/*.zip
+          destination: Plugins
 
 workflows:
   build-plugins-workflow: # Name of the workflow

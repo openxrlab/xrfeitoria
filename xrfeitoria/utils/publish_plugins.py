@@ -166,15 +166,22 @@ if __name__ == '__main__':
     from typer import Option, run
 
     def wrapper(
+        blender: bool = Option(
+            False,
+            '-b',
+            '--blender',
+            help='Whether to Build Blender plugin.',
+        ),
         unreal_exec: List[Path] = Option(
             None,
             '-u',
+            '--unreal-exec',
             resolve_path=True,
             file_okay=True,
             dir_okay=False,
             exists=True,
             help='Path to Unreal Engine executable. e.g. "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"',
-        )
+        ),
     ):
         """Publish plugins to zip files.
 
@@ -186,7 +193,8 @@ if __name__ == '__main__':
         -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
         """
         setup_logger(level='INFO')
-        build_blender()
+        if blender:
+            build_blender()
         if len(unreal_exec) > 0:
             build_unreal(unreal_exec_list=unreal_exec)
         logger.info(f'Check "{dist_root}" for the plugin zip files.')
