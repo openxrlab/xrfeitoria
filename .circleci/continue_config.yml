@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   build-unreal-plugin:
     type: boolean
-    default: false
+    default: true
   run-test:
     type: boolean
     default: true
