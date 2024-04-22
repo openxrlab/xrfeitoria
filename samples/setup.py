@@ -65,12 +65,26 @@ def get_exec(engine: Literal['blender', 'unreal'], exec_from_config: Optional[Pa
     return path.as_posix()
 
 
-def get_unreal_project(unreal_project: str) -> str:
+def ask_unreal_project() -> str:
     """Ask for unreal project path."""
-    txt = 'Please input the path to the unreal project'
-    if unreal_project is None:
-        txt += ', or press [bold]enter[/bold] to download a sample project\n' '\[Enter]'
-    unreal_project = Prompt.ask(txt, default=unreal_project)
+    txt = 'Please input the path to the unreal project, or press [bold]enter[/bold] to download a sample project\n\[Enter]'
+    unreal_project = Prompt.ask(txt, default=None)
+    return get_unreal_project(unreal_project)
+
+
+def get_unreal_project(unreal_project: Optional[str] = None) -> str:
+    """Retrieves the path of the Unreal project. If not provided, it will be downloaded
+    and extracted.
+
+    Args:
+        unreal_project (Optional[str]): The path of the Unreal project. If not provided, it will be downloaded and extracted.
+
+    Returns:
+        str: The path of the Unreal project.
+
+    Raises:
+        FileNotFoundError: If the Unreal project does not exist.
+    """
     if unreal_project is None:
         unreal_project_zip = download(url=unreal_sample_url, dst_dir=tmp_dir / 'unreal_project')
         shutil.unpack_archive(filename=unreal_project_zip, extract_dir=tmp_dir / 'unreal_project')
@@ -101,7 +115,7 @@ def main():
         Config.update(engine=engine, exec_path=blender_exec)
     elif engine == 'unreal':
         unreal_exec = get_exec('unreal', exec_from_config=unreal_exec)
-        unreal_project = get_unreal_project(unreal_project=unreal_project)
+        unreal_project = ask_unreal_project(unreal_project=unreal_project)
         Config.update(engine=engine, exec_path=unreal_exec)
 
     assets_path = {}
