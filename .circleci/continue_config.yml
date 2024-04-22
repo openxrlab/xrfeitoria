@@ -29,7 +29,6 @@ jobs:
           no_output_timeout: 60m
           command: |
             conda activate xrfeitoria
-            echo $PWD
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins `
               -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
