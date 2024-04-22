@@ -21,7 +21,6 @@ jobs:
   build-plugins-windows:
     machine: true
     resource_class: haiyimei/windows-server
-    working_directory: $HOME/project
     steps:
       - checkout
       - run:
