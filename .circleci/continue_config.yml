@@ -11,7 +11,7 @@ parameters:
 jobs:
   runner-test:
     machine: true
-    resource_class: haiyimei/windows-server
+    resource_class: haiyimei/windows-machines
     steps:
       - run:
           name: "Check Runner Info"
@@ -20,7 +20,7 @@ jobs:
 
   build-plugins-windows:
     machine: true
-    resource_class: haiyimei/windows-server
+    resource_class: haiyimei/windows-machines
     steps:
       - checkout
       - run:
