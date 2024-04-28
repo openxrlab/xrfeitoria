@@ -126,8 +126,6 @@ workflows:
     jobs:
       - test-unreal:
           name: "Run Tests - Linux UE"
-          requires:
-            - build-plugins-linux
           matrix:
             parameters:
               image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
