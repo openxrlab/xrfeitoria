@@ -112,30 +112,18 @@ workflows:
     jobs:
       - test-self-host
       - build-plugins-windows:
-          name: "Windows UE - Build Plugins"
+          name: "Build Plugins - Windows UE"
           requires:
             - test-self-host
       - build-plugins-linux:
-          name: "Linux UE 5.3 - Build Plugins"
-          image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
-      - build-plugins-linux:
-          name: "Linux UE 5.2 - Build Plugins"
-          image: "ghcr.io/epicgames/unreal-engine:dev-5.2"
-      - build-plugins-linux:
-          name: "Linux UE 5.1 - Build Plugins"
-          image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
+          name: "Build Plugins - Linux UE"
+          matrix:
+            parameters:
+              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       - test-unreal:
-          name: "Linux UE 5.3 - Run Tests"
-          image: "ghcr.io/epicgames/unreal-engine:dev-5.3"
+          name: "Run Tests - Linux UE"
           requires:
             - build-plugins-linux
-      - test-unreal:
-          name: "Linux UE 5.2 - Run Tests"
-          image: "ghcr.io/epicgames/unreal-engine:dev-5.2"
-          requires:
-            - build-plugins-linux
-      - test-unreal:
-          name: "Linux UE 5.2 - Run Tests"
-          image: "ghcr.io/epicgames/unreal-engine:dev-5.1"
-          requires:
-            - build-plugins-linux
+          matrix:
+            parameters:
+              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
