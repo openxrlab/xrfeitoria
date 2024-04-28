@@ -40,7 +40,7 @@ from .setup import get_exec_path
 
 # XXX: hardcode download url
 dist_root = os.environ.get('XRFEITORIA__DIST_ROOT') or 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
-plugin_info_url = f'{dist_root}/plugins/plugin_infos.json'
+plugin_info_url = 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/plugin_infos.json'
 plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
 plugin_info_type = TypedDict(
     'PluginInfo',
