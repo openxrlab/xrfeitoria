@@ -76,9 +76,11 @@ jobs:
       image:
         type: string
         default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
-      unreal_executable:
-        type: string
-        default: "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+    docker:
+      - image: << parameters.image >>
+        auth:
+          username: $GHCR_USERNAME
+          password: $GHCR_TOKEN
     working_directory: ~/project
     steps:
       - checkout
@@ -100,7 +102,7 @@ jobs:
             python -m pip install .
             export XRFEITORIA__DIST_ROOT="src/dist"
             export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
-            python -m tests.setup_args -u "{{ parameters.unreal_executable }}"
+            python -m tests.setup_args -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
             python -m tests.unreal.main
 
 
