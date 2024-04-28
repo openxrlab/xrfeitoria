@@ -1,4 +1,5 @@
 """Runner for starting blender or unreal as a rpc server."""
+
 import json
 import os
 import platform
@@ -39,6 +40,7 @@ from .setup import get_exec_path
 
 # XXX: hardcode download url
 dist_root = os.environ.get('XRFEITORIA__DIST_ROOT') or 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
+plugin_info_url = f'{dist_root}/plugins/plugin_infos.json'
 plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
 plugin_info_type = TypedDict(
     'PluginInfo',
@@ -501,6 +503,9 @@ class RPCRunner(ABC):
     @property
     @lru_cache
     def plugin_info(self) -> plugin_info_type:
+        if not plugin_infos_json.exists():
+            path = self._download(url=plugin_info_url, dst_dir=plugin_infos_json.parent)
+            assert path == plugin_infos_json, f'Failed to download plugin infos to "{plugin_infos_json}"'
         # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
         plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
         plugin_versions = sorted((map(parse, plugin_infos.keys())))

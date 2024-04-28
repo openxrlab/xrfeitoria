@@ -150,9 +150,9 @@ def build_unreal(unreal_exec_list: List[Path]):
             engine_version=engine_version,
             platform='Source',
         )  # e.g. XRFeitoriaUnreal-0.6.0-Unreal5.3-Source
-        dist_path = dist_root / plugin_name
+        dist_path = src_root / plugin_name
         subprocess.call([uat_path, 'BuildPlugin', f'-Plugin={uplugin_path}', f'-Package={dist_path}'])
-        _make_archive(src_folder=dist_path)
+        _make_archive(src_folder=dist_path, dst_path=dist_root / f'{plugin_name}.zip')
         _make_archive(
             src_folder=dist_path,
             dst_path=dist_root / f'{plugin_src_name}.zip',
