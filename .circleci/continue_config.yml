@@ -67,7 +67,7 @@ jobs:
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
       - save_cache:
-          key: unreal-{{ .BuildNum }}-{{ parameters.image }}
+          key: unreal-{{ .BuildNum }}-<< parameters.image >>
           paths:
             - src/dist/
       - store_artifacts:
@@ -98,7 +98,7 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - restore_cache:
-          key: unreal-{{ .BuildNum }}-{{ parameters.image }}
+          key: unreal-{{ .BuildNum }}-<< parameters.image >>
       - run:
           name: "Run Tests"
           command: |
@@ -123,7 +123,7 @@ workflows:
           matrix:
             parameters:
               image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
-  
+
   test-plugins-workflow:
     when: << pipeline.parameters.run-test >>
     jobs:
