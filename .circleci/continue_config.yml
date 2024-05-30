@@ -67,9 +67,12 @@ jobs:
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
       - save_cache:
-          key: unreal-{{ epoch }}
+          key: unreal-{{ .BuildNum }}-{{ parameters.image }}
           paths:
             - src/dist/
+      - store_artifacts:
+          path: src/dist/
+          destination: Plugins
 
   test-unreal:
     parameters:
@@ -95,14 +98,14 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
       - restore_cache:
-          key: unreal-{{ epoch }}
+          key: unreal-{{ .BuildNum }}-{{ parameters.image }}
       - run:
           name: "Run Tests"
           command: |
             python -m pip install .
             export XRFEITORIA__DIST_ROOT="src/dist"
             export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
-            python -m tests.setup_args -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+            python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
             python -m tests.unreal.main
 
 
