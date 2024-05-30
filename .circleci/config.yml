@@ -11,3 +11,5 @@ workflows:
           config-path: .circleci/continue_config.yml
           mapping: |
             src/XRFeitoriaUnreal/.* build-unreal-plugin true
+            src/.* run-test true
+            xrfeitoria/.* run-test true
