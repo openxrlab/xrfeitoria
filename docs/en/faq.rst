@@ -87,7 +87,7 @@ Run your code ``xxx.py`` like:
         .. code-block:: bash
 
             XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)") \
-            XRFEITORIA__DIST_ROOT=src/dist \
+            XRFEITORIA__DIST_ROOT=src \
                 python xxx.py
 
     .. tab:: Windows
@@ -95,7 +95,7 @@ Run your code ``xxx.py`` like:
         .. code-block:: powershell
 
             $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
-            $env:XRFEITORIA__DIST_ROOT="src/dist"; `
+            $env:XRFEITORIA__DIST_ROOT="src"; `
                 python xxx.py
 
 .. _FAQ-stencil-value:

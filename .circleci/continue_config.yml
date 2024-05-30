@@ -9,41 +9,6 @@ parameters:
     default: true
 
 jobs:
-  test-unreal:
-    parameters:
-      image:
-        type: string
-        default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
-    docker:
-      - image: << parameters.image >>
-        auth:
-          username: $GHCR_USERNAME
-          password: $GHCR_TOKEN
-    working_directory: ~/project
-    steps:
-      - checkout
-      - run:
-          name: Install Miniconda and Python 3.10
-          command: |
-            curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-            bash Miniconda.sh -b -p $HOME/miniconda
-            echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
-            source $BASH_ENV
-            conda install -y python=3.10
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: "Run Tests"
-          command: |
-            python -m pip install .
-            python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-            export XRFEITORIA__DIST_ROOT="src/dist"
-            export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
-            python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-            python -m tests.unreal.main
-      - store_test_results:
-          path: /home/ue4/project/tests/unreal/unreal.log
-
   test-self-host:
     machine: true
     resource_class: haiyimei/windows-machines
@@ -105,15 +70,79 @@ jobs:
           path: src/dist/
           destination: Plugins
 
+  test-unreal-windows:
+    machine: true
+    resource_class: haiyimei/windows-machines
+    steps:
+      - checkout
+      - run:
+          name: "Build Plugins"
+          shell: powershell.exe
+          no_output_timeout: 60m
+          command: |
+            conda activate xrfeitoria
+            python -m pip install .
+            $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
+            $env:XRFEITORIA__DIST_ROOT="src"; `
+            python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+            python -m tests.unreal.main
+            python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+            python -m tests.unreal.main
+            python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+            python -m tests.unreal.main
+      - store_artifacts:
+          path: src/dist/
+          destination: Plugins
+
+  test-unreal-linux:
+    parameters:
+      image:
+        type: string
+        default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
+    docker:
+      - image: << parameters.image >>
+        auth:
+          username: $GHCR_USERNAME
+          password: $GHCR_TOKEN
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install Miniconda and Python 3.10
+          command: |
+            curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            bash Miniconda.sh -b -p $HOME/miniconda
+            echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
+            source $BASH_ENV
+            conda install -y python=3.10
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: "Build Plugins"
+          command: |
+            python -m pip install .
+            python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+      - run:
+          name: "Run Tests"
+          command: |
+            export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
+            export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
+            python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+            python -m tests.unreal.main
+      - store_test_results:
+          path: /home/ue4/project/tests/unreal/unreal.log
+
 workflows:
   test-workflow:
     when: << pipeline.parameters.run-test >>
     jobs:
-      - test-unreal:
+      # - test-unreal-linux:
+      #     name: "Run Tests - UE"
+      #     matrix:
+      #       parameters:
+      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      - test-unreal-windows:
           name: "Run Tests - UE"
-          matrix:
-            parameters:
-              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
 
   build-plugins-workflow:
     when: << pipeline.parameters.build-unreal-plugin >>
