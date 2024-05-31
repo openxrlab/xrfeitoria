@@ -76,7 +76,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "Build Plugins"
+          name: "Run Test"
           shell: powershell.exe
           no_output_timeout: 60m
           command: |
