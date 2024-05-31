@@ -106,6 +106,25 @@ jobs:
       - store_test_results:
           path: /home/ue4/project/tests/unreal/unreal.log
 
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.10
+    steps:
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            # Download artifacts
+            # Get jobs of the workflow
+            for job in $(curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num | jq -r '.["steps"][]["actions"][]["job_name"]'); do
+              echo "Job: $job"
+            done
+            curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num/artifacts \
+              | grep -o -E 'https://([^"]*)' \
+              | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
+            VERSION=$(my-binary --version)
+            ghr -t ${GITHUB_TOKEN} -u :username -r :project -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
 workflows:
   unreal-workflow:
     jobs:
@@ -115,9 +134,17 @@ workflows:
           build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
           requires:
             - test-self-host
-      - unreal-linux:
-          name: "Unreal - Linux UE"
-          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-          matrix:
-            parameters:
-              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      # - unreal-linux:
+      #     name: "Unreal - Linux UE"
+      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+      #     matrix:
+      #       parameters:
+      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      - publish-github-release:
+          name: "Publish GitHub Release"
+          # requires:
+          #   - unreal-windows
+            # - unreal-linux
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
