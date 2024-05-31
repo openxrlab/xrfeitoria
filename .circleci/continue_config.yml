@@ -145,6 +145,6 @@ workflows:
           # requires:
           #   - unreal-windows
             # - unreal-linux
-          filters:
-            tags:
-              only: /^v\d+\.\d+\.\d+/
+          # filters:
+          #   tags:
+          #     only: /^v\d+\.\d+\.\d+/
