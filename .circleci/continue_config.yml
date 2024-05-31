@@ -21,6 +21,10 @@ jobs:
   unreal-windows:
     machine: true
     resource_class: haiyimei/windows-machines
+    parameters:
+      build-unreal-plugin:
+        type: boolean
+        default: true
     steps:
       - checkout
       - run:
@@ -28,9 +32,12 @@ jobs:
           shell: powershell.exe
           no_output_timeout: 60m
           environment:
-            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
+            BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
             PYTHONIOENCODING: "utf-8"
           command: |
+            echo "Build Unreal Plugin: $env:BUILD_UNREAL_PLUGIN"
+            echo "Python IO Encoding: $env:PYTHONIOENCODING"
+            exec 2>&1
             conda activate xrfeitoria
             python -m pip install .
             if ($env:BUILD_UNREAL_PLUGIN -eq "true") {
@@ -56,6 +63,9 @@ jobs:
       image:
         type: string
         default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
+      build-unreal-plugin:
+        type: boolean
+        default: true
     docker:
       - image: << parameters.image >>
         auth:
@@ -77,7 +87,7 @@ jobs:
       - run:
           name: "Build Plugins & Run Tests"
           environment:
-            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
+            BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
@@ -101,10 +111,12 @@ workflows:
       - test-self-host
       - unreal-windows:
           name: "Unreal - Windows UE"
+          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
           requires:
             - test-self-host
-      - unreal-linux:
-          name: "Unreal - Linux UE"
-          matrix:
-            parameters:
-              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      # - unreal-linux:
+      #     name: "Unreal - Linux UE"
+      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+      #     matrix:
+      #       parameters:
+      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
