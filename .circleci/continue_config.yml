@@ -35,12 +35,10 @@ jobs:
             BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
             PYTHONIOENCODING: "utf-8"
           command: |
-            echo "Build Unreal Plugin: $env:BUILD_UNREAL_PLUGIN"
-            echo "Python IO Encoding: $env:PYTHONIOENCODING"
             conda activate xrfeitoria
             python -m pip install .
             if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
-              echo "Building Unreal Plugin"
+              echo "#### Building Unreal Plugin ####"
               python -m xrfeitoria.utils.publish_plugins `
                 -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
                 -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
@@ -57,6 +55,8 @@ jobs:
       - store_artifacts:
           path: src/dist/
           destination: Plugins
+      - store_test_results:
+          path: tests/unreal/unreal.log
 
   unreal-linux:
     parameters:
@@ -91,9 +91,8 @@ jobs:
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
-            echo "Build Unreal Plugin: $BUILD_UNREAL_PLUGIN"
-            echo "Python IO Encoding 
             if [ "$BUILD_UNREAL_PLUGIN" = "true" ]; then
+              echo "#### Building Unreal Plugin ####"
               python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
               export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
               export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
@@ -116,9 +115,9 @@ workflows:
           build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
           requires:
             - test-self-host
-      # - unreal-linux:
-      #     name: "Unreal - Linux UE"
-      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-      #     matrix:
-      #       parameters:
-      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      - unreal-linux:
+          name: "Unreal - Linux UE"
+          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+          matrix:
+            parameters:
+              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]

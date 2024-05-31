@@ -90,6 +90,7 @@ def get_unreal_project(unreal_project: Optional[str] = None, replace: bool = Fal
         unreal_project_zip = download(url=unreal_sample_url, dst_dir=tmp_dir / 'unreal_project')
         unreal_project_dir = unreal_project_zip.parent / unreal_project_zip.stem
         if unreal_project_dir.exists() and replace:
+            logger.info(f'Removing existing unreal project "{unreal_project_dir}"')
             shutil.rmtree(unreal_project_dir, ignore_errors=True)
         shutil.unpack_archive(filename=unreal_project_zip, extract_dir=tmp_dir / 'unreal_project')
         unreal_project = next(unreal_project_dir.glob('*.uproject')).as_posix()
