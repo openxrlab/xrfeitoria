@@ -72,12 +72,13 @@ def ask_unreal_project() -> str:
     return get_unreal_project(unreal_project)
 
 
-def get_unreal_project(unreal_project: Optional[str] = None) -> str:
+def get_unreal_project(unreal_project: Optional[str] = None, replace: bool = False) -> str:
     """Retrieves the path of the Unreal project. If not provided, it will be downloaded
     and extracted.
 
     Args:
         unreal_project (Optional[str]): The path of the Unreal project. If not provided, it will be downloaded and extracted.
+        replace (bool, optional): Whether to replace the existing project. Defaults to False.
 
     Returns:
         str: The path of the Unreal project.
@@ -87,8 +88,10 @@ def get_unreal_project(unreal_project: Optional[str] = None) -> str:
     """
     if unreal_project is None:
         unreal_project_zip = download(url=unreal_sample_url, dst_dir=tmp_dir / 'unreal_project')
-        shutil.unpack_archive(filename=unreal_project_zip, extract_dir=tmp_dir / 'unreal_project')
         unreal_project_dir = unreal_project_zip.parent / unreal_project_zip.stem
+        if unreal_project_dir.exists() and replace:
+            shutil.rmtree(unreal_project_dir, ignore_errors=True)
+        shutil.unpack_archive(filename=unreal_project_zip, extract_dir=tmp_dir / 'unreal_project')
         unreal_project = next(unreal_project_dir.glob('*.uproject')).as_posix()
     unreal_project = unreal_project.strip('"').strip("'")
     if not Path(unreal_project).exists():

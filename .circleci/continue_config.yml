@@ -37,10 +37,10 @@ jobs:
           command: |
             echo "Build Unreal Plugin: $env:BUILD_UNREAL_PLUGIN"
             echo "Python IO Encoding: $env:PYTHONIOENCODING"
-            exec 2>&1
             conda activate xrfeitoria
             python -m pip install .
-            if ($env:BUILD_UNREAL_PLUGIN -eq "true") {
+            if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
+              echo "Building Unreal Plugin"
               python -m xrfeitoria.utils.publish_plugins `
                 -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
                 -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
@@ -91,6 +91,8 @@ jobs:
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
+            echo "Build Unreal Plugin: $BUILD_UNREAL_PLUGIN"
+            echo "Python IO Encoding 
             if [ "$BUILD_UNREAL_PLUGIN" = "true" ]; then
               python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
               export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
