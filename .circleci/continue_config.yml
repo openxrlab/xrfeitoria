@@ -117,8 +117,10 @@ jobs:
           command: |
             # Download artifacts
             # Get jobs of the workflow
-            for job in $(curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num | jq -r '.["steps"][]["actions"][]["job_name"]'); do
-              echo "Job: $job"
+            jobs=$(curl --request GET \
+              -H "Circle-Token: $CIRCLE_TOKEN" \
+              --url https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job
+            )
             done
             curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num/artifacts \
               | grep -o -E 'https://([^"]*)' \
