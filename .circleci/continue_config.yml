@@ -211,10 +211,10 @@ jobs:
           command: |
             echo "Build Unreal Plugin: $BUILD_UNREAL_PLUGIN"
             echo "Run Test: $RUN_TEST"
-            if [ "$BUILD_UNREAL_PLUGIN" = "true" ]; then
+            if [ "$BUILD_UNREAL_PLUGIN" = "1" ]; then
               echo "Building Unreal Plugin"
             fi
-            if [ "$RUN_TEST" = "true" ]; then
+            if [ "$RUN_TEST" = "1" ]; then
               echo "Running Tests"
             fi
 
