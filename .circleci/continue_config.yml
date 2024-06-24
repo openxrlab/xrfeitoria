@@ -25,6 +25,9 @@ jobs:
       build-unreal-plugin:
         type: boolean
         default: true
+      run-test:
+        type: boolean
+        default: true
     steps:
       - checkout
       - run:
@@ -33,6 +36,7 @@ jobs:
           no_output_timeout: 60m
           environment:
             BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
+            RUN_TEST: << parameters.run-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             conda activate xrfeitoria
@@ -46,12 +50,15 @@ jobs:
               $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
               $env:XRFEITORIA__DIST_ROOT="$PWD/src"
             }
-            python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-            python -m tests.unreal.main
-            python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-            python -m tests.unreal.main
-            python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-            python -m tests.unreal.main
+            if ($env:RUN_TEST -eq 1) {
+              echo "#### Running Tests ####"
+              python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+              python -m tests.unreal.main
+              python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+              python -m tests.unreal.main
+              python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+              python -m tests.unreal.main
+            }
       - store_artifacts:
           path: src/dist/
           destination: Plugins
@@ -68,6 +75,9 @@ jobs:
         type: string
         default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
       build-unreal-plugin:
+        type: boolean
+        default: true
+      run-test:
         type: boolean
         default: true
     docker:
@@ -92,6 +102,7 @@ jobs:
           name: "Build Plugins & Run Tests"
           environment:
             BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
+            RUN_TEST: << parameters.run-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
@@ -101,9 +112,13 @@ jobs:
               export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
               export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
             fi
-            ## Can't run tests on non-gpu machine
-            # python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-            # python -m tests.unreal.main
+            if [ "$RUN_TEST" = "true" ]; then
+              echo "#### Running Tests ####"
+              # Can't run tests on non-gpu machine
+              echo "Skipping tests on non-gpu machine"
+              # python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+              # python -m tests.unreal.main
+            fi
       - store_artifacts:
           path: src/dist/
           destination: Plugins
@@ -115,6 +130,10 @@ jobs:
             - src/dist/
 
   blender:
+    parameters:
+      run-test:
+        type: boolean
+        default: true
     docker:
       - image: linuxserver/blender:3.6.5
     steps:
@@ -136,11 +155,17 @@ jobs:
           docker_layer_caching: true
       - run:
           name: "Build Blender Addon & Run Tests"
+          environment:
+            RUN_TEST: << parameters.run-test >>
+            PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins --blender
-            python -m tests.setup_ci -b /usr/bin/blender
-            python -m tests.blender.main -b
+            if [ "$RUN_TEST" = "true" ]; then
+              echo "#### Running Tests ####"
+              python -m tests.setup_ci -b /usr/bin/blender
+              python -m tests.blender.main -b
+            fi
             # dump version to file
             python -c "import xrfeitoria; print(xrfeitoria.__version__)" > /config/project/src/dist/version.txt
       - store_artifacts:
@@ -171,12 +196,10 @@ workflows:
       # -- Unreal -- #
       - test-self-host
       - unreal-windows:
-          name: "Unreal - Windows UE"
           build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
           requires:
             - test-self-host
       - unreal-linux:
-          name: "Unreal - Linux UE"
           build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
           matrix:
             parameters:
@@ -185,11 +208,10 @@ workflows:
       - blender
       # -- Publish -- #
       - publish-github-release:
-          name: "Publish GitHub Release"
           requires:
             - blender
-            - Unreal - Windows UE
-            - Unreal - Linux UE
+            - unreal-windows
+            - unreal-linux
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+/
