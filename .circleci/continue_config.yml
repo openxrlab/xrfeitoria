@@ -106,6 +106,33 @@ jobs:
       - store_test_results:
           path: /home/ue4/project/tests/unreal/unreal.log
 
+  blender:
+    docker:
+      - image: linuxserver/blender:3.6.5
+    steps:
+      - checkout
+      - run:
+          name: Install Miniconda and Python 3.10
+          command: |
+            curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+            bash Miniconda.sh -b -p $HOME/miniconda
+            echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
+            source $BASH_ENV
+            conda install -y python=3.10
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: "Build Blender Addon & Run Tests"
+          command: |
+            python -m pip install .
+            python -m xrfeitoria.utils.publish_plugins --blender
+            python -m tests.setup_ci -b 
+            python -m tests.blender.main
+      - store_artifacts:
+          path: src/dist/
+      - store_test_results:
+          path: tests/blender/blender.log
+
   publish-github-release:
     docker:
       - image: cibuilds/github:0.10
@@ -131,21 +158,23 @@ workflows:
   unreal-workflow:
     jobs:
       - test-self-host
-      - unreal-windows:
-          name: "Unreal - Windows UE"
-          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-          requires:
-            - test-self-host
+      # - unreal-windows:
+      #     name: "Unreal - Windows UE"
+      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+      #     requires:
+      #       - test-self-host
       # - unreal-linux:
       #     name: "Unreal - Linux UE"
       #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
       #     matrix:
       #       parameters:
       #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      - blender:
+          name: "Blender"
       - publish-github-release:
           name: "Publish GitHub Release"
           # requires:
-          #   - unreal-windows
+            # - unreal-windows
             # - unreal-linux
           # filters:
           #   tags:
