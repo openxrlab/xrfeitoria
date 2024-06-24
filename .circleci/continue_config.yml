@@ -121,12 +121,12 @@ jobs:
               -H "Circle-Token: $CIRCLE_TOKEN" \
               --url https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job
             )
-            done
             curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num/artifacts \
               | grep -o -E 'https://([^"]*)' \
               | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
             VERSION=$(my-binary --version)
             ghr -t ${GITHUB_TOKEN} -u :username -r :project -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
+
 workflows:
   unreal-workflow:
     jobs:
