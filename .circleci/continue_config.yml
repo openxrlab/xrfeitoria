@@ -205,7 +205,7 @@ jobs:
     steps:
       - run:
           name: "Test Parameters"
-          parameters:
+          environment:
             BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
             RUN_TEST: << pipeline.parameters.run-test >>
           command: |
