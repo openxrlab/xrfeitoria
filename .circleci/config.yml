@@ -10,9 +10,7 @@ workflows:
           base-revision: main
           config-path: .circleci/continue_config.yml
           mapping: |
-            # -- Unreal Plugin -- #
             src/XRFeitoriaUnreal/.* build-unreal-plugin true
-            # -- tests -- #
             src/.* run-test true
             xrfeitoria/.* run-test true
             tests/.* run-test true
