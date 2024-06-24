@@ -160,7 +160,7 @@ jobs:
             ghr -t ${GITHUB_TOKEN} -u :username -r :project -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
 
 workflows:
-  unreal-workflow:
+  plugin-workflow:
     jobs:
       - test-self-host
       # - unreal-windows:
@@ -175,13 +175,13 @@ workflows:
       #       parameters:
       #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       - blender:
-          name: "Blender"
+          name: "Blender - Linux"
       - publish-github-release:
           name: "Publish GitHub Release"
           requires:
+            - blender
             # - unreal-windows
             # - unreal-linux
-            - blender
           # filters:
           #   tags:
           #     only: /^v\d+\.\d+\.\d+/
