@@ -178,8 +178,8 @@ workflows:
           name: "Blender - Linux"
       - publish-github-release:
           name: "Publish GitHub Release"
-          requires:
-            - blender
+          # requires:
+            # - blender
             # - unreal-windows
             # - unreal-linux
           # filters:
