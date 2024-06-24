@@ -206,8 +206,8 @@ jobs:
       - run:
           name: "Test Parameters"
           parameters:
-            build-unreal-plugin: << parameters.build-unreal-plugin >>
-            run-test: << parameters.run-test >>
+            build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+            run-test: << pipeline.parameters.run-test >>
           command: |
             echo "Build Unreal Plugin: $BUILD_UNREAL_PLUGIN"
             echo "Run Test: $RUN_TEST"
