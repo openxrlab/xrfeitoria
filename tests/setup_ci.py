@@ -16,10 +16,11 @@ def main(blender_exec: Optional[str] = None, unreal_exec: Optional[str] = None):
     setup_logger()
     if blender_exec:
         Config.update(engine='blender', exec_path=blender_exec)
+        unreal_project = None
     if unreal_exec:
         Config.update(engine='unreal', exec_path=unreal_exec)
+        unreal_project = get_unreal_project(replace=True)
 
-    unreal_project = get_unreal_project(replace=True)
     assets_path = {}
     for idx, (name, url) in enumerate(assets_url.items()):
         logger.info(f'Downloading {idx+1}/{len(assets_url)}: {name}')

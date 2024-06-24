@@ -112,6 +112,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install Essential Packages
+          command: |
+            apt-get update
+            apt-get install -y git
+      - run:
           name: Install Miniconda and Python 3.10
           command: |
             curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -126,12 +131,12 @@ jobs:
           command: |
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins --blender
-            python -m tests.setup_ci -b 
+            python -m tests.setup_ci -b /usr/bin/blender
             python -m tests.blender.main
       - store_artifacts:
-          path: src/dist/
+          path: /config/project/src/dist/
       - store_test_results:
-          path: tests/blender/blender.log
+          path: /config/project/output/tests/blender/blender.log
 
   publish-github-release:
     docker:
