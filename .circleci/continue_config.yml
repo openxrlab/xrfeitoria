@@ -141,23 +141,14 @@ jobs:
             python -m xrfeitoria.utils.publish_plugins --blender
             python -m tests.setup_ci -b /usr/bin/blender
             python -m tests.blender.main -b
+            # dump version to file
+            python -c "import xrfeitoria; print(xrfeitoria.__version__)" > /config/project/src/dist/version.txt
       - store_artifacts:
           path: /config/project/src/dist/
       - store_test_results:
           path: /config/project/output/tests/blender/blender.log
       - persist_to_workspace:
           root: /config/project
-          paths:
-            - src/dist/
-  flow:
-    docker:
-      - image: cibuilds/github:0.10
-    steps:
-      - run: mkdir -p workspace/src/dist
-      - run: echo "Hello, world!" > workspace/src/dist/echo-output
-      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
-      - persist_to_workspace:
-          root: workspace
           paths:
             - src/dist/
 
@@ -170,7 +161,8 @@ jobs:
       - run:
           name: "Publish Release on GitHub"
           command: |
-            VERSION=$(my-binary --version)
+            VERSION=$(cat ./src/dist/version.txt)
+            rm -f ./src/dist/version.txt
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/src/dist/
 
 workflows:
@@ -191,13 +183,11 @@ workflows:
       #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
       - blender
-      - flow
       # -- Publish -- #
       - publish-github-release:
           name: "Publish GitHub Release"
           requires:
             - blender
-            - flow
             # - unreal-windows
             # - unreal-linux
           # filters:
