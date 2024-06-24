@@ -178,9 +178,10 @@ workflows:
           name: "Blender"
       - publish-github-release:
           name: "Publish GitHub Release"
-          # requires:
+          requires:
             # - unreal-windows
             # - unreal-linux
+            - blender
           # filters:
           #   tags:
           #     only: /^v\d+\.\d+\.\d+/
