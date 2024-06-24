@@ -188,8 +188,8 @@ workflows:
           name: "Publish GitHub Release"
           requires:
             - blender
-            - unreal-windows
-            - unreal-linux
+            - Unreal - Windows UE
+            - Unreal - Linux UE
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+/
