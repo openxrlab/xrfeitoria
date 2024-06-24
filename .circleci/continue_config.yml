@@ -21,13 +21,6 @@ jobs:
   unreal-windows:
     machine: true
     resource_class: haiyimei/windows-machines
-    parameters:
-      build-unreal-plugin:
-        type: boolean
-        default: true
-      run-test:
-        type: boolean
-        default: true
     steps:
       - checkout
       - run:
@@ -35,8 +28,8 @@ jobs:
           shell: powershell.exe
           no_output_timeout: 60m
           environment:
-            BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
-            RUN_TEST: << parameters.run-test >>
+            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
+            RUN_TEST: << pipeline.parameters.run-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             conda activate xrfeitoria
@@ -75,12 +68,6 @@ jobs:
       image:
         type: string
         default: "ghcr.io/epicgames/unreal-engine:dev-5.3"
-      build-unreal-plugin:
-        type: boolean
-        default: true
-      run-test:
-        type: boolean
-        default: true
     docker:
       - image: << parameters.image >>
         auth:
@@ -102,19 +89,19 @@ jobs:
       - run:
           name: "Build Plugins & Run Tests"
           environment:
-            BUILD_UNREAL_PLUGIN: << parameters.build-unreal-plugin >>
-            RUN_TEST: << parameters.run-test >>
+            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
+            RUN_TEST: << pipeline.parameters.run-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
             mkdir -p /home/ue4/project/src/dist
-            if [ "$BUILD_UNREAL_PLUGIN" = "true" ]; then
+            if [ "$BUILD_UNREAL_PLUGIN" = "1" ]; then
               echo "#### Building Unreal Plugin ####"
               python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
               export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
               export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
             fi
-            if [ "$RUN_TEST" = "true" ]; then
+            if [ "$RUN_TEST" = "1" ]; then
               echo "#### Running Tests ####"
               # Can't run tests on non-gpu machine
               echo "Skipping tests on non-gpu machine"
@@ -132,10 +119,6 @@ jobs:
             - src/dist/
 
   blender:
-    parameters:
-      run-test:
-        type: boolean
-        default: true
     docker:
       - image: linuxserver/blender:3.6.5
     steps:
@@ -158,12 +141,12 @@ jobs:
       - run:
           name: "Build Blender Addon & Run Tests"
           environment:
-            RUN_TEST: << parameters.run-test >>
+            RUN_TEST: << pipeline.parameters.run-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins --blender
-            if [ "$RUN_TEST" = "true" ]; then
+            if [ "$RUN_TEST" = "1" ]; then
               echo "#### Running Tests ####"
               python -m tests.setup_ci -b /usr/bin/blender
               python -m tests.blender.main -b
@@ -191,64 +174,27 @@ jobs:
             VERSION=$(cat ./artifacts/src/dist/version.txt)
             rm -f ./artifacts/src/dist/version.txt
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/src/dist/
-  
-  tmp:
-    docker:
-      - image: cibuilds/github:0.10
-    parameters:
-      build-unreal-plugin:
-        type: boolean
-        default: true
-      run-test:
-        type: boolean
-        default: true
-    steps:
-      - run:
-          name: "Test Parameters"
-          environment:
-            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
-            RUN_TEST: << pipeline.parameters.run-test >>
-          command: |
-            echo "Build Unreal Plugin: $BUILD_UNREAL_PLUGIN"
-            echo "Run Test: $RUN_TEST"
-            if [ "$BUILD_UNREAL_PLUGIN" = "1" ]; then
-              echo "Building Unreal Plugin"
-            fi
-            if [ "$RUN_TEST" = "1" ]; then
-              echo "Running Tests"
-            fi
 
 workflows:
   plugin-workflow:
     jobs:
-      # # -- Unreal -- #
-      # - test-self-host
-      # - unreal-windows:
-      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-      #     run-test: << pipeline.parameters.run-test >>
-      #     requires:
-      #       - test-self-host
-      # - unreal-linux:
-      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-      #     run-test: << pipeline.parameters.run-test >>
-      #     matrix:
-      #       parameters:
-      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
-      # # -- Blender -- #
-      # - blender:
-      #     run-test: << pipeline.parameters.run-test >>
-      # # -- Publish -- #
-      # - publish-github-release:
-      #     requires:
-      #       - blender
-      #       - unreal-windows
-      #       - unreal-linux
-      #     filters:
-      #       tags:
-      #         only: /^v\d+\.\d+\.\d+/
-
-      # -- Temp -- #
-      - tmp:
-          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-          run-test: << pipeline.parameters.run-test >>
-
+      # -- Unreal -- #
+      - test-self-host
+      - unreal-windows:
+          requires:
+            - test-self-host
+      - unreal-linux:
+          matrix:
+            parameters:
+              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      # -- Blender -- #
+      - blender
+      # -- Publish -- #
+      - publish-github-release:
+          requires:
+            - blender
+            - unreal-windows
+            - unreal-linux
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
