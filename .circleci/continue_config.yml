@@ -57,6 +57,10 @@ jobs:
           destination: Plugins
       - store_test_results:
           path: tests/unreal/unreal.log
+      - persist_to_workspace:
+          root: /home/ue4/project
+          paths:
+            - src/dist/
 
   unreal-linux:
     parameters:
@@ -105,6 +109,10 @@ jobs:
           destination: Plugins
       - store_test_results:
           path: /home/ue4/project/tests/unreal/unreal.log
+      - persist_to_workspace:
+          root: /home/ue4/project
+          paths:
+            - src/dist/
 
   blender:
     docker:
@@ -141,6 +149,17 @@ jobs:
           root: /config/project
           paths:
             - src/dist/
+  flow:
+    docker:
+      - image: cibuilds/github:0.10
+    steps:
+      - run: mkdir -p workspace/src/dist
+      - run: echo "Hello, world!" > workspace/src/dist/echo-output
+      # Persist the specified paths (workspace/echo-output) into the workspace for use in downstream job.
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - src/dist/
 
   publish-github-release:
     docker:
@@ -151,17 +170,8 @@ jobs:
       - run:
           name: "Publish Release on GitHub"
           command: |
-            # Download artifacts
-            # Get jobs of the workflow
-            jobs=$(curl --request GET \
-              -H "Circle-Token: $CIRCLE_TOKEN" \
-              --url https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job
-            )
-            curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num/artifacts \
-              | grep -o -E 'https://([^"]*)' \
-              | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
             VERSION=$(my-binary --version)
-            ghr -t ${GITHUB_TOKEN} -u :username -r :project -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/src/dist/
 
 workflows:
   plugin-workflow:
@@ -181,11 +191,13 @@ workflows:
       #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
       - blender
+      - flow
       # -- Publish -- #
       - publish-github-release:
           name: "Publish GitHub Release"
           requires:
             - blender
+            - flow
             # - unreal-windows
             # - unreal-linux
           # filters:
