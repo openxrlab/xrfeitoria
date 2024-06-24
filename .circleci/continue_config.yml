@@ -170,17 +170,17 @@ workflows:
     jobs:
       # -- Unreal -- #
       - test-self-host
-      # - unreal-windows:
-      #     name: "Unreal - Windows UE"
-      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-      #     requires:
-      #       - test-self-host
-      # - unreal-linux:
-      #     name: "Unreal - Linux UE"
-      #     build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
-      #     matrix:
-      #       parameters:
-      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      - unreal-windows:
+          name: "Unreal - Windows UE"
+          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+          requires:
+            - test-self-host
+      - unreal-linux:
+          name: "Unreal - Linux UE"
+          build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+          matrix:
+            parameters:
+              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
       - blender
       # -- Publish -- #
@@ -188,8 +188,8 @@ workflows:
           name: "Publish GitHub Release"
           requires:
             - blender
-            # - unreal-windows
-            # - unreal-linux
-          # filters:
-          #   tags:
-          #     only: /^v\d+\.\d+\.\d+/
+            - unreal-windows
+            - unreal-linux
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
