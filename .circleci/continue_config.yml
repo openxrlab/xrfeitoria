@@ -137,6 +137,10 @@ jobs:
           path: /config/project/src/dist/
       - store_test_results:
           path: /config/project/output/tests/blender/blender.log
+      - persist_to_workspace:
+          root: /config/project
+          paths:
+            - src/dist/
 
   publish-github-release:
     docker:
@@ -162,6 +166,7 @@ jobs:
 workflows:
   plugin-workflow:
     jobs:
+      # -- Unreal -- #
       - test-self-host
       # - unreal-windows:
       #     name: "Unreal - Windows UE"
@@ -174,7 +179,9 @@ workflows:
       #     matrix:
       #       parameters:
       #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      # -- Blender -- #
       - blender
+      # -- Publish -- #
       - publish-github-release:
           name: "Publish GitHub Release"
           requires:
