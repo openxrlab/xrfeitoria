@@ -41,6 +41,7 @@ jobs:
           command: |
             conda activate xrfeitoria
             python -m pip install .
+            mkdir src/dist -ErrorAction SilentlyContinue -Force
             if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
               echo "#### Building Unreal Plugin ####"
               python -m xrfeitoria.utils.publish_plugins `
@@ -106,6 +107,7 @@ jobs:
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
+            mkdir -p /home/ue4/project/src/dist
             if [ "$BUILD_UNREAL_PLUGIN" = "true" ]; then
               echo "#### Building Unreal Plugin ####"
               python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
@@ -197,15 +199,18 @@ workflows:
       - test-self-host
       - unreal-windows:
           build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+          run-test: << pipeline.parameters.run-test >>
           requires:
             - test-self-host
       - unreal-linux:
           build-unreal-plugin: << pipeline.parameters.build-unreal-plugin >>
+          run-test: << pipeline.parameters.run-test >>
           matrix:
             parameters:
               image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
-      - blender
+      - blender:
+          run-test: << pipeline.parameters.run-test >>
       # -- Publish -- #
       - publish-github-release:
           requires:
