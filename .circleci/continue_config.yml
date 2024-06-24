@@ -132,7 +132,7 @@ jobs:
             python -m pip install .
             python -m xrfeitoria.utils.publish_plugins --blender
             python -m tests.setup_ci -b /usr/bin/blender
-            python -m tests.blender.main
+            python -m tests.blender.main -b
       - store_artifacts:
           path: /config/project/src/dist/
       - store_test_results:
