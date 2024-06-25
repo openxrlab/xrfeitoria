@@ -27,12 +27,14 @@ jobs:
           cond: "${{ startsWith(github.ref, 'refs/tags/') }}"
           if_true: ${{ github.ref }}
           if_false: ${{ steps.bumpr.outputs.next_version }}
-      - id: update-version
+      # Update version of the plugin.
+      - name: Update version
         uses: actions/setup-python@v5
         with:
           python-version: 3.8
+        env:
+          VERSION: ${{ steps.tag.outputs.result }}
       - run: |
-          VERSION="${{ steps.tag.outputs.result }}"
           git tag -a "$VERSION" -m "Release $VERSION"
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
