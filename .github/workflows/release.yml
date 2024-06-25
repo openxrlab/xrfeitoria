@@ -40,14 +40,14 @@ jobs:
         name: Post bumpr status comment
         uses: haya14busa/action-bumpr@v1
 
-      # Update version of the plugin.
-      - name: Update version
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.8
-        env:
-          VERSION: ${{ steps.bumpr.outputs.next_version }}
-      - run: |
+      
+      - name: Update version and tag
+        run: |
+          VERSION="${{ steps.bumpr.outputs.next_version }}"
           git tag -a "$VERSION" -m "Release $VERSION"
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
