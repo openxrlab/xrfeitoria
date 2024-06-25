@@ -36,7 +36,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Post bumpr status comment
+      - id: bumpr
+        name: Post bumpr status comment
         uses: haya14busa/action-bumpr@v1
 
       # Update version of the plugin.
@@ -45,7 +46,7 @@ jobs:
         with:
           python-version: 3.8
         env:
-          VERSION: ${{ steps.tag.outputs.result }}
+          VERSION: ${{ steps.bumpr.outputs.next_version }}
       - run: |
           git tag -a "$VERSION" -m "Release $VERSION"
           git config user.name "${{ github.actor }}"
