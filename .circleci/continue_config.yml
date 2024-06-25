@@ -100,6 +100,7 @@ jobs:
               python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
               export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
               export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
+              rm -rf /home/ue4/project/src/dist/*-Source.zip  # remove source zip, cuz it's uploaded in the win build
             fi
             if [ "$RUN_TEST" = "1" ]; then
               echo "#### Running Tests ####"
@@ -196,5 +197,7 @@ workflows:
             - unreal-windows
             - unreal-linux
           filters:
+            branches:
+              ignore: /.*/
             tags:
               only: /^v\d+\.\d+\.\d+/
