@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from loguru import logger
+from typer import Option, Typer
 
 from ..data_structure.constants import plugin_name_blender, plugin_name_pattern, plugin_name_unreal
 from ..utils import setup_logger
@@ -23,6 +24,9 @@ project_root = root.parents[1]
 src_root = project_root / 'src'
 dist_root = src_root / 'dist'
 dist_root.mkdir(exist_ok=True, parents=True)
+
+setup_logger(level='INFO')
+app = Typer(pretty_exceptions_show_locals=False)
 
 
 @contextmanager
@@ -80,7 +84,8 @@ def _make_archive(
     return dst_path
 
 
-def update_bpy_version(bpy_init_file: Path):
+@app.command()
+def update_bpy_version(bpy_init_file: Path = src_root / plugin_name_blender / '__init__.py'):
     """Update version in ``src/XRFeitoriaBpy/__init__.py``.
 
     Args:
@@ -96,7 +101,8 @@ def update_bpy_version(bpy_init_file: Path):
     logger.info(f'Updated "{bpy_init_file}" with version {__version__}')
 
 
-def update_uplugin_version(uplugin_path: Path):
+@app.command()
+def update_uplugin_version(uplugin_path: Path = src_root / plugin_name_unreal / f'{plugin_name_unreal}.uplugin'):
     """Update version in ``src/XRFeitoriaUnreal/XRFeitoria.uplugin``.
 
     Args:
@@ -109,7 +115,14 @@ def update_uplugin_version(uplugin_path: Path):
     logger.info(f'Updated "{uplugin_path}" with version {__version__}')
 
 
+@app.command()
 def build_blender():
+    """Publish Blender Plugin to zip files.
+
+    Examples:
+
+    >>> python -m xrfeitoria.utils.publish_plugins build-blender
+    """
     plugin_name = plugin_name_pattern.format(
         plugin_name=plugin_name_blender,
         plugin_version=__version__,
@@ -128,7 +141,28 @@ def build_blender():
     logger.info(f'Plugin for blender: "{dst_plugin_zip}"')
 
 
-def build_unreal(unreal_exec_list: List[Path]):
+@app.command()
+def build_unreal(
+    unreal_exec_list: List[Path] = Option(
+        None,
+        '-u',
+        '--unreal-exec',
+        resolve_path=True,
+        file_okay=True,
+        dir_okay=False,
+        exists=True,
+        help='Path to Unreal Engine executable. e.g. "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"',
+    ),
+):
+    """Publish Unreal Plugin to zip files.
+
+    Examples:
+
+    >>> python -m xrfeitoria.utils.publish_plugins build-unreal
+    -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    """
     dir_plugin = src_root / plugin_name_unreal
     uplugin_path = dir_plugin / f'{plugin_name_unreal}.uplugin'
     update_uplugin_version(uplugin_path)
@@ -163,40 +197,4 @@ def build_unreal(unreal_exec_list: List[Path]):
 
 
 if __name__ == '__main__':
-    from typer import Option, run
-
-    def wrapper(
-        blender: bool = Option(
-            False,
-            '-b',
-            '--blender',
-            help='Whether to Build Blender plugin.',
-        ),
-        unreal_exec: List[Path] = Option(
-            None,
-            '-u',
-            '--unreal-exec',
-            resolve_path=True,
-            file_okay=True,
-            dir_okay=False,
-            exists=True,
-            help='Path to Unreal Engine executable. e.g. "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"',
-        ),
-    ):
-        """Publish plugins to zip files.
-
-        Examples:
-
-        >>> python -m xrfeitoria.utils.publish_plugins
-        -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-        -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-        -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-        """
-        setup_logger(level='INFO')
-        if blender:
-            build_blender()
-        if len(unreal_exec) > 0:
-            build_unreal(unreal_exec_list=unreal_exec)
-        logger.info(f'Check "{dist_root}" for the plugin zip files.')
-
-    run(wrapper)
+    app()

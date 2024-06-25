@@ -60,12 +60,14 @@ If you want to publish plugins of your own, you can use the following command:
     cd xrfeitoria
     pip install .
 
-    # for instance, build plugins for Blender, UE 5.1, UE 5.2, and UE 5.3 on Windows.
-    # using powershell where backtick(`) is the line continuation character.
-    python -m xrfeitoria.utils.publish_plugins `
+    # build plugins for UE 5.1, UE 5.2, and UE 5.3 on Windows
+    python -m xrfeitoria.utils.publish_plugins build-unreal `
       -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
       -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
       -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+
+    # build plugins for Blender
+    python -m xrfeitoria.utils.publish_plugins build-blender
 
 Please check the path ``./src/dist`` for the generated plugins.
 ``XRFeitoriaBlender`` will be archived by default, and ``XRFeitoriaUnreal`` will only be built when you specify the Unreal editor path.

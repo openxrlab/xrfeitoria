@@ -37,7 +37,7 @@ jobs:
             mkdir src/dist -ErrorAction SilentlyContinue -Force
             if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
               echo "#### Building Unreal Plugin ####"
-              python -m xrfeitoria.utils.publish_plugins `
+              python -m xrfeitoria.utils.publish_plugins build-unreal `
                 -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
                 -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
                 -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
@@ -97,7 +97,7 @@ jobs:
             mkdir -p /home/ue4/project/src/dist
             if [ "$BUILD_UNREAL_PLUGIN" = "1" ]; then
               echo "#### Building Unreal Plugin ####"
-              python -m xrfeitoria.utils.publish_plugins -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+              python -m xrfeitoria.utils.publish_plugins build-unreal -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
               export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
               export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
               rm -rf /home/ue4/project/src/dist/*-Source.zip  # remove source zip, cuz it's uploaded in the win build
@@ -146,7 +146,7 @@ jobs:
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
-            python -m xrfeitoria.utils.publish_plugins --blender
+            python -m xrfeitoria.utils.publish_plugins build-blender
             if [ "$RUN_TEST" = "1" ]; then
               echo "#### Running Tests ####"
               python -m tests.setup_ci -b /usr/bin/blender

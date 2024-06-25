@@ -20,12 +20,6 @@ jobs:
       - id: bumpr
         if: "!startsWith(github.ref, 'refs/tags/')"
         uses: haya14busa/action-bumpr@v1
-      # Update corresponding major and minor tag.
-      # e.g. Update v1 and v1.2 when releasing v1.2.3
-      - uses: haya14busa/action-update-semver@v1
-        if: "!steps.bumpr.outputs.skip"
-        with:
-          tag: ${{ steps.bumpr.outputs.next_version }}
       # Get tag name.
       - id: tag
         uses: haya14busa/action-cond@v1
@@ -33,6 +27,22 @@ jobs:
           cond: "${{ startsWith(github.ref, 'refs/tags/') }}"
           if_true: ${{ github.ref }}
           if_false: ${{ steps.bumpr.outputs.next_version }}
+      - id: update-version
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+      - run: |
+          VERSION="${{ steps.tag.outputs.result }}"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          pip install .
+          python -m xrfeitoria.utils.publish_plugins update-uplugin-version
+          python -m xrfeitoria.utils.publish_plugins update-bpy-version
+          git add .
+          git commit -m "Update version to $VERSION"
+          git push origin HEAD:main
+
   release-check:
     if: github.event.action == 'labeled'
     runs-on: ubuntu-latest
