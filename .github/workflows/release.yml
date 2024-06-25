@@ -44,16 +44,28 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.8
-      
-      - name: Update version and tag
+
+      - name: Prepare Dependencies
         run: |
           VERSION="${{ steps.bumpr.outputs.next_version }}"
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Checkout to PR branch
+          git checkout ${{ github.head_ref }}
           git tag -a "$VERSION" -m "Release $VERSION"
           pip install .
-          python -m xrfeitoria.utils.publish_plugins update-uplugin-version
-          python -m xrfeitoria.utils.publish_plugins update-bpy-version
+
+      - name: Update Blender Addon Version
+        if: "!contains(github.event.pull_request.changed_files, 'src/XRFeitoriaBlender/*')"
+        run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
+
+      - name: Update Unreal Plugin Version
+        if: "!contains(github.event.pull_request.changed_files, 'src/XRFeitoriaUnreal/*')"
+        run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
+
+      - name: Update Python Package Version
+        run: |
+          python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
-          git commit -m "Update version to $VERSION"
-          git push origin HEAD:main
+          git commit -m "[bot] Update plugin info"
+          git push origin ${{ github.head_ref }}

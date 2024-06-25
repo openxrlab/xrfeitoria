@@ -3,15 +3,17 @@
 >>> python -m xrfeitoria.utils.publish_plugins --help
 """
 
+import json
 import os
 import platform
 import re
 import subprocess
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from loguru import logger
+from packaging.version import parse
 from typer import Option, Typer
 
 from ..data_structure.constants import plugin_name_blender, plugin_name_pattern, plugin_name_unreal
@@ -24,6 +26,7 @@ project_root = root.parents[1]
 src_root = project_root / 'src'
 dist_root = src_root / 'dist'
 dist_root.mkdir(exist_ok=True, parents=True)
+plugin_infos_json = root / 'plugin_infos.json'
 
 setup_logger(level='INFO')
 app = Typer(pretty_exceptions_show_locals=False)
@@ -82,6 +85,28 @@ def _make_archive(
 
     logger.info(f'Compressed {src_folder} => {dst_path}')
     return dst_path
+
+
+@app.command()
+def update_plugin_info():
+    """Update version infos in plugin files."""
+    package_version = str(parse(__version__))
+
+    bpy_version = (src_root / plugin_name_blender / '__init__.py').read_text()
+    bpy_version = re.search(r"__version__ = version = '(.*)'", bpy_version).group(1)
+
+    unreal_version = (src_root / plugin_name_unreal / f'{plugin_name_unreal}.uplugin').read_text()
+    unreal_version = re.search(r'"VersionName": "(.*)"', unreal_version).group(1)
+
+    plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
+    plugin_infos[package_version] = {
+        'XRFeitoria': package_version,
+        'XRFeitoriaBpy': str(parse(bpy_version)),
+        'XRFeitoriaUnreal': str(parse(unreal_version)),
+    }
+    plugin_infos = dict(sorted(plugin_infos.items(), key=lambda item: parse(item[0]), reverse=True))  # sort by version
+    plugin_infos_json.write_text(json.dumps(plugin_infos, indent=4) + '\n')  # dump to json
+    logger.info(f'Updated "{plugin_infos_json}" with version {package_version}')
 
 
 @app.command()
