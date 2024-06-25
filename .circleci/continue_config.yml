@@ -59,7 +59,7 @@ jobs:
       - store_test_results:
           path: tests/unreal/unreal.log
       - persist_to_workspace:
-          root: /home/ue4/project
+          root: .
           paths:
             - src/dist/
 
@@ -111,8 +111,8 @@ jobs:
       - store_artifacts:
           path: src/dist/
           destination: Plugins
-      - store_test_results:
-          path: /home/ue4/project/tests/unreal/unreal.log
+      # - store_test_results:
+      #     path: /home/ue4/project/tests/unreal/unreal.log
       - persist_to_workspace:
           root: /home/ue4/project
           paths:
