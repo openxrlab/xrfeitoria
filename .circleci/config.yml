@@ -22,5 +22,6 @@ workflows:
             tests/unreal/.* run-unreal-test true
             tests/blender/.* run-blender-test true
           filters:
+            # https://circleci.com/docs/workflows/#executing-workflows-for-a-git-tag
             tags:
               only: /^v\d+\.\d+\.\d+/

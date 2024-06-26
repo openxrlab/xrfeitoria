@@ -187,6 +187,7 @@ jobs:
     steps:
       - attach_workspace:
           at: ./artifacts
+      - checkout
       - run:
           name: "Publish Release on GitHub"
           command: |
