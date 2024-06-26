@@ -8,7 +8,7 @@ bl_info = {
     'blender': (3, 3, 0),
     'category': 'Tools',
 }
-__version__ = version = '0.6.3'
+__version__ = version = '0.6.2'
 
 
 def register():

@@ -56,11 +56,11 @@ jobs:
           pip install .
 
       - name: Update Blender Addon Version
-        if: "!contains(github.event.pull_request.changed_files, 'src/XRFeitoriaBlender/*')"
+        if: "contains(github.event.pull_request.changed_files, 'src/XRFeitoriaBpy/*')"
         run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
 
       - name: Update Unreal Plugin Version
-        if: "!contains(github.event.pull_request.changed_files, 'src/XRFeitoriaUnreal/*')"
+        if: "contains(github.event.pull_request.changed_files, 'src/XRFeitoriaUnreal/*')"
         run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
 
       - name: Update Python Package Version & Commit
