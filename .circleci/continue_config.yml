@@ -151,36 +151,37 @@ jobs:
             conda install -y python=3.10
       - setup_remote_docker:
           docker_layer_caching: true
-      - run:
-          name: "Build Blender Addon & Run Tests"
-          environment:
-            BUILD_BLENDER_ADDON: << pipeline.parameters.build-blender-addon >>
-            RUN_TEST: << pipeline.parameters.run-blender-test >>
-            PYTHONIOENCODING: "utf-8"
-          command: |
-            python -m pip install .
-            if [ "$BUILD_BLENDER_ADDON" = "1" ]; then
-              echo "#### Building Blender Addon ####"
-              python -m xrfeitoria.utils.publish_plugins build-blender
-              export XRFEITORIA__DIST_ROOT="/config/project/src"
-              export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
-            fi
-            if [ "$RUN_TEST" = "1" ]; then
-              echo "#### Running Tests ####"
-              python -m tests.setup_ci -b /usr/bin/blender
-              python -m tests.blender.main -b
-            fi
-      - store_artifacts:
-          when: << pipeline.parameters.build-blender-addon >>
-          path: /config/project/src/dist/
-      - store_test_results:
-          when: << pipeline.parameters.run-blender-test >>
-          path: /config/project/output/tests/blender/blender.log
-      - persist_to_workspace:
-          when: << pipeline.parameters.build-blender-addon >>
-          root: /config/project
-          paths:
-            - src/dist/
+      - when:
+          condition: << pipeline.parameters.build-blender-addon >> || << pipeline.parameters.run-blender-test >>
+          steps:
+            - run:
+                name: "Build Blender Addon & Run Tests"
+                environment:
+                  BUILD_BLENDER_ADDON: << pipeline.parameters.build-blender-addon >>
+                  RUN_TEST: << pipeline.parameters.run-blender-test >>
+                  PYTHONIOENCODING: "utf-8"
+                command: |
+                  python -m pip install .
+                  if [ "$BUILD_BLENDER_ADDON" = "1" ]; then
+                    echo "#### Building Blender Addon ####"
+                    python -m xrfeitoria.utils.publish_plugins build-blender
+                    export XRFEITORIA__DIST_ROOT="/config/project/src"
+                    export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
+                  fi
+                  if [ "$RUN_TEST" = "1" ]; then
+                    echo "#### Running Tests ####"
+                    python -m tests.setup_ci -b /usr/bin/blender
+                    python -m tests.blender.main -b
+                  fi
+      - when:
+          condition: << pipeline.parameters.build-blender-addon >>
+          steps:
+            - store_artifacts:
+                path: /config/project/src/dist/
+            - persist_to_workspace:
+                root: /config/project
+                paths:
+                  - src/dist/
 
   publish-github-release:
     docker:
