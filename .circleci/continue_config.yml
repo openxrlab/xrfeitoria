@@ -220,9 +220,9 @@ workflows:
   release-workflow:
     jobs:
       # -- Publish -- #
-      - publish-github-release:
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v\d+\.\d+\.\d+/
+      - publish-github-release
+          # filters:
+          #   branches:
+          #     ignore: /.*/
+          #   tags:
+          #     only: /^v\d+\.\d+\.\d+/
