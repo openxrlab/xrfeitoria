@@ -226,14 +226,23 @@ workflows:
   plugin-workflow:
     jobs:
       # -- Unreal -- #
-      - test-self-host
+      - test-self-host:
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
       - unreal-windows:
           requires:
             - test-self-host
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
       - unreal-linux:
           matrix:
             parameters:
               image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
       # -- Blender -- #
       - blender:
           filters:
