@@ -22,7 +22,5 @@ workflows:
             tests/unreal/.* run-unreal-test true
             tests/blender/.* run-blender-test true
           filters:
-            branches:
-              only: /.*/
             tags:
-              only: /.*/
+              only: /^v\d+\.\d+\.\d+/

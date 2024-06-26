@@ -216,7 +216,10 @@ workflows:
       #       parameters:
       #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
-      - blender
+      - blender:
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+/
       # -- Publish -- #
       - publish-github-release:
           requires:
