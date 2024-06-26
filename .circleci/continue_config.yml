@@ -217,12 +217,14 @@ workflows:
               image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
       - blender
-  release-workflow:
-    jobs:
       # -- Publish -- #
-      - publish-github-release
-          # filters:
-          #   branches:
-          #     ignore: /.*/
-          #   tags:
-          #     only: /^v\d+\.\d+\.\d+/
+      - publish-github-release:
+          requires:
+            - blender
+            - unreal-windows
+            - unreal-linux
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v\d+\.\d+\.\d+/
