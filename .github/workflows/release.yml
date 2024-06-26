@@ -48,8 +48,8 @@ jobs:
       - name: Prepare Dependencies
         run: |
           VERSION="${{ steps.bumpr.outputs.next_version }}"
-          git config user.name "[bot]github-actions"
-          git config user.email "41898282+[bot]github-actions@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Checkout to PR branch
           git checkout ${{ github.head_ref }}
           git tag -a "$VERSION" -m "Release $VERSION"
