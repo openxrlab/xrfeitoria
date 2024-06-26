@@ -7,7 +7,10 @@ parameters:
   build-blender-addon:
     type: boolean
     default: false
-  run-test:
+  run-unreal-test:
+    type: boolean
+    default: false
+  run-blender-test:
     type: boolean
     default: false
 
@@ -32,7 +35,7 @@ jobs:
           no_output_timeout: 60m
           environment:
             BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
-            RUN_TEST: << pipeline.parameters.run-test >>
+            RUN_TEST: << pipeline.parameters.run-unreal-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             conda activate xrfeitoria
@@ -61,9 +64,10 @@ jobs:
           path: src/dist/
           destination: Plugins
       - store_test_results:
-          when: << pipeline.parameters.run-test >>
+          when: << pipeline.parameters.run-unreal-test >>
           path: tests/unreal/unreal.log
       - persist_to_workspace:
+          when: << pipeline.parameters.build-unreal-plugin >>
           root: .
           paths:
             - src/dist/
@@ -95,7 +99,7 @@ jobs:
           name: "Build Plugins & Run Tests"
           environment:
             BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
-            RUN_TEST: << pipeline.parameters.run-test >>
+            RUN_TEST: << pipeline.parameters.run-unreal-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
@@ -119,8 +123,10 @@ jobs:
           path: src/dist/
           destination: Plugins
       # - store_test_results:
+      #     when: << pipeline.parameters.run-unreal-test >>
       #     path: /home/ue4/project/tests/unreal/unreal.log
       - persist_to_workspace:
+          when: << pipeline.parameters.build-unreal-plugin >>
           root: /home/ue4/project
           paths:
             - src/dist/
@@ -149,7 +155,7 @@ jobs:
           name: "Build Blender Addon & Run Tests"
           environment:
             BUILD_BLENDER_ADDON: << pipeline.parameters.build-blender-addon >>
-            RUN_TEST: << pipeline.parameters.run-test >>
+            RUN_TEST: << pipeline.parameters.run-blender-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
@@ -168,9 +174,10 @@ jobs:
           when: << pipeline.parameters.build-blender-addon >>
           path: /config/project/src/dist/
       - store_test_results:
-          when: << pipeline.parameters.run-test >>
+          when: << pipeline.parameters.run-blender-test >>
           path: /config/project/output/tests/blender/blender.log
       - persist_to_workspace:
+          when: << pipeline.parameters.build-blender-addon >>
           root: /config/project
           paths:
             - src/dist/

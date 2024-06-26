@@ -12,7 +12,12 @@ workflows:
           mapping: |
             # -- Unreal Plugin -- #
             src/XRFeitoriaUnreal/.* build-unreal-plugin true
+            src/XRFeitoriaUnreal/.* run-unreal-test true
+            # -- Blender Addon -- #
+            src/XRFeitoriaBpy/.* build-blender-addon true
+            src/XRFeitoriaBpy/.* run-blender-test true
             # -- tests -- #
-            src/.* run-test true
-            xrfeitoria/.* run-test true
-            tests/.* run-test true
+            xrfeitoria/.* run-unreal-test true
+            xrfeitoria/.* run-blender-test true
+            tests/unreal/.* run-unreal-test true
+            tests/blender/.* run-blender-test true
