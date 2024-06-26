@@ -135,25 +135,23 @@ jobs:
     docker:
       - image: linuxserver/blender:3.6.5
     steps:
-      - checkout
-      - run:
-          name: Install Essential Packages
-          command: |
-            apt-get update
-            apt-get install -y git
-      - run:
-          name: Install Miniconda and Python 3.10
-          command: |
-            curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-            bash Miniconda.sh -b -p $HOME/miniconda
-            echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
-            source $BASH_ENV
-            conda install -y python=3.10
-      - setup_remote_docker:
-          docker_layer_caching: true
       - when:
           condition: << pipeline.parameters.build-blender-addon >> || << pipeline.parameters.run-blender-test >>
           steps:
+            - checkout
+            - run:
+                name: Install Essential Packages
+                command: |
+                  apt-get update
+                  apt-get install -y git
+            - run:
+                name: Install Miniconda and Python 3.10
+                command: |
+                  curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                  bash Miniconda.sh -b -p $HOME/miniconda
+                  echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
+                  source $BASH_ENV
+                  conda install -y python=3.10
             - run:
                 name: "Build Blender Addon & Run Tests"
                 environment:
@@ -219,12 +217,10 @@ workflows:
               image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
       - blender
+  release-workflow:
+    jobs:
       # -- Publish -- #
       - publish-github-release:
-          requires:
-            - blender
-            - unreal-windows
-            - unreal-linux
           filters:
             branches:
               ignore: /.*/
