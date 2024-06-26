@@ -28,49 +28,51 @@ jobs:
     machine: true
     resource_class: haiyimei/windows-machines
     steps:
-      - checkout
-      - run:
-          name: "Build Plugins & Run Tests"
-          shell: powershell.exe
-          no_output_timeout: 60m
-          environment:
-            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
-            RUN_TEST: << pipeline.parameters.run-unreal-test >>
-            PYTHONIOENCODING: "utf-8"
-          command: |
-            conda activate xrfeitoria
-            python -m pip install .
-            mkdir src/dist -ErrorAction SilentlyContinue -Force
-            if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
-              echo "#### Building Unreal Plugin ####"
-              python -m xrfeitoria.utils.publish_plugins build-unreal `
-                -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
-                -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
-                -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-              $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
-              $env:XRFEITORIA__DIST_ROOT="$PWD/src/dist"
-            }
-            if ($env:RUN_TEST -eq 1) {
-              echo "#### Running Tests ####"
-              python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-              python -m tests.unreal.main
-              python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-              python -m tests.unreal.main
-              python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-              python -m tests.unreal.main
-            }
-      - store_artifacts:
-          when: << pipeline.parameters.build-unreal-plugin >>
-          path: src/dist/
-          destination: Plugins
-      - store_test_results:
-          when: << pipeline.parameters.run-unreal-test >>
-          path: tests/unreal/unreal.log
-      - persist_to_workspace:
-          when: << pipeline.parameters.build-unreal-plugin >>
-          root: .
-          paths:
-            - src/dist/
+      - when:
+          condition: << pipeline.parameters.build-unreal-plugin >> || << pipeline.parameters.run-unreal-test >>
+          steps:
+            - checkout
+            - run:
+                name: "Build Plugins & Run Tests"
+                shell: powershell.exe
+                no_output_timeout: 60m
+                environment:
+                  BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
+                  RUN_TEST: << pipeline.parameters.run-unreal-test >>
+                  PYTHONIOENCODING: "utf-8"
+                command: |
+                  echo "#### Install XRFeitoria Package ####"
+                  conda activate xrfeitoria
+                  python -m pip install .
+                  mkdir src/dist -ErrorAction SilentlyContinue -Force
+                  if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
+                    echo "#### Building Unreal Plugin ####"
+                    python -m xrfeitoria.utils.publish_plugins build-unreal `
+                      -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
+                      -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
+                      -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                    $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
+                    $env:XRFEITORIA__DIST_ROOT="$PWD/src/dist"
+                  }
+                  if ($env:RUN_TEST -eq 1) {
+                    echo "#### Running Tests ####"
+                    python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                    python -m tests.unreal.main
+                    python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                    python -m tests.unreal.main
+                    python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                    python -m tests.unreal.main
+                  }
+      - when:
+          condition: << pipeline.parameters.build-unreal-plugin >>
+          steps:
+            - store_artifacts:
+                path: src/dist/
+                destination: Plugins
+            - persist_to_workspace:
+                root: .
+                paths:
+                - src/dist/
 
   unreal-linux:
     parameters:
@@ -84,52 +86,53 @@ jobs:
           password: $GHCR_TOKEN
     working_directory: ~/project
     steps:
-      - checkout
-      - run:
-          name: Install Miniconda and Python 3.10
-          command: |
-            curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-            bash Miniconda.sh -b -p $HOME/miniconda
-            echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
-            source $BASH_ENV
-            conda install -y python=3.10
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: "Build Plugins & Run Tests"
-          environment:
-            BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
-            RUN_TEST: << pipeline.parameters.run-unreal-test >>
-            PYTHONIOENCODING: "utf-8"
-          command: |
-            python -m pip install .
-            mkdir -p /home/ue4/project/src/dist
-            if [ "$BUILD_UNREAL_PLUGIN" = "1" ]; then
-              echo "#### Building Unreal Plugin ####"
-              python -m xrfeitoria.utils.publish_plugins build-unreal -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-              export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
-              export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
-              rm -rf /home/ue4/project/src/dist/*-Source.zip  # remove source zip, cuz it's uploaded in the win build
-            fi
-            if [ "$RUN_TEST" = "1" ]; then
-              echo "#### Running Tests ####"
-              # Can't run tests on non-gpu machine
-              echo "Skipping tests on non-gpu machine"
-              # python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
-              # python -m tests.unreal.main
-            fi
-      - store_artifacts:
-          when: << pipeline.parameters.build-unreal-plugin >>
-          path: src/dist/
-          destination: Plugins
-      # - store_test_results:
-      #     when: << pipeline.parameters.run-unreal-test >>
-      #     path: /home/ue4/project/tests/unreal/unreal.log
-      - persist_to_workspace:
-          when: << pipeline.parameters.build-unreal-plugin >>
-          root: /home/ue4/project
-          paths:
-            - src/dist/
+      - when:
+          condition: << pipeline.parameters.build-unreal-plugin >> || << pipeline.parameters.run-unreal-test >>
+          steps:
+            - checkout
+            - run:
+                name: Install Miniconda, Python 3.10, and XRFeitoria
+                command: |
+                  curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                  bash Miniconda.sh -b -p $HOME/miniconda
+                  echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
+                  source $BASH_ENV
+                  conda install -y python=3.10
+                  python -m pip install .
+            - run:
+                name: "Build Plugins & Run Tests"
+                environment:
+                  BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
+                  RUN_TEST: << pipeline.parameters.run-unreal-test >>
+                  PYTHONIOENCODING: "utf-8"
+                command: |
+                  mkdir -p /home/ue4/project/src/dist
+                  if [ "$BUILD_UNREAL_PLUGIN" = "1" ]; then
+                    echo "#### Building Unreal Plugin ####"
+                    python -m xrfeitoria.utils.publish_plugins build-unreal -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+                    export XRFEITORIA__DIST_ROOT="/home/ue4/project/src"
+                    export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
+                    rm -rf /home/ue4/project/src/dist/*-Source.zip  # remove source zip, cuz it's uploaded in the win build
+                  fi
+                  if [ "$RUN_TEST" = "1" ]; then
+                    echo "#### Running Tests ####"
+                    # Can't run tests on non-gpu machine
+                    echo "Skipping tests on non-gpu machine"
+                    # python -m tests.setup_ci -u "/home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd"
+                    # python -m tests.unreal.main
+                  fi
+      - when:
+          condition: << pipeline.parameters.build-unreal-plugin >>
+          steps:
+            - store_artifacts:
+                when: << pipeline.parameters.build-unreal-plugin >>
+                path: src/dist/
+                destination: Plugins
+            - persist_to_workspace:
+                when: << pipeline.parameters.build-unreal-plugin >>
+                root: /home/ue4/project
+                paths:
+                  - src/dist/
 
   blender:
     docker:
@@ -222,15 +225,15 @@ jobs:
 workflows:
   plugin-workflow:
     jobs:
-      # # -- Unreal -- #
-      # - test-self-host
-      # - unreal-windows:
-      #     requires:
-      #       - test-self-host
-      # - unreal-linux:
-      #     matrix:
-      #       parameters:
-      #         image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
+      # -- Unreal -- #
+      - test-self-host
+      - unreal-windows:
+          requires:
+            - test-self-host
+      - unreal-linux:
+          matrix:
+            parameters:
+              image: ["ghcr.io/epicgames/unreal-engine:dev-5.1", "ghcr.io/epicgames/unreal-engine:dev-5.2", "ghcr.io/epicgames/unreal-engine:dev-5.3"]
       # -- Blender -- #
       - blender:
           filters:
@@ -240,8 +243,8 @@ workflows:
       - publish-github-release:
           requires:
             - blender
-            # - unreal-windows
-            # - unreal-linux
+            - unreal-windows
+            - unreal-linux
           filters:
             branches:
               ignore: /.*/
