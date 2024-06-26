@@ -145,13 +145,14 @@ jobs:
                   apt-get update
                   apt-get install -y git
             - run:
-                name: Install Miniconda and Python 3.10
+                name: Install Miniconda, Python 3.10, and XRFeitoria
                 command: |
                   curl -sLo Miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
                   bash Miniconda.sh -b -p $HOME/miniconda
                   echo "source $HOME/miniconda/bin/activate" >> $BASH_ENV
                   source $BASH_ENV
                   conda install -y python=3.10
+                  python -m pip install .
             - run:
                 name: "Build Blender Addon & Run Tests"
                 environment:
@@ -159,7 +160,6 @@ jobs:
                   RUN_TEST: << pipeline.parameters.run-blender-test >>
                   PYTHONIOENCODING: "utf-8"
                 command: |
-                  python -m pip install .
                   if [ "$BUILD_BLENDER_ADDON" = "1" ]; then
                     echo "#### Building Blender Addon ####"
                     python -m xrfeitoria.utils.publish_plugins build-blender
@@ -191,18 +191,23 @@ jobs:
       - run:
           name: "Get GitHub Release CLI"
           command: |
-            # https://github.com/tcnksm
+            # https://github.com/tcnksm/ghr
             GHR_VERSION="v0.16.2"
-            GHR_URL="https://github.com/tcnksm/ghr/releases/download/v${GHR_VERSION}/ghr_v${GHR_VERSION}_linux_amd64.tar.gz"
+            GHR_URL="https://github.com/tcnksm/ghr/releases/download/${GHR_VERSION}/ghr_${GHR_VERSION}_linux_amd64.tar.gz"
             wget "$GHR_URL" && \
-              tar xzf ghr_v${GHR_VERSION}_linux_amd64.tar.gz && \
-              mv ghr_v${GHR_VERSION}_linux_amd64/ghr /usr/bin/ghr && \
-              rm -r ghr_v${GHR_VERSION}_linux_amd64.tar.gz ghr_v${GHR_VERSION}_linux_amd64/
+              tar xzf ghr_${GHR_VERSION}_linux_amd64.tar.gz && \
+              mv ghr_${GHR_VERSION}_linux_amd64/ghr /usr/bin/ghr && \
+              rm -r ghr_${GHR_VERSION}_linux_amd64.tar.gz ghr_${GHR_VERSION}_linux_amd64/
       - run:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(git describe --tags --abbrev=0)
             RELEASE_TITLE="XRFeitoria Release $VERSION"
+            if [ -d "./artifacts/src/dist" ]; then
+              DIST_PATH="./artifacts/src/dist/"
+            else
+              DIST_PATH=""
+            fi
             ghr \
               -t ${GITHUB_TOKEN} \
               -u ${CIRCLE_PROJECT_USERNAME} \
@@ -212,7 +217,7 @@ jobs:
               -draft \
               -generatenotes \
               -delete \
-              ${VERSION} ./artifacts/src/dist/
+              ${VERSION} ${DIST_PATH}
 
 workflows:
   plugin-workflow:
