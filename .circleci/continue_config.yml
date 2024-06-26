@@ -48,7 +48,7 @@ jobs:
                 -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
                 -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
               $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
-              $env:XRFEITORIA__DIST_ROOT="$PWD/src"
+              $env:XRFEITORIA__DIST_ROOT="$PWD/src/dist"
             }
             if ($env:RUN_TEST -eq 1) {
               echo "#### Running Tests ####"
@@ -163,7 +163,7 @@ jobs:
                   if [ "$BUILD_BLENDER_ADDON" = "1" ]; then
                     echo "#### Building Blender Addon ####"
                     python -m xrfeitoria.utils.publish_plugins build-blender
-                    export XRFEITORIA__DIST_ROOT="/config/project/src"
+                    export XRFEITORIA__DIST_ROOT="/config/project/src/dist/"
                     export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
                   fi
                   if [ "$RUN_TEST" = "1" ]; then
