@@ -1,6 +1,7 @@
 """
 >>> python -m tests.blender.main
 """
+
 from pathlib import Path
 
 from xrfeitoria.utils import setup_logger
@@ -17,10 +18,10 @@ root = Path(__file__).resolve().parents[2]
 output_path = root / 'output' / Path(__file__).parent.relative_to(root)
 
 
-def main(debug: bool = False, background: bool = False):
+def main(debug: bool = False, dev: bool = False, background: bool = False):
     logger = setup_logger(level='DEBUG' if debug else 'INFO', log_path=output_path / 'blender.log')
 
-    init_test(debug=debug, background=background, dev=True)
+    init_test(debug=debug, dev=dev, background=background)
     with _init_blender(background=background) as xf_runner:
         actor_test(debug=debug)
         camera_test(debug=debug)
@@ -36,7 +37,8 @@ if __name__ == '__main__':
 
     args = argparse.ArgumentParser()
     args.add_argument('--debug', action='store_true')
+    args.add_argument('--dev', action='store_true')
     args.add_argument('--background', '-b', action='store_true')
     args = args.parse_args()
 
-    main(debug=args.debug, background=args.background)
+    main(debug=args.debug, dev=args.dev, background=args.background)
