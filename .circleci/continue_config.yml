@@ -3,10 +3,13 @@ version: 2.1
 parameters:
   build-unreal-plugin:
     type: boolean
-    default: true
+    default: false
+  build-blender-addon:
+    type: boolean
+    default: false
   run-test:
     type: boolean
-    default: true
+    default: false
 
 jobs:
   test-self-host:
@@ -54,9 +57,11 @@ jobs:
               python -m tests.unreal.main
             }
       - store_artifacts:
+          when: << pipeline.parameters.build-unreal-plugin >>
           path: src/dist/
           destination: Plugins
       - store_test_results:
+          when: << pipeline.parameters.run-test >>
           path: tests/unreal/unreal.log
       - persist_to_workspace:
           root: .
@@ -110,6 +115,7 @@ jobs:
               # python -m tests.unreal.main
             fi
       - store_artifacts:
+          when: << pipeline.parameters.build-unreal-plugin >>
           path: src/dist/
           destination: Plugins
       # - store_test_results:
@@ -142,21 +148,27 @@ jobs:
       - run:
           name: "Build Blender Addon & Run Tests"
           environment:
+            BUILD_BLENDER_ADDON: << pipeline.parameters.build-blender-addon >>
             RUN_TEST: << pipeline.parameters.run-test >>
             PYTHONIOENCODING: "utf-8"
           command: |
             python -m pip install .
-            python -m xrfeitoria.utils.publish_plugins build-blender
+            if [ "$BUILD_BLENDER_ADDON" = "1" ]; then
+              echo "#### Building Blender Addon ####"
+              python -m xrfeitoria.utils.publish_plugins build-blender
+              export XRFEITORIA__DIST_ROOT="/config/project/src"
+              export XRFEITORIA__VERSION=`python -c "import xrfeitoria; print(xrfeitoria.__version__)"`
+            fi
             if [ "$RUN_TEST" = "1" ]; then
               echo "#### Running Tests ####"
               python -m tests.setup_ci -b /usr/bin/blender
               python -m tests.blender.main -b
             fi
-            # dump version to file
-            python -c "import xrfeitoria; print(xrfeitoria.__version__)" > /config/project/src/dist/version.txt
       - store_artifacts:
+          when: << pipeline.parameters.build-blender-addon >>
           path: /config/project/src/dist/
       - store_test_results:
+          when: << pipeline.parameters.run-test >>
           path: /config/project/output/tests/blender/blender.log
       - persist_to_workspace:
           root: /config/project
@@ -172,9 +184,18 @@ jobs:
       - run:
           name: "Publish Release on GitHub"
           command: |
-            VERSION=$(cat ./artifacts/src/dist/version.txt)
-            rm -f ./artifacts/src/dist/version.txt
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/src/dist/
+            VERSION=$(git describe --tags --abbrev=0)
+            RELEASE_TITLE="XRFeitoria Release $VERSION"
+            RELEASE_BODY=$(curl -s "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/pulls/${CIRCLE_PR_NUMBER}" | jq -r '.body')
+            ghr \
+              -t ${GITHUB_TOKEN} \
+              -u ${CIRCLE_PROJECT_USERNAME} \
+              -r ${CIRCLE_PROJECT_REPONAME} \
+              -c ${CIRCLE_SHA1} \
+              -n "${RELEASE_TITLE}" \
+              -b "${RELEASE_BODY}" \
+              -delete \
+              ${VERSION} ./artifacts/src/dist/
 
 workflows:
   plugin-workflow:
