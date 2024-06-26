@@ -63,7 +63,7 @@ jobs:
         if: "!contains(github.event.pull_request.changed_files, 'src/XRFeitoriaUnreal/*')"
         run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
 
-      - name: Update Python Package Version
+      - name: Update Python Package Version & Commit
         run: |
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .

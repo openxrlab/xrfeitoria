@@ -192,14 +192,14 @@ jobs:
           command: |
             VERSION=$(git describe --tags --abbrev=0)
             RELEASE_TITLE="XRFeitoria Release $VERSION"
-            RELEASE_BODY=$(curl -s "https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/pulls/${CIRCLE_PR_NUMBER}" | jq -r '.body')
             ghr \
               -t ${GITHUB_TOKEN} \
               -u ${CIRCLE_PROJECT_USERNAME} \
               -r ${CIRCLE_PROJECT_REPONAME} \
               -c ${CIRCLE_SHA1} \
               -n "${RELEASE_TITLE}" \
-              -b "${RELEASE_BODY}" \
+              -draft \
+              -generatenotes \
               -delete \
               ${VERSION} ./artifacts/src/dist/
 
