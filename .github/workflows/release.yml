@@ -59,7 +59,7 @@ jobs:
 
       - name: Determine next version
         env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get the next version from the previous step
           VERSION="${{ steps.bumpr.outputs.next_version }}"
@@ -86,4 +86,5 @@ jobs:
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
           git commit -m "[bot] Update plugin info"
+          git remote set-url origin https://${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
           git push origin HEAD:${{ github.head_ref }}
