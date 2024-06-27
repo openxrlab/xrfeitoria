@@ -56,19 +56,20 @@ jobs:
 
       - name: Determine next version
         run: |
+          # Get the next version from the previous step
           VERSION="${{ steps.bumpr.outputs.next_version }}"
           if [ -z "$VERSION" ]; then
             echo "No version bump needed."
             exit 0
           fi
 
+          # Git configuration
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Checkout to PR branch
-          git checkout ${{ github.head_ref }}
           git tag -a "$VERSION" -m "Release $VERSION"
           pip install .
 
+          # Update plugin info
           if ${{ steps.filter.outputs.blender == 'true' }}; then
             python -m xrfeitoria.utils.publish_plugins update-bpy-version
           fi
