@@ -87,12 +87,5 @@ jobs:
 
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
 
-          # Commit changes
-          git add .
-          git commit -m "[bot] Update plugin info"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-
-      # - name: suggester / Leave comments on PRs
-      #   uses: reviewdog/action-suggester@v1
+      - name: suggester / Leave comments on PRs
+        uses: reviewdog/action-suggester@v1
