@@ -38,6 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
 
       - id: bumpr
         name: Post bumpr status comment
@@ -70,7 +73,7 @@ jobs:
 
           # Git configuration
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$VERSION" -m "Release $VERSION"
           pip install .
 
@@ -85,9 +88,9 @@ jobs:
 
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
-          git commit -m "[bot] Update plugin info"
+          git commit -a -m "[bot] Update plugin info"
+
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+          branch: ${{ github.head_ref }}
