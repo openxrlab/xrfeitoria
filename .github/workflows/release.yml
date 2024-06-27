@@ -39,7 +39,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
 
       - id: bumpr
@@ -92,5 +91,3 @@ jobs:
 
       - name: Push changes
         uses: ad-m/github-push-action@master
-        with:
-          branch: ${{ github.head_ref }}
