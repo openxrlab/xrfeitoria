@@ -10,6 +10,8 @@ on:
       - labeled
 permissions:
   contents: write
+  checks: write
+  issues: write
   pull-requests: write
 
 jobs:
@@ -84,12 +86,6 @@ jobs:
           fi
 
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
-          git add .
-          git commit -a -m "[bot] Update plugin info"
-          # Get Forked Repository
 
-          echo "url: ${{ github.event.pull_request.head.repo.full_name }}"
-          echo "branch: ${{ github.event.pull_request.head.ref }}"
-
-          git remote set-url origin https://x-access-token:${{ secrets.ACTIONS_PAT }}@github.com/${{ github.event.pull_request.head.repo.full_name }}.git
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      - uses: reviewdog/action-suggester@v1
+        name: Leave comments on PRs
