@@ -54,13 +54,22 @@ jobs:
           git checkout ${{ github.head_ref }}
           git tag -a "$VERSION" -m "Release $VERSION"
           pip install .
+      
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            blender:
+              - 'src/XRFeitoriaBpy/*'
+            unreal:
+              - 'src/XRFeitoriaUnreal/*'
 
       - name: Update Blender Addon Version
-        if: "contains(github.event.pull_request.changed_files, 'src/XRFeitoriaBpy/*')"
+        if: steps.filter.outputs.blender == 'true'
         run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
 
       - name: Update Unreal Plugin Version
-        if: "contains(github.event.pull_request.changed_files, 'src/XRFeitoriaUnreal/*')"
+        if: steps.filter.outputs.unreal == 'true'
         run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
 
       - name: Update Python Package Version & Commit
