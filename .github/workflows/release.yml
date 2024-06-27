@@ -34,6 +34,7 @@ jobs:
           if_false: ${{ steps.bumpr.outputs.next_version }}
 
   release-check:
+    if: github.event.action == 'labeled'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,5 +88,4 @@ jobs:
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
           git commit -a -m "[bot] Update plugin info"
-          # push to the branch
-          git push origin HEAD:main
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
