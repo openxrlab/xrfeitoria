@@ -60,8 +60,6 @@ jobs:
               - 'src/XRFeitoriaUnreal/*'
 
       - name: Determine next version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get the next version from the previous step
           VERSION="${{ steps.bumpr.outputs.next_version }}"
@@ -88,4 +86,4 @@ jobs:
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
           git commit -a -m "[bot] Update plugin info"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push https://x-access-token:${{ secrets.ACTIONS_PAT }}@github.com/${{ github.repository }} HEAD:${{ github.event.pull_request.head.ref }}
