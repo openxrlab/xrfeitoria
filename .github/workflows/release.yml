@@ -45,16 +45,6 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: Prepare Dependencies
-        run: |
-          VERSION="${{ steps.bumpr.outputs.next_version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Checkout to PR branch
-          git checkout ${{ github.head_ref }}
-          git tag -a "$VERSION" -m "Release $VERSION"
-          pip install .
-
       - id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -64,16 +54,28 @@ jobs:
             unreal:
               - 'src/XRFeitoriaUnreal/*'
 
-      - name: Update Blender Addon Version
-        if: steps.filter.outputs.blender == 'true'
-        run: python -m xrfeitoria.utils.publish_plugins update-bpy-version
-
-      - name: Update Unreal Plugin Version
-        if: steps.filter.outputs.unreal == 'true'
-        run: python -m xrfeitoria.utils.publish_plugins update-uplugin-version
-
-      - name: Update Python Package Version & Commit
+      - name: Determine next version
         run: |
+          VERSION="${{ steps.bumpr.outputs.next_version }}"
+          if [ -z "$VERSION" ]; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Checkout to PR branch
+          git checkout ${{ github.head_ref }}
+          git tag -a "$VERSION" -m "Release $VERSION"
+          pip install .
+
+          if ${{ steps.filter.outputs.blender == 'true' }}; then
+            python -m xrfeitoria.utils.publish_plugins update-bpy-version
+          fi
+
+          if ${{ steps.filter.outputs.unreal == 'true' }}; then
+            python -m xrfeitoria.utils.publish_plugins update-uplugin-version
+          fi
+
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
           git commit -m "[bot] Update plugin info"
