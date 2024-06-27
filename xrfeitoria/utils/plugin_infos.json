@@ -1,29 +1,4 @@
 {
-    "0.6.7": {
-        "XRFeitoria": "0.6.7",
-        "XRFeitoriaBpy": "0.0.1",
-        "XRFeitoriaUnreal": "0.6.7"
-    },
-    "0.6.6": {
-        "XRFeitoria": "0.6.6",
-        "XRFeitoriaBpy": "0.0.0",
-        "XRFeitoriaUnreal": "0.0.0"
-    },
-    "0.6.5": {
-        "XRFeitoria": "0.6.5",
-        "XRFeitoriaBpy": "0.6.5",
-        "XRFeitoriaUnreal": "0.6.5"
-    },
-    "0.6.4": {
-        "XRFeitoria": "0.6.4",
-        "XRFeitoriaBpy": "0.6.4",
-        "XRFeitoriaUnreal": "0.6.4"
-    },
-    "0.6.3": {
-        "XRFeitoria": "0.6.3",
-        "XRFeitoriaBpy": "0.6.2",
-        "XRFeitoriaUnreal": "0.6.2"
-    },
     "0.6.2": {
         "XRFeitoria": "0.6.2",
         "XRFeitoriaBpy": "0.6.2",
