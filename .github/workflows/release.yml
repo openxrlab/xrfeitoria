@@ -58,6 +58,7 @@ jobs:
         run: |
           VERSION="${{ steps.bumpr.outputs.next_version }}"
           if [ -z "$VERSION" ]; then
+            echo "No version bump needed."
             exit 0
           fi
 
