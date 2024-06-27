@@ -81,4 +81,4 @@ jobs:
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           git add .
           git commit -m "[bot] Update plugin info"
-          git push
+          git push origin HEAD:${{ github.head_ref }}
