@@ -91,5 +91,5 @@ jobs:
           echo "url: ${{ github.event.pull_request.head.repo.full_name }}"
           echo "branch: ${{ github.event.pull_request.head.ref }}"
 
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.event.pull_request.head.repo.full_name }}.git
+          git remote set-url origin https://x-access-token:${{ secrets.ACTIONS_PAT }}@github.com/${{ github.event.pull_request.head.repo.full_name }}.git
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
