@@ -52,7 +52,7 @@ jobs:
                       -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
                       -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
                     $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
-                    $env:XRFEITORIA__DIST_ROOT="$PWD/src/dist"
+                    $env:XRFEITORIA__DIST_ROOT="$PWD/src"
                   }
                   if ($env:RUN_TEST -eq 1) {
                     echo "#### Running Tests ####"
