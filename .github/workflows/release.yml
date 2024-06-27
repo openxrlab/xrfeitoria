@@ -58,6 +58,8 @@ jobs:
               - 'src/XRFeitoriaUnreal/*'
 
       - name: Determine next version
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get the next version from the previous step
           VERSION="${{ steps.bumpr.outputs.next_version }}"
