@@ -65,6 +65,7 @@ jobs:
       - name: Determine next version
         if: ${{ !steps.bumpr.outputs.skip }}
         run: |
+          #
           echo "::group::Get the next version from the previous step"
           VERSION="${{ steps.bumpr.outputs.next_version }}"
           echo "Next version: $VERSION"
