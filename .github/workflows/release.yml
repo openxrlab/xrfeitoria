@@ -87,13 +87,13 @@ jobs:
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
           echo "::endgroup::"
 
-          # echo "::group::Set to PR branch/repository"
-          # REPO_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
-          # REPO_NAME=${{ github.event.pull_request.head.repo.name }}
-          # BRANCH_NAME=${{ github.event.pull_request.head.ref }}
-          # GIT_URL="github.com/${REPO_OWNER}/${REPO_NAME}.git"
-          # echo "Pushing to $GIT_URL"
-          # echo "::endgroup::"
+          echo "::group::Set to PR branch/repository"
+          REPO_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+          REPO_NAME=${{ github.event.pull_request.head.repo.name }}
+          BRANCH_NAME=${{ github.event.pull_request.head.ref }}
+          GIT_URL="github.com/${REPO_OWNER}/${REPO_NAME}.git"
+          echo "Pushing to $GIT_URL"
+          echo "::endgroup::"
 
           echo "::group::Commit and push"
           git add .
