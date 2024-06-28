@@ -70,10 +70,13 @@ jobs:
           # Git configuration
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Set the remote URL to the PR's repository
+          git remote set-url origin https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git
+          git pull
           git tag -a "$VERSION" -m "Release $VERSION"
-          pip install .
 
           # Update plugin info
+          pip install .
           if ${{ steps.filter.outputs.blender == 'true' }}; then
             python -m xrfeitoria.utils.publish_plugins update-bpy-version
           fi
@@ -86,7 +89,6 @@ jobs:
 
           git add .
           git commit -m "[bot] Update plugin info"
-          git remote set-url origin https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       # - name: suggester / Leave comments on PRs
