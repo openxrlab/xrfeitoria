@@ -62,13 +62,10 @@ jobs:
               - 'src/XRFeitoriaUnreal/*'
 
       - name: Determine next version
+        if: ${{ steps.bumpr.outputs.skip == 'false' }}
         run: |
           # Get the next version from the previous step
           VERSION="${{ steps.bumpr.outputs.next_version }}"
-          if [ -z "$VERSION" ]; then
-            echo "No version bump needed."
-            exit 0
-          fi
 
           # Git configuration
           git config user.name "github-actions[bot]"
@@ -87,5 +84,11 @@ jobs:
 
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
 
-      - name: suggester / Leave comments on PRs
-        uses: reviewdog/action-suggester@v1
+          git add .
+          git commit -m "[bot] Update plugin info"
+          git remote set-url origin https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      # - name: suggester / Leave comments on PRs
+      #   if: ${{ steps.bumpr.outputs.skip == 'false' }}
+      #   uses: reviewdog/action-suggester@v1
