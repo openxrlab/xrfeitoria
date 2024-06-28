@@ -86,8 +86,13 @@ jobs:
 
           git add .
           git commit -m "[bot] Update plugin info"
-          git remote set-url origin https://x-access-token:${{ secrets.ACTIONS_PAT }}@github.com/${{ github.event.pull_request.head.repo.full_name }}.git
-          git push origin "HEAD:$(echo ${GITHUB_HEAD_REF})"
+          REPO_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+          REPO_NAME=${{ github.event.pull_request.head.repo.name }}
+          BRANCH_NAME=${{ github.event.pull_request.head.ref }}
+          GIT_URL="github.com/${REPO_OWNER}/${REPO_NAME}.git"
+          echo "Pushing to $GIT_URL"
+          git remote set-url origin https://x-access-token:${{ secrets.ACTIONS_PAT }}@${GIT_URL}
+          git push origin HEAD:${BRANCH_NAME}
 
       # - name: suggester / Leave comments on PRs
       #   if: ${{ !steps.bumpr.outputs.skip }}
