@@ -90,6 +90,8 @@ jobs:
 
           git add .
           git commit -m "[bot] Update plugin info"
+          git fetch origin ${{ github.event.pull_request.head.ref }}
+          git rebase origin/${{ github.event.pull_request.head.ref }}
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       # - name: suggester / Leave comments on PRs
