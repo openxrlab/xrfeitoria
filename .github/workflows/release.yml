@@ -70,10 +70,6 @@ jobs:
           # Git configuration
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Set the remote URL to the PR's repository
-          git remote set-url origin https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git
-          git pull
-          git checkout -b ${{ github.event.pull_request.head.ref }}
           git tag -a "$VERSION" -m "Release $VERSION"
 
           # Update plugin info
@@ -90,9 +86,7 @@ jobs:
 
           git add .
           git commit -m "[bot] Update plugin info"
-          git fetch origin ${{ github.event.pull_request.head.ref }}
-          git rebase origin/${{ github.event.pull_request.head.ref }}
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git push
 
       # - name: suggester / Leave comments on PRs
       #   if: ${{ !steps.bumpr.outputs.skip }}
