@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   test-self-host:
     machine: true
-    resource_class: haiyimei/windows-machines
+    resource_class: openxrlab/xrfeitoria
     steps:
       - run:
           name: "Check Runner Info"
