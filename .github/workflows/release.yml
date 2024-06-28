@@ -73,6 +73,7 @@ jobs:
           # Set the remote URL to the PR's repository
           git remote set-url origin https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git
           git pull
+          git checkout -b ${{ github.event.pull_request.head.ref }}
           git tag -a "$VERSION" -m "Release $VERSION"
 
           # Update plugin info
