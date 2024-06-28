@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  test-self-host:
+    machine: true
+    resource_class: haiyimei/windows-machines
+    steps:
+      - run:
+          name: "Check Runner Info"
+          shell: powershell.exe
+          command: echo "Hi I'm on Runners!"
+
+workflows:
+  plugin-workflow:
+    jobs:
+      # -- Unreal -- #
+      - test-self-host
