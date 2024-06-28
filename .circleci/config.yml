@@ -8,7 +8,7 @@ jobs:
       - run:
           name: "Check Runner Info"
           shell: powershell.exe
-          command: echo "Hi I'm on Runners!"
+          command: echo "Hi I'm on Runners!!!"
 
 workflows:
   plugin-workflow:
