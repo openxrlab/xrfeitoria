@@ -17,7 +17,7 @@ parameters:
 jobs:
   test-self-host:
     machine: true
-    resource_class: haiyimei/windows-machines
+    resource_class: openxrlab/xrfeitoria
     steps:
       - run:
           name: "Check Runner Info"
@@ -26,7 +26,7 @@ jobs:
 
   unreal-windows:
     machine: true
-    resource_class: haiyimei/windows-machines
+    resource_class: openxrlab/xrfeitoria
     steps:
       - when:
           condition: << pipeline.parameters.build-unreal-plugin >> || << pipeline.parameters.run-unreal-test >>
