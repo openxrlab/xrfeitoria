@@ -42,6 +42,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - id: bumpr
         name: Post bumpr status comment
@@ -65,29 +66,42 @@ jobs:
         if: ${{ !steps.bumpr.outputs.skip }}
         run: |
           # Get the next version from the previous step
+          echo "::group::Get the next version from the previous step"
           VERSION="${{ steps.bumpr.outputs.next_version }}"
+          echo "Next version: $VERSION"
+          echo "::endgroup::"
 
-          # Git configuration
+          echo "::group::Git configuration"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$VERSION" -m "Release $VERSION"
-          pip install .
+          echo "::endgroup::"
 
-          # Update plugin info
+          echo "::group::Update plugin info"
+          pip install .
           if ${{ steps.filter.outputs.blender == 'true' }}; then
             python -m xrfeitoria.utils.publish_plugins update-bpy-version
           fi
-
           if ${{ steps.filter.outputs.unreal == 'true' }}; then
             python -m xrfeitoria.utils.publish_plugins update-uplugin-version
           fi
-
           python -m xrfeitoria.utils.publish_plugins update-plugin-info
+          echo "::endgroup::"
 
+          echo "::group::Set to PR branch/repository"
+          REPO_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+          REPO_NAME=${{ github.event.pull_request.head.repo.name }}
+          BRANCH_NAME=${{ github.event.pull_request.head.ref }}
+          GIT_URL="github.com/${REPO_OWNER}/${REPO_NAME}.git"
+          echo "Pushing to $GIT_URL"
+          echo "::endgroup::"
+
+          echo "::group::Commit and push"
           git add .
           git commit -m "[bot] Update plugin info"
-          git remote set-url origin https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          git remote set-url origin https://x-access-token:${{ secrets.ACTIONS_PAT }}@${GIT_URL}
+          git push origin HEAD:${BRANCH_NAME}
+          echo "::endgroup::"
 
       # - name: suggester / Leave comments on PRs
       #   if: ${{ !steps.bumpr.outputs.skip }}
