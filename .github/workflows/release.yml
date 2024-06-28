@@ -62,7 +62,7 @@ jobs:
               - 'src/XRFeitoriaUnreal/*'
 
       - name: Determine next version
-        if: ${{ steps.bumpr.outputs.skip == 'false' }}
+        if: ${{ !steps.bumpr.outputs.skip }}
         run: |
           # Get the next version from the previous step
           VERSION="${{ steps.bumpr.outputs.next_version }}"
@@ -90,5 +90,5 @@ jobs:
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       # - name: suggester / Leave comments on PRs
-      #   if: ${{ steps.bumpr.outputs.skip == 'false' }}
+      #   if: ${{ !steps.bumpr.outputs.skip }}
       #   uses: reviewdog/action-suggester@v1
