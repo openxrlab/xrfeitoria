@@ -2,15 +2,19 @@
 
 >>> python -m xrfeitoria.utils.publish_plugins --help
 """
+
+import json
 import os
 import platform
 import re
 import subprocess
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from loguru import logger
+from packaging.version import parse
+from typer import Option, Typer
 
 from ..data_structure.constants import plugin_name_blender, plugin_name_pattern, plugin_name_unreal
 from ..utils import setup_logger
@@ -22,6 +26,10 @@ project_root = root.parents[1]
 src_root = project_root / 'src'
 dist_root = src_root / 'dist'
 dist_root.mkdir(exist_ok=True, parents=True)
+plugin_infos_json = root / 'plugin_infos.json'
+
+setup_logger(level='INFO')
+app = Typer(pretty_exceptions_show_locals=False)
 
 
 @contextmanager
@@ -62,6 +70,7 @@ def _make_archive(
 
     if dst_path.exists():
         dst_path.unlink()
+    dst_path.parent.mkdir(exist_ok=True, parents=True)
 
     with zipfile.ZipFile(dst_path, 'w', compression=zipfile.ZIP_DEFLATED) as zipf:
         for file in src_folder.rglob('*'):
@@ -78,7 +87,30 @@ def _make_archive(
     return dst_path
 
 
-def update_bpy_version(bpy_init_file: Path):
+@app.command()
+def update_plugin_info():
+    """Update version infos in plugin files."""
+    package_version = str(parse(__version__))
+
+    bpy_version = (src_root / plugin_name_blender / '__init__.py').read_text()
+    bpy_version = re.search(r"__version__ = version = '(.*)'", bpy_version).group(1)
+
+    unreal_version = (src_root / plugin_name_unreal / f'{plugin_name_unreal}.uplugin').read_text()
+    unreal_version = re.search(r'"VersionName": "(.*)"', unreal_version).group(1)
+
+    plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
+    plugin_infos[package_version] = {
+        'XRFeitoria': package_version,
+        'XRFeitoriaBpy': str(parse(bpy_version)),
+        'XRFeitoriaUnreal': str(parse(unreal_version)),
+    }
+    plugin_infos = dict(sorted(plugin_infos.items(), key=lambda item: parse(item[0]), reverse=True))  # sort by version
+    plugin_infos_json.write_text(json.dumps(plugin_infos, indent=4) + '\n')  # dump to json
+    logger.info(f'Updated "{plugin_infos_json}" with version {package_version}')
+
+
+@app.command()
+def update_bpy_version(bpy_init_file: Path = src_root / plugin_name_blender / '__init__.py'):
     """Update version in ``src/XRFeitoriaBpy/__init__.py``.
 
     Args:
@@ -94,7 +126,8 @@ def update_bpy_version(bpy_init_file: Path):
     logger.info(f'Updated "{bpy_init_file}" with version {__version__}')
 
 
-def update_uplugin_version(uplugin_path: Path):
+@app.command()
+def update_uplugin_version(uplugin_path: Path = src_root / plugin_name_unreal / f'{plugin_name_unreal}.uplugin'):
     """Update version in ``src/XRFeitoriaUnreal/XRFeitoria.uplugin``.
 
     Args:
@@ -107,7 +140,14 @@ def update_uplugin_version(uplugin_path: Path):
     logger.info(f'Updated "{uplugin_path}" with version {__version__}')
 
 
+@app.command()
 def build_blender():
+    """Publish Blender Plugin to zip files.
+
+    Examples:
+
+    >>> python -m xrfeitoria.utils.publish_plugins build-blender
+    """
     plugin_name = plugin_name_pattern.format(
         plugin_name=plugin_name_blender,
         plugin_version=__version__,
@@ -126,13 +166,35 @@ def build_blender():
     logger.info(f'Plugin for blender: "{dst_plugin_zip}"')
 
 
-def build_unreal(unreal_exec_list: List[Path]):
+@app.command()
+def build_unreal(
+    unreal_exec_list: List[Path] = Option(
+        None,
+        '-u',
+        '--unreal-exec',
+        resolve_path=True,
+        file_okay=True,
+        dir_okay=False,
+        exists=True,
+        help='Path to Unreal Engine executable. e.g. "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"',
+    ),
+):
+    """Publish Unreal Plugin to zip files.
+
+    Examples:
+
+    >>> python -m xrfeitoria.utils.publish_plugins build-unreal
+    -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+    """
     dir_plugin = src_root / plugin_name_unreal
     uplugin_path = dir_plugin / f'{plugin_name_unreal}.uplugin'
     update_uplugin_version(uplugin_path)
     logger.info('Compiling plugin for Unreal Engine...')
+    suffix = 'bat' if platform.system() == 'Windows' else 'sh'
     for unreal_exec in unreal_exec_list:
-        uat_path = unreal_exec.parents[2] / 'Build/BatchFiles/RunUAT.bat'
+        uat_path = unreal_exec.parents[2] / f'Build/BatchFiles/RunUAT.{suffix}'
         unreal_infos = UnrealRPCRunner._get_engine_info(unreal_exec)
         engine_version = ''.join(unreal_infos)  # e.g. Unreal5.1
         plugin_name = plugin_name_pattern.format(
@@ -147,9 +209,9 @@ def build_unreal(unreal_exec_list: List[Path]):
             engine_version=engine_version,
             platform='Source',
         )  # e.g. XRFeitoriaUnreal-0.6.0-Unreal5.3-Source
-        dist_path = dist_root / plugin_name
+        dist_path = src_root / plugin_name
         subprocess.call([uat_path, 'BuildPlugin', f'-Plugin={uplugin_path}', f'-Package={dist_path}'])
-        _make_archive(src_folder=dist_path)
+        _make_archive(src_folder=dist_path, dst_path=dist_root / f'{plugin_name}.zip')
         _make_archive(
             src_folder=dist_path,
             dst_path=dist_root / f'{plugin_src_name}.zip',
@@ -160,32 +222,4 @@ def build_unreal(unreal_exec_list: List[Path]):
 
 
 if __name__ == '__main__':
-    from typer import Option, run
-
-    def wrapper(
-        unreal_exec: List[Path] = Option(
-            None,
-            '-u',
-            resolve_path=True,
-            file_okay=True,
-            dir_okay=False,
-            exists=True,
-            help='Path to Unreal Engine executable. e.g. "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"',
-        )
-    ):
-        """Publish plugins to zip files.
-
-        Examples:
-
-        >>> python -m xrfeitoria.utils.publish_plugins
-        -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-        -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-        -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
-        """
-        setup_logger(level='INFO')
-        build_blender()
-        if len(unreal_exec) > 0:
-            build_unreal(unreal_exec_list=unreal_exec)
-        logger.info(f'Check "{dist_root}" for the plugin zip files.')
-
-    run(wrapper)
+    app()

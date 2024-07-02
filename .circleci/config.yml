@@ -1,0 +1,27 @@
+version: 2.1
+setup: true
+orbs:
+  path-filtering: circleci/path-filtering@1.0.0
+
+workflows:
+  generate-config:
+    jobs:
+      - path-filtering/filter:
+          base-revision: main
+          config-path: .circleci/continue_config.yml
+          mapping: |
+            # -- Unreal Plugin -- #
+            src/XRFeitoriaUnreal/.* build-unreal-plugin true
+            src/XRFeitoriaUnreal/.* run-unreal-test true
+            # -- Blender Addon -- #
+            src/XRFeitoriaBpy/.* build-blender-addon true
+            src/XRFeitoriaBpy/.* run-blender-test true
+            # -- tests -- #
+            xrfeitoria/.* run-unreal-test true
+            xrfeitoria/.* run-blender-test true
+            tests/unreal/.* run-unreal-test true
+            tests/blender/.* run-blender-test true
+          filters:
+            # https://circleci.com/docs/workflows/#executing-workflows-for-a-git-tag
+            tags:
+              only: /^v\d+\.\d+\.\d+/

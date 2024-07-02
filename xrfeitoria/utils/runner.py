@@ -1,4 +1,5 @@
 """Runner for starting blender or unreal as a rpc server."""
+
 import json
 import os
 import platform
@@ -38,7 +39,7 @@ from .downloader import download
 from .setup import get_exec_path
 
 # XXX: hardcode download url
-dist_root = os.environ.get('XRFEITORIA__DIST_ROOT') or 'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria'
+dist_root = os.environ.get('XRFEITORIA__DIST_ROOT') or 'https://github.com/openxrlab/xrfeitoria/releases/download'
 plugin_infos_json = Path(__file__).parent.resolve() / 'plugin_infos.json'
 plugin_info_type = TypedDict(
     'PluginInfo',
@@ -501,7 +502,6 @@ class RPCRunner(ABC):
     @property
     @lru_cache
     def plugin_info(self) -> plugin_info_type:
-        # plugin_infos = { "0.5.0": { "XRFeitoria": "0.5.0", "XRFeitoriaBpy": "0.5.0", "XRFeitoriaUnreal": "0.5.0" }, ... }
         plugin_infos: Dict[str, Dict[str, str]] = json.loads(plugin_infos_json.read_text())
         plugin_versions = sorted((map(parse, plugin_infos.keys())))
         _version = parse(__version__)
@@ -542,9 +542,12 @@ class RPCRunner(ABC):
     @lru_cache
     def plugin_url(self) -> Optional[str]:
         if dist_root.startswith('http'):
-            # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaBpy-0.5.0-None-None.zip
-            # e.g. https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/plugins/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
-            return f'{dist_root}/plugins/{plugin_name_pattern.format(**self.plugin_info)}.zip'
+            # e.g. https://github.com/openxrlab/xrfeitoria/releases/download/v0.6.2/XRFeitoriaBpy-0.6.2-None-None.zip
+            # e.g. https://github.com/openxrlab/xrfeitoria/releases/download/v0.6.2/XRFeitoriaUnreal-0.6.2-Unreal5.1-Windows.zip
+            plugin_version = self.plugin_info['plugin_version']
+            plugin_filename = plugin_name_pattern.format(**self.plugin_info)
+            plugin_url = f'{dist_root}/v{plugin_version}/{plugin_filename}.zip'
+            return plugin_url
         else:
             # e.g. /path/to/dist/XRFeitoriaBpy-0.5.0-None-None.zip
             # e.g. /path/to/dist/XRFeitoriaUnreal-0.5.0-Unreal5.1-Windows.zip
@@ -635,7 +638,8 @@ class BlenderRPCRunner(RPCRunner):
             else:
                 plugin_path = Path(self.plugin_url)
             if plugin_path != src_plugin_path:
-                shutil.move(plugin_path, src_plugin_path)
+                src_plugin_path.parent.mkdir(exist_ok=True, parents=True)
+                shutil.copyfile(plugin_path, src_plugin_path)
         return src_plugin_path
 
     @staticmethod

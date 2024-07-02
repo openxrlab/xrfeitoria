@@ -22,5 +22,5 @@ def _get_version() -> str:
 
 
 _tls = CacheThread()
-__version__ = _get_version()
+__version__ = _get_version()  # e.g. '0.5.0'
 from .factory import init_blender, init_unreal
