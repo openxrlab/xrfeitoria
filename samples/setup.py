@@ -65,10 +65,12 @@ def get_exec(engine: Literal['blender', 'unreal'], exec_from_config: Optional[Pa
     return path.as_posix()
 
 
-def ask_unreal_project() -> str:
+def ask_unreal_project(unreal_project: Optional[str] = None) -> str:
     """Ask for unreal project path."""
-    txt = 'Please input the path to the unreal project, or press [bold]enter[/bold] to download a sample project\n\[Enter]'
-    unreal_project = Prompt.ask(txt, default=None)
+    txt = 'Please input the path to the unreal project'
+    if unreal_project is None:
+        txt += ', or press [bold]enter[/bold] to download a sample project\n' '\[Enter]'
+    unreal_project = Prompt.ask(txt, default=unreal_project)
     return get_unreal_project(unreal_project)
 
 

@@ -194,6 +194,7 @@ class SequenceBlender(SequenceBase):
     def _spawn_camera_in_engine(
         transform_keys: 'Union[List[Dict], Dict]',
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: str = 'Camera',
     ) -> None:
         """Spawn a camera in the engine.
@@ -270,6 +271,7 @@ class SequenceBlender(SequenceBase):
     def _use_camera_in_engine(
         transform_keys: 'Union[List[Dict], Dict]',
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: str = 'Camera',
     ) -> None:
         """Use level camera to render in the sequence in the engine.

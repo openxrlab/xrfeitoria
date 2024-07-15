@@ -1,6 +1,7 @@
 from ..data_structure.constants import Vector
 from ..object.object_utils import ObjectUtilsUnreal
 from ..rpc import remote_unreal
+from ..utils import Validator
 from .camera_base import CameraBase
 
 try:
@@ -15,6 +16,16 @@ class CameraUnreal(CameraBase):
     """Camera class for Unreal."""
 
     _object_utils = ObjectUtilsUnreal
+
+    @property
+    def aspect_ratio(self) -> float:
+        """Aspect of ratio, Width / Height."""
+        return self._get_aspect_ratio_in_engine(self._name)
+
+    @aspect_ratio.setter
+    def aspect_ratio(self, value: float):
+        Validator.validate_argument_type(value, [float, int])
+        self._set_aspect_ratio_in_engine(self._name, value)
 
     def look_at(self, target: Vector) -> None:
         """Set the camera to look at the target.
@@ -36,6 +47,11 @@ class CameraUnreal(CameraBase):
         camera: unreal.CameraActor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
         return camera.camera_component.field_of_view
 
+    @staticmethod
+    def _get_aspect_ratio_in_engine(name: str) -> float:
+        camera: unreal.CameraActor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
+        return camera.camera_component.aspect_ratio
+
     # ----- Setter ----- #
 
     @staticmethod
@@ -46,6 +62,11 @@ class CameraUnreal(CameraBase):
     def _set_camera_fov_in_engine(name, fov):
         camera: unreal.CameraActor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
         camera.camera_component.field_of_view = fov
+
+    @staticmethod
+    def _set_aspect_ratio_in_engine(name: str, ratio: float):
+        camera: unreal.CameraActor = XRFeitoriaUnrealFactory.utils_actor.get_actor_by_name(name)
+        camera.camera_component.aspect_ratio = ratio
 
     @staticmethod
     def _spawn_in_engine(
