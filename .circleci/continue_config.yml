@@ -34,6 +34,7 @@ jobs:
             # - checkout
             - run:
                 name: Clone GitHub repository
+                shell: powershell.exe
                 command: |
                   git clone << pipeline.project.git_url >> .
                   git fetch --tags
