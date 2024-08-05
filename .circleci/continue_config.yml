@@ -35,7 +35,7 @@ jobs:
             - run:
                 name: Clone GitHub repository
                 command: |
-                  git clone << pipeline.git_url >> --branch << pipeline.git_tag >> $env:USERPROFILE\project
+                  git clone << pipeline.project.git_url >> --branch << pipeline.git.branch >> $env:USERPROFILE\project
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
