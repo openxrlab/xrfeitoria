@@ -35,11 +35,10 @@ jobs:
             - run:
                 name: Clone GitHub repository
                 command: |
-                  git clone << pipeline.project.git_url >> --branch << pipeline.git.branch >> project
+                  git clone << pipeline.project.git_url >> --branch << pipeline.git.branch >> .
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
-                working_directory: project
                 no_output_timeout: 60m
                 environment:
                   BUILD_UNREAL_PLUGIN: << pipeline.parameters.build-unreal-plugin >>
