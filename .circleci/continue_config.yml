@@ -37,7 +37,8 @@ jobs:
                 command: |
                   TAG="<< pipeline.git.tag >>"
                   BRANCH="<< pipeline.git.branch >>"
-                  if [ -n "$TAG" ]; then
+                  # If the branch is empty, use the tag as the branch
+                  if [ -z "$BRANCH" ] || [ "$BRANCH" = " " ]; then
                     BRANCH=$TAG
                   fi
                   echo "Cloning $BRANCH branch"
