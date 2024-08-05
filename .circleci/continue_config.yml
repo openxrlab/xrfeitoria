@@ -39,7 +39,7 @@ jobs:
                   $TAG = << pipeline.git.tag >>
                   $BRANCH = << pipeline.git.branch >>
                   $BRANCH = if ($TAG -ne $null) { $TAG } else { $BRANCH }
-                  git clone << pipeline.git.url >> --branch $BRANCH .
+                  git clone << pipeline.project.git_url >> --branch $BRANCH .
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
