@@ -508,6 +508,7 @@ Thumbs.db
 
 # Plugins
 src/*.zip
+src/XRFeitoriaUnreal-*/
 src/XRFeitoriaUnreal/Binaries/
 
 # Configs

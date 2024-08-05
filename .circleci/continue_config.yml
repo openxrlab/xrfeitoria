@@ -47,13 +47,13 @@ jobs:
                   PYTHONIOENCODING: "utf-8"
                 command: |
                   echo "#### Get Unreal Engine ####"
-                  $UE_51 = if (Test-Path env:$UE_51) { $env:UE_51 } else {
+                  $UE_51 = if (Test-Path $env:UE_51) { $env:UE_51 } else {
                       "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
                   }
-                  $UE_52 = if (Test-Path env:$UE_52) { $env:UE_52 } else {
+                  $UE_52 = if (Test-Path $env:UE_52) { $env:UE_52 } else {
                       "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
                   }
-                  $UE_53 = if (Test-Path env:$UE_53) { $env:UE_53 } else {
+                  $UE_53 = if (Test-Path $env:UE_53) { $env:UE_53 } else {
                       "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
                   }
                   echo "#### Install XRFeitoria Package ####"
