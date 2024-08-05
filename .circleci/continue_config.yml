@@ -35,7 +35,17 @@ jobs:
             - run:
                 name: Clone GitHub repository
                 command: |
-                  git clone << pipeline.project.git_url >> --branch << pipeline.git.branch >> .
+                  git clone << pipeline.project.git_url >>
+                  git fetch --tags
+                  $TAG = git tag -l --points-at HEAD
+                  if ($TAG) {
+                    Write-Host "Checking out tag: $TAG"
+                    git checkout $TAG
+                  } else {
+                    $BRANCH = << pipeline.git.branch >>
+                    Write-Host "Checking out branch: $BRANCH"
+                    git checkout $BRANCH
+                  }
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
