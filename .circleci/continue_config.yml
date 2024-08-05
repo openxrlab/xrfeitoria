@@ -35,7 +35,7 @@ jobs:
             - run:
                 name: Clone GitHub repository
                 command: |
-                  git clone << pipeline.project.git_url >>
+                  git clone << pipeline.project.git_url >> .
                   git fetch --tags
                   $TAG = git tag -l --points-at HEAD
                   if ($TAG) {
