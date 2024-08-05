@@ -1,9 +1,14 @@
 $installDirPath = "$env:ProgramFiles\CircleCI"
-$agentFile = "circleci-runner.exe"
-$cmd = "`"$installDirPath\$agentFile`" machine --config `"$installDirPath\runner-agent-config.yaml`""
+$agentPath = Join-Path -Path $installDirPath -ChildPath "circleci-runner.exe"
+$configPath = Join-Path -Path $installDirPath -ChildPath "runner-agent-config.yaml"
 
-echo "Constantly running command: $cmd"
+echo "Constantly running CircleCI Runner Agent"
 while ($true) {
-    Invoke-Expression $cmd
+    echo "--- Restarting CircleCI Runner Agent ---"
+    try {
+        & $agentPath machine --config $configPath
+    } catch {
+        echo "Error: $_"
+    }
     Start-Sleep 1
 }
