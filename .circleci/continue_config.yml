@@ -35,13 +35,13 @@ jobs:
             - run:
                 name: Clone GitHub repository
                 command: |
-                  # bash
                   TAG="<< pipeline.git.tag >>"
                   BRANCH="<< pipeline.git.branch >>"
                   if [ -n "$TAG" ]; then
                     BRANCH=$TAG
                   fi
-                  git clone "<< pipeline.project.git_url >>" --branch $BRANCH .
+                  echo "Cloning $BRANCH branch"
+                  git clone << pipeline.project.git_url >> --branch $BRANCH .
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
