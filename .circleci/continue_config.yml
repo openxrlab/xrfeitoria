@@ -37,14 +37,12 @@ jobs:
                 command: |
                   TAG="<< pipeline.git.tag >>"
                   BRANCH="<< pipeline.git.branch >>"
-                  declare -p TAG
-                  declare -p BRANCH
                   # If the branch is empty, use the tag as the branch
-                  if [ -z "$BRANCH" ] || [ "$BRANCH" = " " ]; then
-                    BRANCH=$TAG
+                  if [ -z "\$BRANCH" ]; then
+                    BRANCH=\$TAG
                   fi
-                  echo "Cloning $BRANCH branch"
-                  git clone << pipeline.project.git_url >> --branch $BRANCH .
+                  echo "Cloning \$BRANCH branch"
+                  git clone << pipeline.project.git_url >> --branch \$BRANCH .
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
