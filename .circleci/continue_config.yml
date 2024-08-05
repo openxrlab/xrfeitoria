@@ -31,7 +31,11 @@ jobs:
       - when:
           condition: << pipeline.parameters.build-unreal-plugin >> || << pipeline.parameters.run-unreal-test >>
           steps:
-            - checkout
+            # - checkout
+            - run:
+                name: Clone GitHub repository
+                command: |
+                  git clone << pipeline.project.git_url >> --branch << pipeline.git.branch >> .
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
@@ -41,6 +45,16 @@ jobs:
                   RUN_TEST: << pipeline.parameters.run-unreal-test >>
                   PYTHONIOENCODING: "utf-8"
                 command: |
+                  echo "#### Get Unreal Engine ####"
+                  $UE_51 = if (Test-Path $env:UE_51) { $env:UE_51 } else {
+                      "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                  }
+                  $UE_52 = if (Test-Path $env:UE_52) { $env:UE_52 } else {
+                      "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                  }
+                  $UE_53 = if (Test-Path $env:UE_53) { $env:UE_53 } else {
+                      "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                  }
                   echo "#### Install XRFeitoria Package ####"
                   conda activate xrfeitoria
                   python -m pip install .
@@ -48,19 +62,23 @@ jobs:
                   if ($env:BUILD_UNREAL_PLUGIN -eq 1) {
                     echo "#### Building Unreal Plugin ####"
                     python -m xrfeitoria.utils.publish_plugins build-unreal `
-                      -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
-                      -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe" `
-                      -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                      -u $UE_51 `
+                      -u $UE_52 `
+                      -u $UE_53
                     $env:XRFEITORIA__VERSION=$(python -c "import xrfeitoria; print(xrfeitoria.__version__)")
                     $env:XRFEITORIA__DIST_ROOT="$PWD/src"
                   }
                   if ($env:RUN_TEST -eq 1) {
-                    echo "#### Running Tests ####"
-                    python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.1/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+                    echo "#### Running Tests For UE 5.1 ####"
+                    python -m tests.setup_ci -u $UE_51
                     python -m tests.unreal.main
-                    python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.2/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+
+                    echo "#### Running Tests For UE 5.2 ####"
+                    python -m tests.setup_ci -u $UE_52
                     python -m tests.unreal.main
-                    python -m tests.setup_ci -u "C:/Program Files/Epic Games/UE_5.3/Engine/Binaries/Win64/UnrealEditor-Cmd.exe"
+
+                    echo "#### Running Tests For UE 5.3 ####"
+                    python -m tests.setup_ci -u $UE_53
                     python -m tests.unreal.main
                   }
       - when:

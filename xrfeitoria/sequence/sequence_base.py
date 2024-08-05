@@ -132,6 +132,7 @@ class SequenceBase(ABC):
         location: 'Vector' = None,
         rotation: 'Vector' = None,
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: Optional[str] = None,
     ) -> CameraBase:
         """Spawn a new camera in the sequence.
@@ -140,6 +141,7 @@ class SequenceBase(ABC):
             location (Vector): Location of the camera.
             rotation (Vector): Rotation of the camera.
             fov (float in (0.0, 180.0), optional): Field of view of the camera len. Defaults to 90.0. (unit: degrees)
+            aspect_ratio (float, optional): Aspect ratio of the camera. Defaults to 16.0 / 9.0.
             camera_name (str, optional): Name of the camera. Defaults to None.
         """
         if camera_name is None:
@@ -148,6 +150,7 @@ class SequenceBase(ABC):
         cls._spawn_camera_in_engine(
             transform_keys=transform_keys.model_dump(),
             fov=fov,
+            aspect_ratio=aspect_ratio,
             camera_name=camera_name,
         )
         logger.info(f'[cyan]Spawned[/cyan] camera "{camera_name}" in sequence "{cls.name}"')
@@ -158,6 +161,7 @@ class SequenceBase(ABC):
         cls,
         transform_keys: 'TransformKeys',
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: str = None,
     ) -> CameraBase:
         """Spawn a new camera with keyframes in the sequence.
@@ -165,6 +169,7 @@ class SequenceBase(ABC):
         Args:
             transform_keys (TransformKeys): Keyframes of transform (location, rotation, and scale).
             fov (float in (0.0, 180.0), optional): Field of view of the camera len. Defaults to 90.0. (unit: degrees)
+            aspect_ratio (float, optional): Aspect ratio of the camera. Defaults to 16.0 / 9.0.
             camera_name (str, optional): Name of the camera. Defaults to 'Camera'.
         """
         if not isinstance(transform_keys, list):
@@ -175,6 +180,7 @@ class SequenceBase(ABC):
         cls._spawn_camera_in_engine(
             transform_keys=transform_keys,
             fov=fov,
+            aspect_ratio=aspect_ratio,
             camera_name=camera_name,
         )
         logger.info(
@@ -269,6 +275,7 @@ class SequenceBase(ABC):
         location: 'Optional[Vector]' = None,
         rotation: 'Optional[Vector]' = None,
         fov: float = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> None:
         """Use the specified level camera in the sequence. The location, rotation and
         fov set in this method are only used in the sequence. The location, rotation and
@@ -279,6 +286,7 @@ class SequenceBase(ABC):
             location (Optional[Vector], optional): The location of the camera. Defaults to None. unit: meter.
             rotation (Optional[Vector], optional): The rotation of the camera. Defaults to None. unit: degree.
             fov (float, optional): The field of view of the camera. Defaults to None. unit: degree.
+            aspect_ratio (float, optional): The aspect ratio of the camera. Defaults to None.
         """
         camera_name = camera.name
         location = camera.location if location is None else location
@@ -289,6 +297,7 @@ class SequenceBase(ABC):
         cls._use_camera_in_engine(
             transform_keys=transform_keys.model_dump(),
             fov=fov,
+            aspect_ratio=aspect_ratio,
             camera_name=camera_name,
         )
         logger.info(f'[cyan]Used[/cyan] camera "{camera_name}" in sequence "{cls.name}"')
@@ -299,6 +308,7 @@ class SequenceBase(ABC):
         camera: _camera,
         transform_keys: 'TransformKeys',
         fov: float = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> None:
         """Use the specified level camera in the sequence. The transform_keys and fov
         set in this method are only used in the sequence. The location, rotation and fov
@@ -308,6 +318,7 @@ class SequenceBase(ABC):
             camera (CameraUnreal or CameraBlender): The camera to use.
             transform_keys (TransformKeys): The transform keys to use.
             fov (float, optional): The field of view to use. Defaults to None. unit: degree.
+            aspect_ratio (float, optional): The aspect ratio of the camera. Defaults to None.
         """
         camera_name = camera.name
         if not isinstance(transform_keys, list):
@@ -317,6 +328,7 @@ class SequenceBase(ABC):
         cls._use_camera_in_engine(
             transform_keys=transform_keys,
             fov=fov,
+            aspect_ratio=aspect_ratio,
             camera_name=camera_name,
         )
         logger.info(
@@ -453,6 +465,7 @@ class SequenceBase(ABC):
     def _spawn_camera_in_engine(
         transform_keys: 'Union[List[Dict], Dict]',
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: str = 'Camera',
     ) -> None:
         pass

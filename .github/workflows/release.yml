@@ -63,7 +63,7 @@ jobs:
               - 'src/XRFeitoriaUnreal/*'
 
       - name: Determine next version
-        if: ${{ !steps.bumpr.outputs.skip }}
+        if: ${{ !steps.bumpr.outputs.skip }} && ${{ steps.bumpr.outputs.next_version != '' }}
         run: |
           # Get the next version from the previous step
           echo "::group::Get the next version from the previous step"
@@ -104,5 +104,5 @@ jobs:
           echo "::endgroup::"
 
       # - name: suggester / Leave comments on PRs
-      #   if: ${{ !steps.bumpr.outputs.skip }}
+      #   if: ${{ !steps.bumpr.outputs.skip }} && ${{ steps.bumpr.outputs.next_version != '' }}
       #   uses: reviewdog/action-suggester@v1

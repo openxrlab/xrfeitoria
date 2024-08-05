@@ -460,6 +460,7 @@ class SequenceUnreal(SequenceBase):
     def _use_camera_in_engine(
         transform_keys: 'Union[List[Dict], Dict]',
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: str = 'Camera',
     ) -> None:
         if not isinstance(transform_keys, list):
@@ -470,6 +471,7 @@ class SequenceUnreal(SequenceBase):
         XRFeitoriaUnrealFactory.Sequence.add_camera(
             transform_keys=transform_keys,
             fov=fov,
+            aspect_ratio=aspect_ratio,
             camera_name=camera_name,
         )
 
@@ -522,6 +524,7 @@ class SequenceUnreal(SequenceBase):
     def _spawn_camera_in_engine(
         transform_keys: 'Union[List[Dict], Dict]',
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         camera_name: str = 'Camera',
     ) -> None:
         if not isinstance(transform_keys, list):
@@ -532,6 +535,7 @@ class SequenceUnreal(SequenceBase):
         XRFeitoriaUnrealFactory.Sequence.add_camera(
             transform_keys=transform_keys,
             fov=fov,
+            aspect_ratio=aspect_ratio,
             camera_name=camera_name,
             spawnable=True,
         )

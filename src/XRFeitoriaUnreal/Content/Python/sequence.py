@@ -601,6 +601,7 @@ def add_camera_to_sequence(
     camera: unreal.CameraActor,
     camera_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     camera_fov: float = 90.0,
+    camera_aspect_ratio: float = 16.0 / 9.0,
     seq_length: Optional[int] = None,
 ) -> unreal.CameraActor:
     if seq_length is None:
@@ -617,6 +618,11 @@ def add_camera_to_sequence(
 
     # set the camera FOV
     fov_track, fov_section = add_property_float_track_to_binding(camera_component_binding, 'FieldOfView', camera_fov)
+
+    # set the camera aspect ratio
+    aspect_ratio_track, aspect_ratio_section = add_property_float_track_to_binding(
+        camera_component_binding, 'AspectRatio', camera_aspect_ratio
+    )
 
     # ------- add master track ------- #
     camera_cut_track: unreal.MovieSceneCameraCutTrack = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)  # type: ignore
@@ -647,6 +653,7 @@ def add_camera_to_sequence(
             'self': camera.camera_component,
         },
         'fov': {'track': fov_track, 'section': fov_section},
+        'aspect_ratio': {'track': aspect_ratio_track, 'section': aspect_ratio_section},
         'transform': {'track': transform_track, 'section': transform_section},
     }
 
@@ -657,6 +664,7 @@ def add_spawnable_camera_to_sequence(
     camera_transform_keys: Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]] = None,
     camera_class: Type[unreal.CameraActor] = unreal.CameraActor,
     camera_fov: float = 90.0,
+    camera_aspect_ratio: float = 16.0 / 9.0,
     seq_length: Optional[int] = None,
 ) -> unreal.CameraActor:
     """Add a camera actor to the sequence.
@@ -667,6 +675,7 @@ def add_spawnable_camera_to_sequence(
         camera_transform_keys (Optional[Union[SequenceTransformKey, List[SequenceTransformKey]]], optional): transform keys of the camera actor. Defaults to None.
         camera_class (Type[unreal.CameraActor], optional): the camera actor class to spawn. Defaults to unreal.CameraActor.
         camera_fov (float, optional): Filed of view of the camera. Defaults to 90.0.
+        camera_aspect_ratio (float, optional): Aspect ratio of the camera. Defaults to 16.0 / 9.0.
         seq_length (Optional[int], optional): Sequence length. Defaults to None.
 
     Returns:
@@ -687,6 +696,11 @@ def add_spawnable_camera_to_sequence(
 
     # set the camera FOV
     fov_track, fov_section = add_property_float_track_to_binding(camera_component_binding, 'FieldOfView', camera_fov)
+
+    # set the camera aspect ratio
+    aspect_ratio_track, aspect_ratio_section = add_property_float_track_to_binding(
+        camera_component_binding, 'AspectRatio', camera_aspect_ratio
+    )
 
     # ------- add master track ------- #
     # add master track (camera) to sequence
@@ -726,6 +740,7 @@ def add_spawnable_camera_to_sequence(
             'self': camera_actor.camera_component,
         },
         'fov': {'track': fov_track, 'section': fov_section},
+        'aspect_ratio': {'track': aspect_ratio_track, 'section': aspect_ratio_section},
         'transform': {'track': transform_track, 'section': transform_section},
     }
 
@@ -1174,6 +1189,7 @@ class Sequence:
         camera_name: str,
         transform_keys: 'Optional[TransformKeys]' = None,
         fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
         spawnable: bool = False,
     ):
         """Spawn a camera in sequence.
@@ -1190,6 +1206,7 @@ class Sequence:
                 camera_name=camera_name,
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
+                camera_aspect_ratio=aspect_ratio,
             )
             cls.bindings[camera_name] = bindings
         else:
@@ -1199,6 +1216,7 @@ class Sequence:
                 camera=camera,
                 camera_transform_keys=transform_keys,
                 camera_fov=fov,
+                camera_aspect_ratio=aspect_ratio,
             )
             cls.bindings[camera_name] = bindings
 
