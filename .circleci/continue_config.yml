@@ -31,18 +31,20 @@ jobs:
       - when:
           condition: << pipeline.parameters.build-unreal-plugin >> || << pipeline.parameters.run-unreal-test >>
           steps:
-            - checkout
-            # - run:
-            #     name: Clone GitHub repository
-            #     command: |
-            #       TAG="<< pipeline.git.tag >>"
-            #       BRANCH="<< pipeline.git.branch >>"
-            #       # If the branch is empty, use the tag as the branch
-            #       if [ -z "$BRANCH" ] || [ "$BRANCH" = " " ]; then
-            #         BRANCH=$TAG
-            #       fi
-            #       echo "Cloning $BRANCH branch"
-            #       git clone << pipeline.project.git_url >> --branch $BRANCH .
+            # - checkout
+            - run:
+                name: Clone GitHub repository
+                command: |
+                  TAG="<< pipeline.git.tag >>"
+                  BRANCH="<< pipeline.git.branch >>"
+                  declare -p TAG
+                  declare -p BRANCH
+                  # If the branch is empty, use the tag as the branch
+                  if [ -z "$BRANCH" ] || [ "$BRANCH" = " " ]; then
+                    BRANCH=$TAG
+                  fi
+                  echo "Cloning $BRANCH branch"
+                  git clone << pipeline.project.git_url >> --branch $BRANCH .
             - run:
                 name: "Build Plugins & Run Tests"
                 shell: powershell.exe
