@@ -211,6 +211,7 @@ def build_unreal(
         )  # e.g. XRFeitoriaUnreal-0.6.0-Unreal5.3-Source
         dist_path = src_root / plugin_name
         subprocess.call([uat_path, 'BuildPlugin', f'-Plugin={uplugin_path}', f'-Package={dist_path}'])
+        assert (dist_path / 'Binaries').exists(), f'Failed to compile plugin for Unreal Engine {engine_version}'
         _make_archive(src_folder=dist_path, dst_path=dist_root / f'{plugin_name}.zip')
         _make_archive(
             src_folder=dist_path,
