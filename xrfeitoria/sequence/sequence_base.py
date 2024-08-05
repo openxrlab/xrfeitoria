@@ -275,7 +275,7 @@ class SequenceBase(ABC):
         location: 'Optional[Vector]' = None,
         rotation: 'Optional[Vector]' = None,
         fov: float = None,
-        aspect_ratio: float = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> None:
         """Use the specified level camera in the sequence. The location, rotation and
         fov set in this method are only used in the sequence. The location, rotation and
@@ -308,7 +308,7 @@ class SequenceBase(ABC):
         camera: _camera,
         transform_keys: 'TransformKeys',
         fov: float = None,
-        aspect_ratio: float = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> None:
         """Use the specified level camera in the sequence. The transform_keys and fov
         set in this method are only used in the sequence. The location, rotation and fov

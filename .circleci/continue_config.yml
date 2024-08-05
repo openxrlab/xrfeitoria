@@ -70,11 +70,15 @@ jobs:
                     $env:XRFEITORIA__DIST_ROOT="$PWD/src"
                   }
                   if ($env:RUN_TEST -eq 1) {
-                    echo "#### Running Tests ####"
+                    echo "#### Running Tests For UE 5.1 ####"
                     python -m tests.setup_ci -u $UE_51
                     python -m tests.unreal.main
+
+                    echo "#### Running Tests For UE 5.2 ####"
                     python -m tests.setup_ci -u $UE_52
                     python -m tests.unreal.main
+
+                    echo "#### Running Tests For UE 5.3 ####"
                     python -m tests.setup_ci -u $UE_53
                     python -m tests.unreal.main
                   }

@@ -35,7 +35,12 @@ class SequenceBase(ABC):
     ) -> ActorBase: ...
     @classmethod
     def spawn_camera(
-        cls, location: Vector = None, rotation: Vector = None, fov: float = 90.0, camera_name: Optional[str] = None
+        cls,
+        location: Vector = None,
+        rotation: Vector = None,
+        fov: float = 90.0,
+        aspect_ratio: float = 16.0 / 9.0,
+        camera_name: Optional[str] = None,
     ) -> CameraBase: ...
     @classmethod
     def spawn_camera_with_keys(
@@ -43,6 +48,7 @@ class SequenceBase(ABC):
         transform_keys: TransformKeys,
         fov: float = 90.0,
         camera_name: str = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> CameraBase: ...
     @classmethod
     def use_camera(
@@ -51,6 +57,7 @@ class SequenceBase(ABC):
         location: Optional[Vector] = None,
         rotation: Optional[Vector] = None,
         fov: float = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> None: ...
     @classmethod
     def use_camera_with_keys(
@@ -58,6 +65,7 @@ class SequenceBase(ABC):
         camera: CameraBase,
         transform_keys: TransformKeys,
         fov: float = None,
+        aspect_ratio: float = 16.0 / 9.0,
     ) -> None: ...
     @classmethod
     def use_actor(
