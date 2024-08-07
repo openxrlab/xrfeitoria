@@ -106,7 +106,11 @@ class CustomMoviePipeline:
         )
 
     @staticmethod
-    def add_render_passes(movie_preset: unreal.MoviePipelineMasterConfig, render_passes: List[RenderPass]) -> None:
+    def add_render_passes(
+        movie_preset: unreal.MoviePipelineMasterConfig,
+        render_passes: List[RenderPass],
+        accumulator_includes_alpha: bool = True,
+    ) -> None:
         """Add render passes to a movie preset.
 
         Args:
@@ -114,11 +118,15 @@ class CustomMoviePipeline:
             render_passes (List[RenderPass]): The render passes to add.
                 The available render passes are defined in `UnrealRenderLayerEnum`: `rgb`, `depth`, `mask`, \
                 `flow`, `diffuse`, `normal`, `metallic`, `roughness`, `specular`, `tangent`, `basecolor`
+            accumulator_includes_alpha (bool): Whether the accumulator includes alpha.
+                https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/MoviePipelineDeferredPassBase#unreal.MoviePipelineDeferredPassBase.accumulator_includes_alpha
         """
 
-        # find or add setting
-        render_pass = movie_preset.find_or_add_setting_by_class(unreal.CustomMoviePipelineDeferredPass)
+        deferred_config = movie_preset.find_or_add_setting_by_class(unreal.CustomMoviePipelineDeferredPass)
         render_pass_config = movie_preset.find_or_add_setting_by_class(unreal.CustomMoviePipelineOutput)
+
+        # set alpha
+        deferred_config.accumulator_includes_alpha = accumulator_includes_alpha
 
         # add render passes
         additional_render_passes = []
