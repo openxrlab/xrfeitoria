@@ -42,6 +42,7 @@ class RendererUnreal(RendererBase):
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0},
         anti_aliasing: 'Optional[RenderJob.AntiAliasSetting]' = None,
         export_audio: bool = False,
+        export_transparent: bool = False,
     ) -> None:
         """Add a rendering job to the renderer queue.
 
@@ -56,6 +57,7 @@ class RendererUnreal(RendererBase):
                 Ref to :ref:`FAQ-console-variables` for details.
             anti_aliasing (Optional[RenderJobUnreal.AntiAliasSetting], optional): Anti aliasing setting. Defaults to None.
             export_audio (bool, optional): Whether to export audio. Defaults to False.
+            export_transparent (bool, optional): Whether to export transparent images. Defaults to False. When enabled, it will reduce the performance.
 
         Note:
             The motion blur is turned off by default. If you want to turn it on, please set ``r.MotionBlurQuality`` to a non-zero value in ``console_variables``.
@@ -81,6 +83,7 @@ class RendererUnreal(RendererBase):
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
             export_audio=export_audio,
+            export_transparent=export_transparent,
         )
         cls._add_job_in_engine(job.model_dump(mode='json'))
         cls.render_queue.append(job)

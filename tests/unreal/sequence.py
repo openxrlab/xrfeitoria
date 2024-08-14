@@ -85,6 +85,7 @@ def new_seq(xf_runner: XRFeitoriaUnreal, level_path: str, seq_name: str):
         render_passes=[RenderPass('img', 'png'), RenderPass('flow', 'exr'), RenderPass('lineart', 'png')],
         export_vertices=True,
         export_skeleton=True,
+        export_transparent=True,
     )
 
     xf_runner.utils.save_current_level()

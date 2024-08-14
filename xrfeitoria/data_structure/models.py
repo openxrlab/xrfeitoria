@@ -249,6 +249,10 @@ class RenderJobUnreal(BaseModel):
         default=AntiAliasSetting(), description='Anti aliasing setting of the render job.'
     )
     export_audio: bool = Field(default=False, description='Whether to export audio of the render job.')
+    export_transparent: bool = Field(
+        default=False,
+        description='Whether to export transparent images of the render job. When enabled, it will reduce the performance.',
+    )
 
     class Config:
         use_enum_values = True

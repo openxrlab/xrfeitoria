@@ -37,6 +37,7 @@ class SequenceUnreal(SequenceBase):
         export_vertices: bool = False,
         export_skeleton: bool = False,
         export_audio: bool = False,
+        export_transparent: bool = False,
     ) -> None: ...
     @classmethod
     def spawn_actor(

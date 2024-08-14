@@ -71,6 +71,7 @@ class SequenceUnreal(SequenceBase):
         export_vertices: bool = False,
         export_skeleton: bool = False,
         export_audio: bool = False,
+        export_transparent: bool = False,
     ) -> None:
         """Add the sequence to the renderer's job queue. Can only be called after the
         sequence is instantiated using
@@ -90,6 +91,7 @@ class SequenceUnreal(SequenceBase):
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export the skeleton. Defaults to False.
             export_audio (bool, optional): Whether to export audio. Defaults to False.
+            export_transparent (bool, optional): Whether to export transparent images. Defaults to False. When enabled, it will reduce the performance.
 
         Examples:
             >>> import xrfeitoria as xf
@@ -125,6 +127,7 @@ class SequenceUnreal(SequenceBase):
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
             export_audio=export_audio,
+            export_transparent=export_transparent,
         )
 
         logger.info(
