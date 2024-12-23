@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -23,6 +24,9 @@ from ..rpc import remote_blender
 from ..utils.functions import blender_functions
 from .renderer_base import RendererBase, render_status
 
+DISABLE_SPINNER = os.environ.get('XRFEITORIA__DISABLE_SPINNER', '').lower() in ('true', '1', 'yes')
+LOG_INTERVAL = int(os.environ.get('XRFEITORIA__LOG_INTERVAL', '10'))
+
 try:
     # linting and for engine
     from XRFeitoriaBpy.core.factory import XRFeitoriaBlenderFactory  # defined in src/XRFeitoriaBpy/core/factory.py
@@ -37,7 +41,13 @@ except (ImportError, ModuleNotFoundError):
 
 
 def receive_stdout(
-    process: subprocess.Popen, in_background: bool, frame_range: Tuple[int, int], job_idx: Optional[int] = None
+    process: subprocess.Popen,
+    in_background: bool,
+    frame_range: Tuple[int, int],
+    job_idx: Optional[int] = None,
+    refresh_per_second: int = 1,
+    disable_spinner: bool = DISABLE_SPINNER,
+    log_interval: int = LOG_INTERVAL,
 ) -> None:
     """Receive output from the subprocess, and update the spinner.
 
@@ -45,8 +55,11 @@ def receive_stdout(
         process (subprocess.Popen): Subprocess of the blender process.
         frame_range (Tuple[int, int]): Frame range of the rendering job.
         job_range (Tuple[int, int]): Job range of all jobs in render queue.
+        disable_spinner (bool, optional): If True, the spinner will be disabled. Defaults to environment variable XRFEITORIA__DISABLE_SPINNER (False).
+        log_interval (int, optional): Log progress every N frames. Defaults to environment variable XRFEITORIA__LOG_INTERVAL (10).
     """
     from rich import get_console
+    from rich.live import Live
     from rich.spinner import Spinner
 
     frame_count = 0
@@ -55,13 +68,23 @@ def receive_stdout(
     job_info = f' {job_idx}' if job_idx else ''
 
     console = get_console()
-    # TODO: change to progress bar
-    try:
-        spinner: Spinner = console._live.renderable
-    except AttributeError:
-        status = console.status('[bold green]:rocket: Rendering...[/bold green]')
-        status.start()
-        spinner: Spinner = status.renderable
+    spinner = None
+    live = None
+
+    if not disable_spinner:
+        # TODO: change to progress bar
+        try:
+            spinner: Spinner = console._live.renderable
+            # Update the refresh rate of existing live display
+            console._live.refresh_per_second = refresh_per_second
+        except AttributeError:
+            # Create new spinner with custom refresh rate
+            spinner = Spinner('dots', '[bold green]:rocket: Rendering...[/bold green]')
+            live = Live(spinner, refresh_per_second=refresh_per_second)
+            live.start()
+            spinner = live.renderable
+    else:
+        logger.warning(f'Spinner disabled, instead logging every {log_interval} frames')
 
     # init
     __frame_current__ = frame_current
@@ -93,8 +116,12 @@ def receive_stdout(
                 if frame_count > frame_length:
                     break
                 text = f'[bold green]:rocket: Rendering Job{job_info}: frame {frame_count}/{frame_length}[/bold green]'
-                spinner.update(text=text)
-                logger.debug(f'(XF-Rendering) Job{job_info}: frame {frame_count}/{frame_length}')
+                if spinner:
+                    spinner.update(text=text)
+                if disable_spinner and (frame_count % log_interval == 0 or frame_count == frame_length):
+                    logger.info(text)
+                else:
+                    logger.debug(text)
                 # reset
                 first_trigger = second_trigger = False
         else:
@@ -115,8 +142,13 @@ def receive_stdout(
                 if frame_count > frame_length:
                     break
                 text = f'[bold green]:rocket: Rendering Job{job_info}: frame {frame_count}/{frame_length}[/bold green]'
-                spinner.update(text=text)
+                if spinner:
+                    spinner.update(text=text)
+                # Always log debug
                 logger.debug(f'(XF-Rendering) Job{job_info}: frame {frame_count}/{frame_length}')
+                # When spinner is disabled, also log info at intervals
+                if disable_spinner and (frame_count % log_interval == 0 or frame_count == frame_length):
+                    logger.info(f'(XF-Rendering) Job{job_info}: frame {frame_count}/{frame_length}')
                 # reset
                 first_trigger = second_trigger = False
 
@@ -171,12 +203,23 @@ class RendererBlender(RendererBase):
 
     @classmethod
     @render_status
-    def render_jobs(cls, use_gpu: bool = True) -> None:
+    def render_jobs(
+        cls,
+        use_gpu: bool = True,
+        disable_spinner: bool = DISABLE_SPINNER,
+        log_interval: int = LOG_INTERVAL,
+    ) -> None:
         """Render all jobs in the render queue, and this method will clear the render
         queue after rendering.
 
         Args:
             use_gpu (bool, optional): Use GPU to render. Defaults to True.
+            disable_spinner (bool, optional): If True, the spinner will be disabled. Defaults to environment variable XRFEITORIA__DISABLE_SPINNER or False.
+                The Spinner is a progress bar to show the rendering progress in the console.
+                If you are using a container, you may want to set this to True.
+                You can also set this via environment variable XRFEITORIA__DISABLE_SPINNER=true.
+            log_interval (int, optional): Log progress every N frames. Defaults to environment variable XRFEITORIA__LOG_INTERVAL or 10.
+                You can also set this via environment variable XRFEITORIA__LOG_INTERVAL=20.
         """
         if len(cls.render_queue) == 0:
             logger.warning(
@@ -226,6 +269,8 @@ class RendererBlender(RendererBase):
                     'in_background': in_background,
                     'frame_range': blender_functions.get_frame_range(),
                     'job_idx': job_idx + 1,
+                    'disable_spinner': disable_spinner,
+                    'log_interval': log_interval,
                 },
             )
             output_thread.start()

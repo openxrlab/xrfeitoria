@@ -1,9 +1,13 @@
+import os
 from abc import ABC, abstractmethod
 from functools import wraps
 from typing import List
 
 from loguru import logger
 from rich import get_console
+
+# Get environment variable for spinner disable, defaulting to False if not set
+DISABLE_SPINNER = os.environ.get('XRFEITORIA__DISABLE_SPINNER', '').lower() in ('true', '1', 'yes')
 
 
 # decorator
@@ -13,10 +17,15 @@ def render_status(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with console.status('[bold green]:rocket: Rendering...[/bold green]'):
+        if DISABLE_SPINNER:
             ret = func(*args, **kwargs)
-        logger.info('[bold green]:white_check_mark: Rendering done![/bold green]')
-        return ret
+            logger.info('[bold green]:white_check_mark: Rendering done![/bold green]')
+            return ret
+        else:
+            with console.status('[bold green]:rocket: Rendering...[/bold green]'):
+                ret = func(*args, **kwargs)
+            logger.info('[bold green]:white_check_mark: Rendering done![/bold green]')
+            return ret
 
     return wrapper
 
