@@ -155,7 +155,7 @@ def main(
     camera_name = 'camera'
 
     with xf.init_blender(exec_path=blender_exec, background=background) as xf_runner:
-        with xf_runner.Sequence.new(seq_name=seq_name) as seq:
+        with xf_runner.sequence(seq_name=seq_name) as seq:
             actor = seq.import_actor(actor_name='actor', file_path=mesh_path, stencil_value=255)
             actor.set_origin_to_center()
             actor.location = (0, 0, 0)
