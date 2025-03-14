@@ -117,6 +117,7 @@ Please refer to [FAQ](https://xrfeitoria.readthedocs.io/en/latest/faq.html).
 | [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <a href=https://skhu101.github.io/HumanLiff/><img src="https://github.com/skhu101/HumanLiff/raw/main/img/HumanLiff_teaser_v1.png"/></a> | Blender |
 | [PrimDiffusion: Volumetric Primitives Diffusion for 3D Human Generation](https://frozenburning.github.io/projects/primdiffusion/) | <a href=https://frozenburning.github.io/projects/primdiffusion/><img src="https://github.com/user-attachments/assets/9dee5e27-f639-4292-b601-ac206b44690d"></a> | Blender |
 | [WHAC: World-grounded Humans and Cameras](https://wqyin.github.io/projects/WHAC/) | <a href=https://wqyin.github.io/projects/WHAC/><img src="https://github.com/user-attachments/assets/19d7d933-5f27-4793-bfbe-6b19b9e13c28"></a> | Unreal Engine |
+| [SMPLest-X: Ultimate Scaling for Expressive Human Pose and Shape Estimation](https://caizhongang.com/projects/SMPLer-X/) | <a href=https://caizhongang.com/projects/SMPLer-X/><img src="https://github.com/user-attachments/assets/09cb69db-67d9-46a7-b288-33a0b91191a7"></a> | Blender |
 
 ## License
 
