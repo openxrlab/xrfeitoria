@@ -13,19 +13,24 @@ parameters:
   run-blender-test:
     type: boolean
     default: false
+  run-on-windows:
+    type: boolean
+    default: false
 
 jobs:
   test-self-host:
     machine: true
     resource_class: openxrlab/xrfeitoria
     steps:
-      - run:
-          name: "Check Runner Info"
-          shell: powershell.exe
-          command: echo "Hi I'm on Runners!"
-          timeout: 1m
-          fail_on_error: false
-          when: always
+      - when:
+          condition: << pipeline.parameters.run-on-windows >>
+          steps:
+            - run:
+                name: "Check Runner Info"
+                shell: powershell.exe
+                command: echo "Hi I'm on Runners!"
+                timeout: 1m
+                fail_on_error: false
 
   unreal-windows:
     machine: true
