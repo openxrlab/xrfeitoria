@@ -3,12 +3,6 @@ setup: true
 orbs:
   path-filtering: circleci/path-filtering@1.2.0
 
-# Define parameters that will be available in all workflows
-parameters:
-  run-on-windows:
-    type: boolean
-    default: false
-
 workflows:
   generate-config:
     jobs:
