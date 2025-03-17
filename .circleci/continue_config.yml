@@ -23,6 +23,9 @@ jobs:
           name: "Check Runner Info"
           shell: powershell.exe
           command: echo "Hi I'm on Runners!"
+          timeout: 1m
+          fail_on_error: false
+          when: always
 
   unreal-windows:
     machine: true
