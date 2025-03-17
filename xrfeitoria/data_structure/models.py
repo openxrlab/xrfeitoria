@@ -121,7 +121,7 @@ class RenderPass(BaseModel):
                     from xrfeitoria.data_structure.models import RenderPass
 
                     with xf.init_blender() as xf_runner:
-                        seq = xf_runner.Sequence.new(seq_name='test'):
+                        seq = xf_runner.sequence(seq_name='test'):
                             seq.add_to_renderer(
                                 output_path=...,
                                 resolution=...,

@@ -181,7 +181,7 @@ def new_seq_data(asset_path: str, sequence_path: str, map_path: str) -> None:
             - "SequencePath": str
             - "MapPath": str
     """
-    XRFeitoriaUnrealFactory.Sequence.new_data_asset(
+    XRFeitoriaUnrealFactory.sequence_data_asset(
         asset_path=asset_path,
         sequence_path=sequence_path,
         map_path=map_path,

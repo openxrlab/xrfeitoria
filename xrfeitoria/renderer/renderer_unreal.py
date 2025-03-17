@@ -122,7 +122,7 @@ class RendererUnreal(RendererBase):
             logger.warning(
                 '[bold red]Skip rendering[/bold red], no render job in the queue. \n'
                 ':bulb: Please add a job first via: \n'
-                '>>> with xf_runner.Sequence.open(sequence_name=...) as seq:\n'
+                '>>> with xf_runner.sequence(sequence_name=...) as seq:\n'
                 '...     seq.add_to_renderer(...)'
             )
             return

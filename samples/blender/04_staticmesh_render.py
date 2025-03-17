@@ -3,6 +3,7 @@
 
 This is a script to render static meshes in blender.
 """
+
 import math
 from pathlib import Path
 
@@ -64,7 +65,7 @@ def main(debug=False, background=False):
     ##################################################
     #### Create a new sequence with default level ####
     ##################################################
-    with xf_runner.Sequence.new(seq_name=seq_1_name) as seq:
+    with xf_runner.sequence(seq_name=seq_1_name) as seq:
         # use the `camera` in level to render
         seq.use_camera(camera=camera)
 
@@ -85,7 +86,7 @@ def main(debug=False, background=False):
     ########################################################
     #### Create another new sequence with default level ####
     ########################################################
-    with xf_runner.Sequence.new(seq_name=seq_2_name) as seq:
+    with xf_runner.sequence(seq_name=seq_2_name) as seq:
         # import an actor to the sequence, and add transform keys to make it rotate around the bunny and grow bigger and bigger
         actor_kc = seq.import_actor(file_path=assets_path['koupen_chan'], stencil_value=255)
         actor_kc.set_origin_to_center()

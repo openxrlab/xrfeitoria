@@ -1,6 +1,7 @@
 """
 >>> python -m tests.blender.level
 """
+
 from pathlib import Path
 
 import xrfeitoria as xf
@@ -23,7 +24,7 @@ blend_sample = assets_path['blend_sample']
 
 
 def seq_simple(xf_runner: XRFeitoriaBlender, seq_name: str = 'seq_simple'):
-    with xf_runner.Sequence.new(seq_name=seq_name, level='Scene', seq_length=1) as seq:
+    with xf_runner.sequence(seq_name=seq_name, level='Scene', seq_length=1) as seq:
         camera = xf_runner.Camera('Camera')
         seq.use_camera(camera)
 

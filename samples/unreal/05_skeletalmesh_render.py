@@ -3,6 +3,7 @@
 
 This is a script to render skeletal meshes in unreal.
 """
+
 from pathlib import Path
 
 import xrfeitoria as xf
@@ -30,7 +31,7 @@ def main(debug=False, background=False):
         path=assets_path['motion_1'], skeleton_path=f'{SMPL_XL_path}_Skeleton'
     )[0]
 
-    with xf_runner.Sequence.new(seq_name=seq_name, level=level_path, seq_length=200, replace=True) as seq:
+    with xf_runner.sequence(seq_name=seq_name, level=level_path, seq_length=200, replace=True) as seq:
         seq.show()
 
         # add a camera in sequence to render
