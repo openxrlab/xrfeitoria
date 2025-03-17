@@ -8,7 +8,7 @@ workflows:
     jobs:
       - path-filtering/filter:
           base-revision: main
-          config-path: .circleci/continue_config.yml
+          config-path: .circleci/continue_config_lite.yml
           mapping: |
             # -- Unreal Plugin -- #
             src/XRFeitoriaUnreal/.* build-unreal-plugin true
