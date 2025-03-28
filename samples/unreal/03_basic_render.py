@@ -3,6 +3,7 @@
 
 This is a script to render a preset level in unreal.
 """
+
 from pathlib import Path
 
 import xrfeitoria as xf
@@ -28,7 +29,7 @@ def main(debug=False, background=False):
 
     # open a pre-made sequence, which has a corresponding level
     # the sequence data is under /Game/XRFeitoriaUnreal/Sequences/{seq_name}_data
-    with xf_runner.Sequence.open(seq_name=seq_name) as seq:
+    with xf_runner.sequence(seq_name=seq_name) as seq:
         # use the camera in the level to render
         camera = xf_runner.Camera('Camera')
         camera_name = camera.name

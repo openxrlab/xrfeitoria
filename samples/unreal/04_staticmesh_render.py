@@ -3,6 +3,7 @@
 
 This is a script to render static meshes in unreal.
 """
+
 import math
 from pathlib import Path
 
@@ -62,7 +63,7 @@ def main(debug=False, background=False):
     ####################################################
     ######## Create a new sequence with level   ########
     ####################################################
-    with xf_runner.Sequence.new(level=dst_level_path, seq_name=seq_1_name, replace=True) as seq:
+    with xf_runner.sequence(level=dst_level_path, seq_name=seq_1_name, replace=True) as seq:
         # show the sequence in unreal editor
         seq.show()
         # use the `camera` in level to render
@@ -86,7 +87,7 @@ def main(debug=False, background=False):
     ####################################################
     ##### Create another new sequence with level   #####
     ####################################################
-    with xf_runner.Sequence.new(level=dst_level_path, seq_name=seq_2_name, seq_length=6, replace=True) as seq:
+    with xf_runner.sequence(level=dst_level_path, seq_name=seq_2_name, seq_length=6, replace=True) as seq:
         # show the sequence in unreal editor
         seq.show()
 

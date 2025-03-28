@@ -121,7 +121,7 @@ class RenderPass(BaseModel):
                     from xrfeitoria.data_structure.models import RenderPass
 
                     with xf.init_blender() as xf_runner:
-                        seq = xf_runner.Sequence.new(seq_name='test'):
+                        seq = xf_runner.sequence(seq_name='test'):
                             seq.add_to_renderer(
                                 output_path=...,
                                 resolution=...,
@@ -249,6 +249,10 @@ class RenderJobUnreal(BaseModel):
         default=AntiAliasSetting(), description='Anti aliasing setting of the render job.'
     )
     export_audio: bool = Field(default=False, description='Whether to export audio of the render job.')
+    export_transparent: bool = Field(
+        default=False,
+        description='Whether to export transparent images of the render job. When enabled, it will reduce the performance.',
+    )
 
     class Config:
         use_enum_values = True

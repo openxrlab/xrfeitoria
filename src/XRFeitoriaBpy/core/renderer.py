@@ -162,7 +162,7 @@ class RenderPassUtils:
         elif image_format == ImageFileFormatEnum.jpeg:
             cls.set_slot_to_jpg(file_slot)
 
-        # link node of render layer to file output (mask and depth need to be processed)
+        # link node of render layer to file output (mask/depth/flow need to be processed)
         node_out = render_layer_node.outputs[render_layer]
         if render_layer == RenderLayerEnum.mask:
             if not image_format == ImageFileFormatEnum.exr:
@@ -185,4 +185,13 @@ class RenderPassUtils:
             math_node.inputs[1].default_value = 1000.0 / 65535.0
             links.new(node_out, math_node.inputs[0])
             node_out = math_node.outputs[0]
+        if render_layer == RenderLayerEnum.flow:
+            separate_rgba = tree.nodes.new('CompositorNodeSepRGBA')
+            combine_flow = tree.nodes.new('CompositorNodeCombRGBA')
+            links.new(node_out, separate_rgba.inputs[0])
+            links.new(separate_rgba.outputs['R'], combine_flow.inputs['R'])
+            links.new(separate_rgba.outputs['G'], combine_flow.inputs['G'])
+            links.new(separate_rgba.outputs['B'], combine_flow.inputs['B'])
+            links.new(separate_rgba.outputs['A'], combine_flow.inputs['A'])
+            node_out = combine_flow.outputs[0]
         links.new(node_out, file_output_node.inputs[slot_name])

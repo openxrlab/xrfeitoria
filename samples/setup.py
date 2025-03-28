@@ -14,18 +14,16 @@ from xrfeitoria.utils.setup import Config, get_exec_path, guess_exec_path
 
 # XXX: Hard-coded assets url
 assets_url = dict(
-    bunny='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/stanford-bunny.obj',
-    koupen_chan='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/koupen_chan.fbx',
-    SMPL_XL='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/SMPL-XL-001.fbx',
-    motion_1='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/motion-greeting.fbx',
-    motion_2='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/motion-stand_to_walk_back.fbx',
-    blend_sample='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/Tree1.blend',
-    hdr_sample='https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/assets/hdr-sample.hdr',
+    bunny='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--stanford-bunny.obj',
+    koupen_chan='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--koupen_chan.fbx',
+    SMPL_XL='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--SMPL-XL-001.fbx',
+    motion_1='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--motion-greeting.fbx',
+    motion_2='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--motion-stand_to_walk_back.fbx',
+    blend_sample='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--Tree1.blend',
+    hdr_sample='https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/assets--hdr-sample.hdr',
 )
 # XXX: hard-coded unreal project url
-unreal_sample_url = (
-    'https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/unreal_project/XRFeitoriaUnreal_Sample.zip'
-)
+unreal_sample_url = 'https://github.com/openxrlab/xrfeitoria/releases/download/v0.1.0/UE--XRFeitoriaUnreal_Sample.zip'
 asset_dir = tmp_dir / 'assets'
 
 

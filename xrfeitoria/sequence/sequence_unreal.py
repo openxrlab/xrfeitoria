@@ -71,6 +71,7 @@ class SequenceUnreal(SequenceBase):
         export_vertices: bool = False,
         export_skeleton: bool = False,
         export_audio: bool = False,
+        export_transparent: bool = False,
     ) -> None:
         """Add the sequence to the renderer's job queue. Can only be called after the
         sequence is instantiated using
@@ -90,12 +91,13 @@ class SequenceUnreal(SequenceBase):
             export_vertices (bool, optional): Whether to export vertices. Defaults to False.
             export_skeleton (bool, optional): Whether to export the skeleton. Defaults to False.
             export_audio (bool, optional): Whether to export audio. Defaults to False.
+            export_transparent (bool, optional): Whether to export transparent images. Defaults to False. When enabled, it will reduce the performance.
 
         Examples:
             >>> import xrfeitoria as xf
             >>> from xrfeitoria.data_structure.models import RenderPass
             >>> with xf.init_blender() as xf_runner:
-            ...     seq = xf_runner.Sequence.new(seq_name='test'):
+            ...     seq = xf_runner.sequence(seq_name='test'):
             ...         seq.add_to_renderer(
             ...             output_path=...,
             ...             resolution=...,
@@ -125,6 +127,7 @@ class SequenceUnreal(SequenceBase):
             console_variables=console_variables,
             anti_aliasing=anti_aliasing,
             export_audio=export_audio,
+            export_transparent=export_transparent,
         )
 
         logger.info(
@@ -423,7 +426,7 @@ class SequenceUnreal(SequenceBase):
         seq_path, map_path = SequenceUnreal._get_seq_info_in_engine(
             seq_name=seq_name, seq_dir=seq_dir, map_path=map_path
         )
-        XRFeitoriaUnrealFactory.Sequence.open(
+        XRFeitoriaUnrealFactory.sequence(
             map_path=map_path,
             seq_path=seq_path,
         )

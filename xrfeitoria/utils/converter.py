@@ -294,6 +294,7 @@ class ConverterUnreal:
         Returns:
             np.ndarray: of shape (... , 3)
         """
+        # vector @ cls.unreal2opencv.T
         return np.einsum('ij,...j->...i', cls.unreal2opencv, vector) / cls.units_scale
 
 

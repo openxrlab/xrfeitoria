@@ -3,6 +3,7 @@
 
 This is a script to render skeletal meshes in blender.
 """
+
 from pathlib import Path
 
 import xrfeitoria as xf
@@ -38,7 +39,7 @@ def main(debug=False, background=False):
     ### Create a new sequence with the defined level ###
     ####################################################
     seq_length = 200
-    with xf_runner.Sequence.new(seq_name=seq_name, level='MyLevel', seq_length=seq_length) as seq:
+    with xf_runner.sequence(seq_name=seq_name, level='MyLevel', seq_length=seq_length) as seq:
         # import an skeletal mesh and set an animation to it
         actor = seq.import_actor(file_path=assets_path['SMPL_XL'], stencil_value=128)
         actor.setup_animation(animation_path=assets_path['motion_2'])

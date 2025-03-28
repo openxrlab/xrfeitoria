@@ -111,12 +111,13 @@ Please refer to [FAQ](https://xrfeitoria.readthedocs.io/en/latest/faq.html).
 | Project | Teaser | Engine |
 | :---: | :---: | :---: |
 | [SynBody: Synthetic Dataset with Layered Human Models for 3D Human Perception and Modeling](https://synbody.github.io/) | <a href=https://synbody.github.io/><img src="https://synbody.github.io/static/teaser.png"></a> | Unreal Engine / Blender |
-| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <a href=https://wenjiawang0312.github.io/projects/zolly/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/zolly.jpg"></a> | Blender |
+| [Zolly: Zoom Focal Length Correctly for Perspective-Distorted Human Mesh Reconstruction](https://wenjiawang0312.github.io/projects/zolly/) | <a href=https://wenjiawang0312.github.io/projects/zolly/><img src="https://github.com/user-attachments/assets/fff3f441-4b3b-41a1-ab81-e151369f392f"></a> | Blender |
 | [SHERF: Generalizable Human NeRF from a Single Image](https://skhu101.github.io/SHERF/) | <a href=https://skhu101.github.io/SHERF/><img src="https://github.com/skhu101/SHERF/raw/main/img/SHERF_teaser.png"></a> | Blender |
 | [MatrixCity: A Large-scale City Dataset for City-scale Neural Rendering and Beyond](https://city-super.github.io/matrixcity/) | <a href=https://city-super.github.io/matrixcity/><img src="https://city-super.github.io/matrixcity/img/teaser.jpg"></a> | Unreal Engine |
-| [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <a href=https://skhu101.github.io/HumanLiff/><img src="https://skhu101.github.io/HumanLiff/HumanLiff%20-%20Project%20Page_files/SHERF_teaser.png"/></a> | Blender |
-| [PrimDiffusion: Volumetric Primitives Diffusion for 3D Human Generation](https://frozenburning.github.io/projects/primdiffusion/) | <a href=https://frozenburning.github.io/projects/primdiffusion/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/PrimDiffusion.png"></a> | Blender |
-| [WHAC: World-grounded Humans and Cameras](https://wqyin.github.io/projects/WHAC/) | <a href=https://wqyin.github.io/projects/WHAC/><img src="https://openxrlab-share.oss-cn-hongkong.aliyuncs.com/xrfeitoria/pics/whac.jpg"></a> | Unreal Engine |
+| [HumanLiff: Layer-wise 3D Human Generation with Diffusion Model](https://skhu101.github.io/HumanLiff/) | <a href=https://skhu101.github.io/HumanLiff/><img src="https://github.com/skhu101/HumanLiff/raw/main/img/HumanLiff_teaser_v1.png"/></a> | Blender |
+| [PrimDiffusion: Volumetric Primitives Diffusion for 3D Human Generation](https://frozenburning.github.io/projects/primdiffusion/) | <a href=https://frozenburning.github.io/projects/primdiffusion/><img src="https://github.com/user-attachments/assets/9dee5e27-f639-4292-b601-ac206b44690d"></a> | Blender |
+| [WHAC: World-grounded Humans and Cameras](https://wqyin.github.io/projects/WHAC/) | <a href=https://wqyin.github.io/projects/WHAC/><img src="https://github.com/user-attachments/assets/19d7d933-5f27-4793-bfbe-6b19b9e13c28"></a> | Unreal Engine |
+| [SMPLest-X: Ultimate Scaling for Expressive Human Pose and Shape Estimation](https://caizhongang.com/projects/SMPLer-X/) | <a href=https://caizhongang.com/projects/SMPLer-X/><img src="https://github.com/user-attachments/assets/09cb69db-67d9-46a7-b288-33a0b91191a7"></a> | Blender |
 
 ## License
 

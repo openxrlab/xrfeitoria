@@ -1,8 +1,9 @@
 """Sequence wrapper functions."""
 
+import inspect
 import warnings
 from contextlib import contextmanager
-from typing import ContextManager, List, Optional, Tuple, Union
+from typing import ContextManager, Optional, Union
 
 from typing_extensions import deprecated
 
@@ -13,6 +14,21 @@ from .sequence_blender import SequenceBlender
 from .sequence_unreal import SequenceUnreal
 
 __all__ = ['sequence_wrapper_blender', 'sequence_wrapper_unreal']
+
+
+def _get_caller_frame():
+    """Get the actual caller's frame by traversing the frame stack."""
+    frame = inspect.currentframe()
+    try:
+        while frame:
+            frame_info = inspect.getframeinfo(frame)
+            # Skip frames from this module and contextlib
+            if frame_info.filename.endswith(('sequence_wrapper.py', 'contextlib.py')):
+                frame = frame.f_back
+                continue
+            return frame
+    finally:
+        del frame
 
 
 @deprecated('Use `xf_runner.sequence` function instead.', category=DeprecationWarning)
@@ -47,7 +63,14 @@ class SequenceWrapperBlender:
         Yields:
             SequenceBase: Sequence object.
         """
-        warnings.showwarning(cls._warn_msg, DeprecationWarning, __file__, 0)
+        caller_frame = _get_caller_frame()
+        if caller_frame:
+            warnings.showwarning(
+                cls._warn_msg, DeprecationWarning, caller_frame.f_code.co_filename, caller_frame.f_lineno
+            )
+        else:
+            warnings.warn(cls._warn_msg, DeprecationWarning, stacklevel=3)
+
         cls._seq._new(
             seq_name=seq_name,
             level=level,
@@ -69,7 +92,14 @@ class SequenceWrapperBlender:
         Yields:
             SequenceBase: Sequence object.
         """
-        warnings.showwarning(cls._warn_msg, DeprecationWarning, __file__, 0)
+        caller_frame = _get_caller_frame()
+        if caller_frame:
+            warnings.showwarning(
+                cls._warn_msg, DeprecationWarning, caller_frame.f_code.co_filename, caller_frame.f_lineno
+            )
+        else:
+            warnings.warn(cls._warn_msg, DeprecationWarning, stacklevel=3)
+
         cls._seq._open(seq_name=seq_name)
         yield cls._seq
         cls._seq.close()

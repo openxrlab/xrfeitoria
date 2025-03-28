@@ -1,3 +1,5 @@
+# This config is used for the CircleCI workflow to run the tests on the Windows and Linux runners
+# Windows runner needs to be self-hosted
 version: 2.1
 
 parameters:

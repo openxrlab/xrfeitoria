@@ -106,7 +106,11 @@ class CustomMoviePipeline:
         )
 
     @staticmethod
-    def add_render_passes(movie_preset: unreal.MoviePipelineMasterConfig, render_passes: List[RenderPass]) -> None:
+    def add_render_passes(
+        movie_preset: unreal.MoviePipelineMasterConfig,
+        render_passes: List[RenderPass],
+        accumulator_includes_alpha: bool = False,
+    ) -> None:
         """Add render passes to a movie preset.
 
         Args:
@@ -114,11 +118,15 @@ class CustomMoviePipeline:
             render_passes (List[RenderPass]): The render passes to add.
                 The available render passes are defined in `UnrealRenderLayerEnum`: `rgb`, `depth`, `mask`, \
                 `flow`, `diffuse`, `normal`, `metallic`, `roughness`, `specular`, `tangent`, `basecolor`
+            accumulator_includes_alpha (bool): Whether the accumulator includes alpha.
+                https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/MoviePipelineDeferredPassBase#unreal.MoviePipelineDeferredPassBase.accumulator_includes_alpha
         """
 
-        # find or add setting
-        render_pass = movie_preset.find_or_add_setting_by_class(unreal.CustomMoviePipelineDeferredPass)
+        deferred_config = movie_preset.find_or_add_setting_by_class(unreal.CustomMoviePipelineDeferredPass)
         render_pass_config = movie_preset.find_or_add_setting_by_class(unreal.CustomMoviePipelineOutput)
+
+        # set alpha
+        deferred_config.accumulator_includes_alpha = accumulator_includes_alpha
 
         # add render passes
         additional_render_passes = []
@@ -263,6 +271,7 @@ class CustomMoviePipeline:
         anti_alias: RenderJobUnreal.AntiAliasSetting = RenderJobUnreal.AntiAliasSetting(),
         console_variables: Dict[str, float] = {'r.MotionBlurQuality': 0.0},
         export_audio: bool = False,
+        export_transparent: bool = False,
     ) -> unreal.MoviePipelineMasterConfig:
         """
         Create a movie preset from args.
@@ -280,6 +289,7 @@ class CustomMoviePipeline:
             anti_alias (dict): Anti-alias settings.
             console_variables (bool): Console variables.
             export_audio (bool): Whether to export audio.
+            export_transparent (bool): Whether to render with transparent background.
 
         Returns:
             unreal.MoviePipelineMasterConfig: The created movie preset.
@@ -287,7 +297,7 @@ class CustomMoviePipeline:
 
         movie_preset = unreal.MoviePipelineMasterConfig()
 
-        cls.add_render_passes(movie_preset, render_passes)
+        cls.add_render_passes(movie_preset, render_passes, accumulator_includes_alpha=export_transparent)
         cls.add_output_config(movie_preset, resolution, file_name_format, output_path)
         cls.add_anti_alias(movie_preset, anti_alias)
         cls.add_console_command(movie_preset, console_variables)
@@ -379,6 +389,7 @@ class CustomMoviePipeline:
             anti_alias=job.anti_aliasing,
             console_variables=job.console_variables,
             export_audio=job.export_audio,
+            export_transparent=job.export_transparent,
         )
         new_job.set_configuration(movie_preset)
         unreal.log(f'Added new job ({new_job.job_name}) to queue')

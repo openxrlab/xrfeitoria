@@ -192,6 +192,7 @@ class RenderJobUnreal:
     console_variables: Dict[str, float] = field(default_factory=dict)
     anti_aliasing: AntiAliasSetting = AntiAliasSetting()
     export_audio: bool = False
+    export_transparent: bool = False
 
     def __post_init__(self):
         self.render_passes = [RenderPass(**rp) for rp in self.render_passes]

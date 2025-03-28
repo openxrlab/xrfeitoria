@@ -73,6 +73,7 @@ class LoggerWrapper:
         cls,
         level: Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'] = 'INFO',
         log_path: 'Optional[PathLike]' = None,
+        log_path_level: Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'] = 'DEBUG',
         replace: bool = True,
     ) -> 'loguru.Logger':
         """Setup logging to file and console.
@@ -81,6 +82,8 @@ class LoggerWrapper:
             level (Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], optional):
                 logging level. Defaults to "INFO", find more in https://loguru.readthedocs.io/en/stable/api/logger.html.
             log_path (Path, optional): path to save the log file. Defaults to None.
+            log_path_level (Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], optional):
+                logging level for the log file. Defaults to 'DEBUG'.
             replace (bool, optional): replace the log file if exists. Defaults to True.
         """
         if cls.is_setup:
@@ -106,8 +109,9 @@ class LoggerWrapper:
             log_path.parent.mkdir(parents=True, exist_ok=True)
             if replace and log_path.exists():
                 log_path.unlink(missing_ok=True)
-            _level = 'RPC' if level == 'RPC' else 'TRACE'
-            logger.add(log_path, level=_level, filter=cls.filter_unique, format=cls.logger_format, encoding='utf-8')
+            logger.add(
+                log_path, level=log_path_level, filter=cls.filter_unique, format=cls.logger_format, encoding='utf-8'
+            )
             logger.info(f'Python Logging to "{log_path.as_posix()}"')
         cls.is_setup = True
         return logger
@@ -148,6 +152,7 @@ class LoggerWrapper:
 def setup_logger(
     level: Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'] = 'INFO',
     log_path: 'Optional[PathLike]' = None,
+    log_path_level: Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'] = 'DEBUG',
     replace: bool = True,
 ) -> 'loguru.Logger':
     """Setup logging to file and console.
@@ -163,10 +168,12 @@ def setup_logger(
                 - 'INFO': logging info messages.
                 - ...
         log_path (Path, optional): path to save the log file. Defaults to None.
+        log_path_level (Literal['RPC', 'TRACE', 'DEBUG', 'INFO', 'SUCCESS', 'WARNING', 'ERROR', 'CRITICAL'], optional):
+            logging level for the log file. Defaults to 'DEBUG'.
         replace (bool, optional): replace the log file if exists. Defaults to True.
     """
     try:
-        return LoggerWrapper.setup_logging(level, log_path, replace)
+        return LoggerWrapper.setup_logging(level, log_path, log_path_level, replace)
     except Exception as e:
         import traceback
 

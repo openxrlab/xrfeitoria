@@ -1,6 +1,7 @@
 """
 >>> python -m tests.blender.sequence
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +32,7 @@ def seq_actor(xf_runner: XRFeitoriaBlender, seq_name: str = 'seq_actor'):
     camera_level = xf_runner.Camera.spawn(location=(0, 10, 0))
     camera_level.look_at(target=(0, 0, 0))
 
-    with xf_runner.Sequence.new(seq_name=seq_name, seq_length=2) as seq:
+    with xf_runner.sequence(seq_name=seq_name, seq_length=2) as seq:
         seq.use_camera(camera_level)
         camera = seq.spawn_camera(camera_name='camera', location=(-10, 0, 0), rotation=(90, 0, -90), fov=39.6)
 
@@ -85,7 +86,7 @@ def seq_actor(xf_runner: XRFeitoriaBlender, seq_name: str = 'seq_actor'):
 
 
 def seq_shape(xf_runner: XRFeitoriaBlender, seq_name='seq_shape'):
-    with xf_runner.Sequence.new(seq_name=seq_name, seq_length=6) as seq:
+    with xf_runner.sequence(seq_name=seq_name, seq_length=6) as seq:
         camera = seq.spawn_camera(location=(-10, 0, 0), rotation=(90, 0, -90), fov=39.6)
 
         xf_runner.utils.set_frame_current(frame=3)

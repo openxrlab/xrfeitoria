@@ -3,6 +3,7 @@
 
 This is a script to render a preset level in blender.
 """
+
 from pathlib import Path
 
 import xrfeitoria as xf
@@ -49,7 +50,7 @@ def main(debug=False, background=False):
     )
 
     # by creating a new `sequence`, XRFeitoria links a new collection named `{seq_name}` to the level.
-    with xf_runner.Sequence.new(seq_name=seq_name, level='Scene') as seq:
+    with xf_runner.sequence(seq_name=seq_name, level='Scene') as seq:
         # The cameras in the level will not be used for rendering by default,
         # but you can activate them by calling `seq.use_camera(camera)`.
         # There is a camera named `Camera` in the level, and we use it for rendering.
