@@ -17,14 +17,13 @@ name = "xrfeitoria"
 authors = [{ name = "OpenXRLab", email = "openxrlab@pjlab.org.cn" }]
 description = "OpenXRLab Synthetic Data Rendering Toolbox"
 readme = "README.md"
-requires-python = ">=3.8, <3.11"
+requires-python = ">=3.9, <3.11"
 license = { text = 'Apache License 2.0' }
 classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: Unix",
     "Operating System :: MacOS",
     "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     'License :: OSI Approved :: Apache Software License',
@@ -81,7 +80,7 @@ xf-smplx = "xrfeitoria.cmd.blender.vis_smplx:app"
 
 [tool.black]
 line-length = 120
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py39', 'py310']
 include = '\.pyi?$'
 skip-string-normalization = true
 
@@ -93,8 +92,8 @@ line-length = 120
 # - `F841` (unused variables)
 fix = true
 unfixable = ["F401", "F841"]
-# Assume the minimum version is Python 3.8
-target-version = 'py38'
+# Assume the minimum version is Python 3.9
+target-version = 'py39'
 
 
 [tool.isort]

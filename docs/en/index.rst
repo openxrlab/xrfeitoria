@@ -47,7 +47,7 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-- ``Python >= 3.8``
+- ``Python >= 3.9``
 - (optional) ``Unreal Engine >= 5.1``
     |check_| Windows
 
